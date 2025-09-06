@@ -55,7 +55,7 @@ electronic_shop/
 
 ### 🏪 Giao diện
 - ✅ Responsive design cho mọi thiết bị
-- ✅ Hero section với slider
+- ✅ Hero section với animation
 - ✅ Flash sale và sản phẩm nổi bật
 - ✅ Danh mục sản phẩm với hình ảnh
 - ✅ Loading states chuyên nghiệp
@@ -138,9 +138,8 @@ Mọi đóng góp đều được chào đón! Vui lòng:
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ## 📞 Liên hệ
-- **Author**: [Your Name]
-- **Email**: [your.email@example.com]
-- **Project Link**: [https://github.com/yourusername/electronic_shop](https://github.com/yourusername/electronic_shop)
+- **Author**: truongle03
+- **Project Link**: https://github.com/truongle03/electronic_shop
 
 ## 🎉 Acknowledgments
 - Vue.js team for the amazing framework
