@@ -1,0 +1,151 @@
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
+import { useAuthStore } from "./auth";
+import { useRouter } from "vue-router";
+import { useNotification } from "../composables/useNotification";
+import {
+  getCart,
+  addToCart as addToCartApi,
+  updateCartItem as updateCartItemApi,
+  removeFromCart as removeFromCartApi,
+} from "../api/cartService";
+
+export const useCartStore = defineStore("cart", () => {
+  const cartItems = ref([]);
+  const authStore = useAuthStore();
+  const router = useRouter();
+  const loading = ref(false);
+  const { notifyAddToCart, notifyRemoveFromCart, notifyUpdateCart, notifyClearCart, showError, showWarning } = useNotification();
+
+  const cartTotal = computed(() => {
+    return cartItems.value.reduce((total, item) => {
+      return total + item.price * item.quantity;
+    }, 0);
+  });
+
+  const cartCount = computed(() => {
+    return cartItems.value.reduce((count, item) => {
+      return count + item.quantity;
+    }, 0);
+  });
+
+  const fetchCart = async () => {
+    if (!authStore.isAuthenticated) {
+      // Nếu chưa đăng nhập, giỏ hàng sẽ rỗng
+      cartItems.value = [];
+      return;
+    }
+
+    try {
+      loading.value = true;
+      const cart = await getCart();
+      if (cart && cart.products) {
+        cartItems.value = cart.products.map(item => ({
+          id: item.product_id._id,
+          name: item.product_id.name,
+          price: item.price,
+          quantity: item.quantity,
+          image: item.product_id.images[0],
+          subtotal: item.subtotal
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching cart:", error);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const addToCart = async (product, quantity = 1) => {
+    if (!authStore.isAuthenticated) {
+      localStorage.setItem(
+        "pendingCartItem",
+        JSON.stringify({ product, quantity })
+      );
+
+      showWarning("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+      return false;
+    }
+
+    try {
+      loading.value = true;
+      await addToCartApi(product._id, quantity);
+      await fetchCart(); // Refresh cart data from server
+      notifyAddToCart(product.name);
+      return true;
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+      showError("Không thể thêm sản phẩm vào giỏ hàng");
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const updateQuantity = async (productId, quantity) => {
+    try {
+      loading.value = true;
+      await updateCartItemApi(productId, quantity);
+      await fetchCart();
+      notifyUpdateCart();
+    } catch (error) {
+      console.error("Error updating cart:", error);
+      showError("Không thể cập nhật giỏ hàng");
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const removeFromCart = async (productId) => {
+    try {
+      loading.value = true;
+      // Lấy tên sản phẩm trước khi xóa
+      const item = cartItems.value.find(item => item.id === productId);
+      const productName = item ? item.name : 'Sản phẩm';
+      
+      await removeFromCartApi(productId);
+      await fetchCart();
+      notifyRemoveFromCart(productName);
+    } catch (error) {
+      console.error("Error removing from cart:", error);
+      showError("Không thể xóa sản phẩm khỏi giỏ hàng");
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const clearCart = () => {
+    cartItems.value = [];
+    notifyClearCart();
+  };
+
+  // Kiểm tra xem có sản phẩm đang chờ thêm vào giỏ không
+  const checkPendingCartItem = async () => {
+    const pendingItem = localStorage.getItem("pendingCartItem");
+    if (pendingItem && authStore.isAuthenticated) {
+      const { product, quantity } = JSON.parse(pendingItem);
+      await addToCart(product, quantity);
+      localStorage.removeItem("pendingCartItem");
+    }
+  };
+
+  // Fetch cart when store is initialized and user is authenticated
+  if (authStore.isAuthenticated) {
+    fetchCart();
+  }
+
+  return {
+    cartItems,
+    cartTotal,
+    cartCount,
+    loading,
+    addToCart,
+    removeFromCart,
+    updateQuantity,
+    clearCart,
+    checkPendingCartItem,
+    fetchCart,
+  };
+});
