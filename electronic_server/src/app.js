@@ -8,6 +8,7 @@ import authRouter from "./routes/auth.router.js";
 import cartRouter from "./routes/cart.router.js";
 import userRouter from "./routes/user.router.js";
 import orderRouter from "./routes/order.router.js";
+import ordersRouter from "./routes/orders.router.js";
 
 dotenv.config();
 connectDB();
@@ -22,6 +23,7 @@ app.use("/api/categories", categoryRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/users", userRouter);
 app.use("/api/orders", orderRouter);
+app.use("/api/payment-orders", ordersRouter);
 
 app.get("/", (req, res) => {
   res.send("Server API đang chạy 🚀");

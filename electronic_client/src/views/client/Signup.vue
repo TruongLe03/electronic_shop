@@ -1,15 +1,26 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuthStore } from "../stores/auth";
-import { register } from "../api/authService";
-import { useNotification } from "../composables/useNotification";
-import { useGlobalLoading } from "../composables/useLoading";
+import { useAuthStore } from "@stores/auth";
+import { register } from "@api/authService";
+import { useNotification } from "@composables/useNotification";
+import { useGlobalLoading } from "@composables/useLoading";
 
 const router = useRouter();
 const authStore = useAuthStore();
 const { notifyRegister, showError, showSuccess } = useNotification();
 const { showFormLoading, hideLoading } = useGlobalLoading();
+
+// Kiểm tra nếu user đã đăng nhập và là admin thì redirect
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    if (authStore.user?.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/");
+    }
+  }
+});
 
 const formData = ref({
   email: "",
@@ -76,7 +87,7 @@ const handleSubmit = async () => {
     }
 
     loading.value = true;
-    
+
     // Hiển thị loading overlay
     loader = showFormLoading("Đang đăng ký tài khoản...");
 
@@ -93,9 +104,15 @@ const handleSubmit = async () => {
     // Cập nhật store
     authStore.updateUser(response.user);
 
-    // Show success message and redirect to home page
+    // Show success message
     notifyRegister(true);
-    router.push("/");
+
+    // Redirect based on role
+    if (response.user.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/");
+    }
   } catch (error) {
     console.error("Registration error:", error);
     notifyRegister(false);

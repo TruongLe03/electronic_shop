@@ -1,11 +1,11 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import Header from "../components/Header.vue";
-import ProductCard from "../components/productCard.vue";
-import Footer from "../components/Footer.vue";
-import { getProducts, getProductsByCategory } from "../api/productService";
-import { getCategories } from "../api/categoryService";
-import { useCartStore } from "../stores/cart";
+import Header from "@components/client/Header.vue";
+import ProductCard from "@components/client/productCard.vue";
+import Footer from "@components/client/Footer.vue";
+import { getProducts, getProductsByCategory } from "@api/productService";
+import { getCategories } from "@api/categoryService";
+import { useCartStore } from "@stores/cart";
 
 const products = ref([]);
 const categories = ref([]);
@@ -23,11 +23,11 @@ const handleAddToCart = async (product) => {
   try {
     const success = await cartStore.addToCart(product, quantity.value);
     if (success) {
-      alert('Thêm vào giỏ hàng thành công!');
+      alert("Thêm vào giỏ hàng thành công!");
     }
   } catch (error) {
-    console.error('Error adding to cart:', error);
-    alert('Có lỗi xảy ra khi thêm vào giỏ hàng');
+    console.error("Error adding to cart:", error);
+    alert("Có lỗi xảy ra khi thêm vào giỏ hàng");
   }
 };
 

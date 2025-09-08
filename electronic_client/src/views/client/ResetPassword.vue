@@ -4,9 +4,7 @@
       <div class="mt-8 bg-white rounded-lg shadow-md p-8">
         <div class="text-center mb-8">
           <h2 class="text-3xl font-bold text-gray-900">Đặt lại mật khẩu</h2>
-          <p class="mt-2 text-gray-600">
-            Nhập mật khẩu mới của bạn
-          </p>
+          <p class="mt-2 text-gray-600">Nhập mật khẩu mới của bạn</p>
         </div>
 
         <!-- Error Message -->
@@ -86,19 +84,19 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { validateResetToken, resetPassword } from '../api/passwordService';
+import { ref, onMounted } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { validateResetToken, resetPassword } from "@api/passwordService";
 
 const route = useRoute();
 const router = useRouter();
 const token = route.params.token;
 
-const password = ref('');
-const confirmPassword = ref('');
+const password = ref("");
+const confirmPassword = ref("");
 const loading = ref(false);
-const error = ref('');
-const success = ref('');
+const error = ref("");
+const success = ref("");
 
 // Kiểm tra token khi component được tải
 onMounted(async () => {
@@ -106,8 +104,8 @@ onMounted(async () => {
     loading.value = true;
     await validateResetToken(token);
   } catch (err) {
-    error.value = 'Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn';
-    console.error('Token validation error:', err);
+    error.value = "Link đặt lại mật khẩu không hợp lệ hoặc đã hết hạn";
+    console.error("Token validation error:", err);
   } finally {
     loading.value = false;
   }
@@ -117,27 +115,26 @@ const handleSubmit = async () => {
   try {
     // Validate passwords
     if (password.value !== confirmPassword.value) {
-      error.value = 'Mật khẩu xác nhận không khớp';
+      error.value = "Mật khẩu xác nhận không khớp";
       return;
     }
 
     if (password.value.length < 6) {
-      error.value = 'Mật khẩu phải có ít nhất 6 ký tự';
+      error.value = "Mật khẩu phải có ít nhất 6 ký tự";
       return;
     }
 
     loading.value = true;
-    error.value = '';
+    error.value = "";
 
     await resetPassword(token, password.value);
-    
-    success.value = 'Đặt lại mật khẩu thành công!';
-    password.value = '';
-    confirmPassword.value = '';
 
+    success.value = "Đặt lại mật khẩu thành công!";
+    password.value = "";
+    confirmPassword.value = "";
   } catch (err) {
-    console.error('Password reset error:', err);
-    error.value = err.message || 'Đã có lỗi xảy ra';
+    console.error("Password reset error:", err);
+    error.value = err.message || "Đã có lỗi xảy ra";
   } finally {
     loading.value = false;
   }

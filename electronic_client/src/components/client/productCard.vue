@@ -1,7 +1,7 @@
 <script setup>
-import { getFullImage, handleImageError } from "../utils/imageUtils";
-import { useCartStore } from "../stores/cart";
-import { useNotification } from "../composables/useNotification";
+import { getFullImage, handleImageError } from "@utils/imageUtils";
+import { useCartStore } from "@stores/cart";
+import { useNotification } from "@composables/useNotification";
 import { ref } from "vue";
 
 const props = defineProps({
@@ -39,9 +39,9 @@ const handleAddToCart = async () => {
 };
 
 // Debug log để kiểm tra dữ liệu image
-console.log('Product data:', props.product);
-console.log('Main image:', props.product?.main_image);
-console.log('Processed image URL:', getFullImage(props.product?.main_image));
+console.log("Product data:", props.product);
+console.log("Main image:", props.product?.main_image);
+console.log("Processed image URL:", getFullImage(props.product?.main_image));
 </script>
 
 <template>
@@ -56,7 +56,13 @@ console.log('Processed image URL:', getFullImage(props.product?.main_image));
           :alt="product.name"
           class="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
           @error="handleImageError"
-          @load="() => console.log('Image loaded successfully:', getFullImage(product.main_image))"
+          @load="
+            () =>
+              console.log(
+                'Image loaded successfully:',
+                getFullImage(product.main_image)
+              )
+          "
         />
         <!-- Add to Cart Overlay -->
         <div

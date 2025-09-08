@@ -1,10 +1,10 @@
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import { useAuthStore } from "../stores/auth";
-import { login } from "../api/authService";
-import { useNotification } from "../composables/useNotification";
-import { useGlobalLoading } from "../composables/useLoading";
+import { useAuthStore } from "@stores/auth";
+import { login } from "@api/authService";
+import { useNotification } from "@composables/useNotification";
+import { useGlobalLoading } from "@composables/useLoading";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -15,6 +15,17 @@ const email = ref("");
 const password = ref("");
 const error = ref("");
 const loading = ref(false);
+
+// Kiểm tra nếu user đã đăng nhập và là admin thì redirect
+onMounted(() => {
+  if (authStore.isAuthenticated) {
+    if (authStore.user?.role === "admin") {
+      router.push("/admin");
+    } else {
+      router.push("/");
+    }
+  }
+});
 
 const handleLogin = async () => {
   let loader;
@@ -27,27 +38,32 @@ const handleLogin = async () => {
 
     loading.value = true;
     error.value = "";
-    
+
     // Hiển thị loading overlay
     loader = showFormLoading("Đang đăng nhập...");
 
     const response = await login(email.value, password.value);
-    
+
     // Cập nhật store
     authStore.updateUser(response.user);
-    
+
     // Hiển thị thông báo thành công
     notifyLogin(true, response.user.name || response.user.email);
-    
-    // Chuyển hướng
-    const intendedRoute = localStorage.getItem('intendedRoute');
-    if (intendedRoute) {
-      localStorage.removeItem('intendedRoute');
-      router.push(intendedRoute);
-    } else {
-      router.push("/");
-    }
 
+    // Chuyển hướng dựa trên role
+    if (response.user.role === "admin") {
+      // Nếu là admin thì chuyển thẳng đến dashboard
+      router.push("/admin");
+    } else {
+      // Nếu là user thường thì xử lý như bình thường
+      const intendedRoute = localStorage.getItem("intendedRoute");
+      if (intendedRoute) {
+        localStorage.removeItem("intendedRoute");
+        router.push(intendedRoute);
+      } else {
+        router.push("/");
+      }
+    }
   } catch (err) {
     console.error("Login error:", err);
     error.value = err.message || "Đã có lỗi xảy ra";
@@ -66,9 +82,9 @@ const handleLogin = async () => {
         <div class="text-center mb-8">
           <h2 class="text-3xl font-bold text-gray-900">Đăng nhập</h2>
           <p class="mt-2 text-gray-600">
-            Chưa có tài khoản? 
-            <router-link 
-              to="/signup" 
+            Chưa có tài khoản?
+            <router-link
+              to="/signup"
               class="text-blue-600 hover:text-blue-800 font-medium"
             >
               Đăng ký ngay
@@ -77,8 +93,8 @@ const handleLogin = async () => {
         </div>
 
         <!-- Error Message -->
-        <div 
-          v-if="error" 
+        <div
+          v-if="error"
           class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm"
         >
           {{ error }}
@@ -87,8 +103,8 @@ const handleLogin = async () => {
         <form @submit.prevent="handleLogin" class="space-y-6">
           <!-- Email Input -->
           <div>
-            <label 
-              for="email" 
+            <label
+              for="email"
               class="block text-sm font-medium text-gray-700 mb-1"
             >
               Email
@@ -105,8 +121,8 @@ const handleLogin = async () => {
 
           <!-- Password Input -->
           <div>
-            <label 
-              for="password" 
+            <label
+              for="password"
               class="block text-sm font-medium text-gray-700 mb-1"
             >
               Mật khẩu
@@ -123,8 +139,8 @@ const handleLogin = async () => {
 
           <!-- Forgot Password -->
           <div class="flex justify-end">
-            <router-link 
-              to="/forgot-password" 
+            <router-link
+              to="/forgot-password"
               class="text-sm text-blue-600 hover:text-blue-800"
             >
               Quên mật khẩu?

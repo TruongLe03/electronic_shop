@@ -1,15 +1,13 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
 import ProductCard from "./productCard.vue";
-import { getDiscountedProducts } from "../api/productService";
+import { getDiscountedProducts } from "@api/productService";
 
 const scrollContainer = ref(null);
-const currentSlide = ref(0);
 let autoScrollInterval = null;
-const itemsPerPage = 4;
 const loading = ref(true);
 const error = ref(null);
-const saleItems = ref([]);
+const discountedProducts = ref([]);
 
 // Lấy danh sách sản phẩm đang giảm giá
 const fetchDiscountedProducts = async () => {
@@ -17,8 +15,8 @@ const fetchDiscountedProducts = async () => {
     loading.value = true;
     error.value = null;
     const response = await getDiscountedProducts();
-    saleItems.value = response.data;
-    console.log("Discounted products:", saleItems.value);
+    discountedProducts.value = response.data;
+    console.log("Discounted products:", discountedProducts.value);
   } catch (err) {
     error.value = "Không thể tải danh sách sản phẩm giảm giá";
     console.error("Error fetching discounted products:", err);
@@ -54,46 +52,16 @@ const updateTimer = () => {
   }
 };
 
-// Show only 4 items at a time
-const visibleItems = computed(() => {
-  if (!saleItems.value || saleItems.value.length === 0) {
-    return [];
-  }
-  const startIndex = currentSlide.value * itemsPerPage;
-  return saleItems.value.slice(startIndex, startIndex + itemsPerPage);
-});
-
-const totalPages = computed(() => {
-  if (!saleItems.value || saleItems.value.length === 0) {
-    return 0;
-  }
-  return Math.ceil(saleItems.value.length / itemsPerPage);
-});
-
-const formatPrice = (price) => {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(price);
-};
-
+// Horizontal scroll functions
 const scrollLeft = () => {
-  if (!totalPages.value) return;
-
-  if (currentSlide.value > 0) {
-    currentSlide.value--;
-  } else {
-    currentSlide.value = totalPages.value - 1;
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollBy({ left: -320, behavior: 'smooth' });
   }
 };
 
 const scrollRight = () => {
-  if (!totalPages.value) return;
-
-  if (currentSlide.value < totalPages.value - 1) {
-    currentSlide.value++;
-  } else {
-    currentSlide.value = 0;
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollBy({ left: 320, behavior: 'smooth' });
   }
 };
 
@@ -216,51 +184,56 @@ const handleMouseLeave = () => {
           </button>
         </div>
 
-        <!-- Grid of 4 Cards -->
+        <!-- Single Row Scroll -->
         <div
           v-else
-          class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4"
+          class="relative overflow-hidden"
         >
-          <div
-            v-for="item in visibleItems"
-            :key="item._id"
-            class="transform transition duration-300 hover:scale-105"
+          <!-- Navigation Buttons -->
+          <button
+            @click="scrollLeft"
+            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 opacity-0 group-hover:opacity-100"
           >
-            <ProductCard :product="item">
-              <!-- Flash Sale Badge -->
-              <template #badge>
-                <div
-                  class="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-sm font-semibold"
-                >
-                  -{{ item.discount_percent }}%
-                </div>
-              </template>
-            </ProductCard>
+            ‹
+          </button>
+          <button
+            @click="scrollRight"
+            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 opacity-0 group-hover:opacity-100"
+          >
+            ›
+          </button>
+
+          <!-- Scrollable Container -->
+          <div
+            ref="scrollContainer"
+            class="flex gap-4 overflow-x-auto scrollbar-hide scroll-smooth pb-4"
+            style="scrollbar-width: none; -ms-overflow-style: none;"
+          >
+            <div
+              v-for="item in discountedProducts"
+              :key="item._id"
+              class="flex-none w-48 sm:w-56 md:w-64 transform transition duration-300 hover:scale-105"
+            >
+              <ProductCard :product="item">
+                <!-- Flash Sale Badge -->
+                <template #badge>
+                  <div
+                    class="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-sm font-semibold"
+                  >
+                    -{{ item.discount_percent }}%
+                  </div>
+                </template>
+              </ProductCard>
+            </div>
           </div>
         </div>
 
         <!-- Empty State -->
         <div
-          v-if="!loading && !error && visibleItems.length === 0"
+          v-if="!loading && !error && discountedProducts.length === 0"
           class="text-center py-12"
         >
           <div class="text-gray-500">Không có sản phẩm giảm giá</div>
-        </div>
-
-        <!-- Progress Dots -->
-        <div
-          v-if="!loading && !error && totalPages > 1"
-          class="flex justify-center mt-6 gap-2"
-        >
-          <button
-            v-for="index in totalPages"
-            :key="index"
-            @click="currentSlide = index - 1"
-            class="w-2 h-2 rounded-full transition-all duration-300"
-            :class="
-              index - 1 === currentSlide ? 'bg-red-600 w-4' : 'bg-gray-300'
-            "
-          ></button>
         </div>
       </div>
     </div>
@@ -274,5 +247,15 @@ const handleMouseLeave = () => {
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Ẩn scrollbar */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 </style>

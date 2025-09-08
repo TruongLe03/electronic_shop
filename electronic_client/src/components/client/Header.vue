@@ -2,9 +2,9 @@
 import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { storeToRefs } from "pinia";
-import { useAuthStore } from "../stores/auth";
-import { useCartStore } from "../stores/cart";
-import { useNotification } from "../composables/useNotification";
+import { useAuthStore } from "@stores/auth";
+import { useCartStore } from "@stores/cart";
+import { useNotification } from "@composables/useNotification";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -30,22 +30,22 @@ const handleLogout = () => {
   try {
     // Clear auth store
     authStore.logout();
-    
+
     // Clear cart store
     cartStore.clearCart();
-    
+
     // Close any open menus
     showUserMenu.value = false;
     showNotificationMenu.value = false;
     isMobileMenuOpen.value = false;
-    
+
     // Show notification
     notifyLogout();
-    
+
     // Navigate to home page
     router.push("/");
   } catch (error) {
-    console.error('Logout error:', error);
+    console.error("Logout error:", error);
     // Even if there's an error, still try to navigate to home
     router.push("/");
   }
@@ -72,33 +72,33 @@ const navigateToNotifications = () => {
 const notifications = ref([
   {
     id: 1,
-    title: 'Đơn hàng đã được xác nhận',
-    message: 'Đơn hàng #12345 đã được xác nhận',
-    time: '2 giờ trước',
-    read: false
+    title: "Đơn hàng đã được xác nhận",
+    message: "Đơn hàng #12345 đã được xác nhận",
+    time: "2 giờ trước",
+    read: false,
   },
   {
     id: 2,
-    title: 'Khuyến mãi đặc biệt',
-    message: 'Giảm giá 20% cho tất cả sản phẩm',
-    time: '6 giờ trước',
-    read: false
+    title: "Khuyến mãi đặc biệt",
+    message: "Giảm giá 20% cho tất cả sản phẩm",
+    time: "6 giờ trước",
+    read: false,
   },
   {
     id: 3,
-    title: 'Cập nhật thông tin',
-    message: 'Vui lòng cập nhật thông tin tài khoản',
-    time: '1 ngày trước',
-    read: true
-  }
+    title: "Cập nhật thông tin",
+    message: "Vui lòng cập nhật thông tin tài khoản",
+    time: "1 ngày trước",
+    read: true,
+  },
 ]);
 
 const unreadCount = computed(() => {
-  return notifications.value.filter(n => !n.read).length;
+  return notifications.value.filter((n) => !n.read).length;
 });
 
 const markAsRead = (id) => {
-  const notification = notifications.value.find(n => n.id === id);
+  const notification = notifications.value.find((n) => n.id === id);
   if (notification) {
     notification.read = true;
   }
@@ -108,6 +108,11 @@ const toggleUserMenu = (event) => {
   event.stopPropagation();
   showUserMenu.value = !showUserMenu.value;
   showNotificationMenu.value = false;
+};
+
+const navigateToAdmin = () => {
+  router.push("/admin");
+  showUserMenu.value = false;
 };
 
 const toggleNotificationMenu = (event) => {
@@ -209,7 +214,7 @@ onMounted(() => {
               <div class="px-4 py-2 border-b border-gray-200">
                 <h3 class="text-sm font-semibold text-gray-900">Thông báo</h3>
               </div>
-              
+
               <div v-if="notifications.length > 0">
                 <div
                   v-for="notification in notifications"
@@ -237,11 +242,11 @@ onMounted(() => {
                   </div>
                 </div>
               </div>
-              
+
               <div v-else class="px-4 py-6 text-center">
                 <p class="text-sm text-gray-500">Không có thông báo nào</p>
               </div>
-              
+
               <div class="px-4 py-2 border-t border-gray-200">
                 <button
                   @click="navigateToNotifications"
@@ -287,7 +292,9 @@ onMounted(() => {
                 alt="User Avatar"
                 class="w-8 h-8 rounded-full object-cover"
               />
-              <span class="font-semibold"> {{ user?.name || user?.username }}</span>
+              <span class="font-semibold">
+                {{ user?.name || user?.username }}</span
+              >
               <span>▼</span>
             </button>
 
@@ -298,6 +305,17 @@ onMounted(() => {
               style="position: absolute; min-width: 200px"
               @click.stop
             >
+              <!-- Admin Dashboard Link (only for admin users) -->
+              <button
+                v-if="user?.role === 'admin'"
+                @click="navigateToAdmin"
+                class="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100 border-b border-gray-200"
+              >
+                <span class="text-purple-600 font-medium"
+                  >🏪 Admin Dashboard</span
+                >
+              </button>
+
               <button
                 @click="navigateToProfile"
                 class="block w-full text-left px-4 py-2 text-gray-800 hover:bg-gray-100"
@@ -356,19 +374,25 @@ onMounted(() => {
           to="/products"
           class="px-6 py-2 hover:bg-blue-300"
           @click="toggleMobileMenu"
-          >Products</RouterLink
+          >Sản phẩm</RouterLink
         >
         <RouterLink
-          to="/"
+          to="/categories"
           class="px-6 py-2 hover:bg-blue-300"
           @click="toggleMobileMenu"
-          >About</RouterLink
+          >Danh mục</RouterLink
         >
         <RouterLink
-          to="/"
+          to="/deals"
           class="px-6 py-2 hover:bg-blue-300"
           @click="toggleMobileMenu"
-          >Contact</RouterLink
+          >Khuyến mãi</RouterLink
+        >
+        <RouterLink
+          to="/support"
+          class="px-6 py-2 hover:bg-blue-300"
+          @click="toggleMobileMenu"
+          >Hỗ trợ</RouterLink
         >
         <!-- Thêm phần đăng nhập/đăng ký -->
         <div class="border-t border-blue-300 mt-2 pt-2">
@@ -389,20 +413,44 @@ onMounted(() => {
     </div>
 
     <!-- Bottom section - Navigation (desktop only) -->
-    <nav class="hidden lg:block bg-blue-200 text-blue-900 px-6 py-2">
-      <div class="flex gap-8 justify-center">
-        <RouterLink to="/" class="hover:text-blue-700 font-medium"
-          >Home</RouterLink
+    <nav class="hidden lg:block bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-3 shadow-md">
+      <div class="max-w-7xl mx-auto flex gap-8 justify-center items-center">
+        <RouterLink 
+          to="/" 
+          class="hover:text-blue-200 font-medium transition-colors duration-200 px-4 py-2 rounded-lg hover:bg-white/10"
         >
-        <RouterLink to="/products" class="hover:text-blue-700 font-medium"
-          >Products</RouterLink
+          Trang chủ
+        </RouterLink>
+        <RouterLink 
+          to="/products" 
+          class="hover:text-blue-200 font-medium transition-colors duration-200 px-4 py-2 rounded-lg hover:bg-white/10"
         >
-        <RouterLink to="/about" class="hover:text-blue-700 font-medium"
-          >About</RouterLink
+          Sản phẩm
+        </RouterLink>
+        <RouterLink 
+          to="/categories" 
+          class="hover:text-blue-200 font-medium transition-colors duration-200 px-4 py-2 rounded-lg hover:bg-white/10"
         >
-        <RouterLink to="/contact" class="hover:text-blue-700 font-medium"
-          >Contact</RouterLink
+          Danh mục
+        </RouterLink>
+        <RouterLink 
+          to="/deals" 
+          class="hover:text-blue-200 font-medium transition-colors duration-200 px-4 py-2 rounded-lg hover:bg-white/10"
         >
+          Khuyến mãi
+        </RouterLink>
+        <RouterLink 
+          to="/brands" 
+          class="hover:text-blue-200 font-medium transition-colors duration-200 px-4 py-2 rounded-lg hover:bg-white/10"
+        >
+          Thương hiệu
+        </RouterLink>
+        <RouterLink 
+          to="/support" 
+          class="hover:text-blue-200 font-medium transition-colors duration-200 px-4 py-2 rounded-lg hover:bg-white/10"
+        >
+          Hỗ trợ
+        </RouterLink>
       </div>
     </nav>
   </header>

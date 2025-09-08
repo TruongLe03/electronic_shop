@@ -1,8 +1,8 @@
 <script setup>
-import { useCartStore } from "../stores/cart";
+import { useCartStore } from "@stores/cart";
 import { useRouter } from "vue-router";
-import Header from "../components/Header.vue";
-import Footer from "../components/Footer.vue";
+import Header from "@components/client/Header.vue";
+import Footer from "@components/client/Footer.vue";
 
 const cart = useCartStore();
 const router = useRouter();
