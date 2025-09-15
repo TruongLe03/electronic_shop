@@ -1,354 +1,212 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import Header from "@components/client/Header.vue";
-import ProductCard from "@components/client/productCard.vue";
 import heroSection from "@components/client/heroSection.vue";
-import FlashSale from "@components/client/FlashSale.vue";
-import bestSeller from "@components/client/bestSeller.vue";
-import newProducts from "@components/client/newProducts.vue";
+import CategorySidebar from "@components/client/CategorySidebar.vue";
+import FeaturedProducts from "@components/client/FeaturedProducts.vue";
 import Footer from "@components/client/Footer.vue";
-import { getProducts } from "@api/productService";
 
-const products = ref([]);
-const loading = ref(false);
-const error = ref(null);
-const currentPage = ref(1);
-const itemsPerPage = 8; // Giảm số lượng để hiển thị đẹp hơn
-const totalPages = ref(0);
-const totalProducts = ref(0);
+// Page loading state
+const pageLoading = ref(true);
 
-// Thêm state cho các section mới
-const featuredCategories = ref([
-  {
-    id: 1,
-    name: "Arduino & Vi điều khiển",
-    image:
-      "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=300&h=200&fit=crop",
-    count: "150+ sản phẩm",
-    color: "from-blue-500 to-purple-600",
-  },
-  {
-    id: 2,
-    name: "Cảm biến IoT",
-    image:
-      "https://images.unsplash.com/photo-1558618047-3c8c76ca7d13?w=300&h=200&fit=crop",
-    count: "200+ sản phẩm",
-    color: "from-green-500 to-teal-600",
-  },
-  {
-    id: 3,
-    name: "Robot & Automation",
-    image:
-      "https://images.unsplash.com/photo-1485827404703-89b55fcc595e?w=300&h=200&fit=crop",
-    count: "80+ sản phẩm",
-    color: "from-orange-500 to-red-600",
-  },
-  {
-    id: 4,
-    name: "Phụ kiện điện tử",
-    image:
-      "https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=300&h=200&fit=crop",
-    count: "300+ sản phẩm",
-    color: "from-purple-500 to-pink-600",
-  },
-]);
-
-const statistics = ref([
-  { label: "Sản phẩm", value: "1000+", icon: "📦" },
-  { label: "Khách hàng", value: "5000+", icon: "👥" },
-  { label: "Đơn hàng", value: "15000+", icon: "📊" },
-  { label: "Đánh giá 5 sao", value: "98%", icon: "⭐" },
-]);
-
-const services = ref([
-  {
-    icon: "🚚",
-    title: "Giao hàng nhanh",
-    description: "Giao hàng trong 24h tại TP.HCM và Hà Nội",
-  },
-  {
-    icon: "🔧",
-    title: "Hỗ trợ kỹ thuật",
-    description: "Đội ngũ kỹ sư hỗ trợ 24/7",
-  },
-  {
-    icon: "💎",
-    title: "Chất lượng cao",
-    description: "Sản phẩm chính hãng, bảo hành đầy đủ",
-  },
-  {
-    icon: "💰",
-    title: "Giá tốt nhất",
-    description: "Cam kết giá tốt nhất thị trường",
-  },
-]);
-
-const loadProducts = async (page = 1) => {
-  try {
-    loading.value = true;
-    error.value = null;
-
-    console.log(`Loading products for page ${page} with limit ${itemsPerPage}`);
-
-    const result = await getProducts(page, itemsPerPage);
-    console.log("Load products result:", result);
-
-    // More detailed debugging
-    console.log("Result type:", typeof result);
-    console.log("Result keys:", result ? Object.keys(result) : "null");
-    console.log("Result.data:", result?.data);
-    console.log("Result.data type:", typeof result?.data);
-    console.log("Is result.data array?", Array.isArray(result?.data));
-
-    if (result && result.data && Array.isArray(result.data)) {
-      products.value = result.data;
-      totalProducts.value = result.total || result.data.length;
-      totalPages.value = Math.ceil(totalProducts.value / itemsPerPage);
-
-      console.log("Products set successfully:", {
-        count: products.value.length,
-        total: totalProducts.value,
-        pages: totalPages.value,
-      });
-    } else {
-      console.error("Invalid result structure:", result);
-      error.value = "Dữ liệu sản phẩm không hợp lệ";
-      products.value = [];
-    }
-  } catch (err) {
-    console.error("Load products error:", err);
-    error.value = err.message || "Không thể tải sản phẩm";
-    products.value = [];
-  } finally {
-    loading.value = false;
-  }
-};
-
-const handlePageChange = (page) => {
-  if (page >= 1 && page <= totalPages.value && page !== currentPage.value) {
-    currentPage.value = page;
-    loadProducts(page);
-  }
-};
-
-const retryLoad = () => {
-  loadProducts(currentPage.value);
-};
-
-onMounted(() => {
-  console.log("Component mounted, loading products...");
-  loadProducts(currentPage.value);
+// Lifecycle
+onMounted(async () => {
+  // Simulate page loading
+  setTimeout(() => {
+    pageLoading.value = false;
+  }, 500);
 });
 </script>
 
 <template>
-  <Header />
-
-  <!-- Hero Section -->
-  <heroSection />
-
-  <!-- Statistics Section -->
-  <section class="py-12 bg-gradient-to-r from-blue-50 to-indigo-100">
-    <div class="container mx-auto px-4">
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-        <div
-          v-for="stat in statistics"
-          :key="stat.label"
-          class="text-center p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300"
-        >
-          <div class="text-3xl mb-2">{{ stat.icon }}</div>
-          <div class="text-2xl font-bold text-gray-800 mb-1">
-            {{ stat.value }}
-          </div>
-          <div class="text-gray-600 text-sm">{{ stat.label }}</div>
-        </div>
-      </div>
+  <!-- Page Loading Overlay -->
+  <div
+    v-if="pageLoading"
+    class="fixed inset-0 bg-white z-50 flex items-center justify-center"
+  >
+    <div class="text-center">
+      <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+      <p class="text-gray-600 font-medium">Đang tải trang...</p>
     </div>
-  </section>
+  </div>
 
-  <!-- Flash Sale -->
-  <FlashSale />
-
-  <!-- Featured Categories -->
-  <section class="py-16 bg-gray-50">
-    <div class="container mx-auto px-4">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-800 mb-4">Danh mục nổi bật</h2>
-        <p class="text-gray-600 max-w-2xl mx-auto">
-          Khám phá các danh mục sản phẩm điện tử hàng đầu với chất lượng tốt
-          nhất
-        </p>
-      </div>
-
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-        <div
-          v-for="category in featuredCategories"
-          :key="category.id"
-          class="group cursor-pointer transform hover:scale-105 transition-all duration-300"
-        >
-          <div class="relative overflow-hidden rounded-xl shadow-lg">
-            <div
-              :class="`absolute inset-0 bg-gradient-to-t ${category.color} opacity-80`"
-            ></div>
-            <img
-              :src="category.image"
-              :alt="category.name"
-              class="w-full h-48 object-cover"
-            />
-            <div
-              class="absolute inset-0 flex flex-col justify-end p-6 text-white"
-            >
-              <h3 class="text-lg font-semibold mb-1">{{ category.name }}</h3>
-              <p class="text-sm opacity-90">{{ category.count }}</p>
+  <!-- Main Content -->
+  <div v-else class="min-h-screen bg-gray-50">
+    <!-- Header -->
+    <Header />
+    
+    <!-- Main Content -->
+    <main>
+      <!-- Hero Section -->
+      <heroSection />
+      
+      <!-- Main Content Area with Sidebar -->
+      <div class="container mx-auto px-4 py-8">
+        <div class="flex flex-col lg:flex-row gap-6">
+          <!-- Sidebar - Categories -->
+          <aside class="lg:w-1/4">
+            <CategorySidebar />
+          </aside>
+          
+          <!-- Main Content -->
+          <div class="lg:w-3/4">
+            <!-- Featured Products Section -->
+            <FeaturedProducts />
+            
+            <!-- Popular Categories Quick Links -->
+            <div class="mt-8 bg-white rounded-lg shadow-md p-6">
+              <h3 class="text-xl font-semibold text-gray-900 mb-4">
+                <i class="fas fa-fire text-red-500 mr-2"></i>
+                Danh mục phổ biến
+              </h3>
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <router-link 
+                  to="/products?categoryId=68abd2d522590b67b7eef500"
+                  class="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-blue-500 hover:bg-blue-50 transition-all duration-200 group"
+                >
+                  <i class="fas fa-microchip text-2xl text-blue-600 mb-2 group-hover:text-blue-700"></i>
+                  <span class="text-sm font-medium text-gray-700 group-hover:text-blue-700 text-center">Arduino</span>
+                </router-link>
+                
+                <router-link 
+                  to="/products?categoryId=68abd2d522590b67b7eef4fc"
+                  class="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-green-500 hover:bg-green-50 transition-all duration-200 group"
+                >
+                  <i class="fas fa-satellite-dish text-2xl text-green-600 mb-2 group-hover:text-green-700"></i>
+                  <span class="text-sm font-medium text-gray-700 group-hover:text-green-700 text-center">Cảm biến</span>
+                </router-link>
+                
+                <router-link 
+                  to="/products?categoryId=68abd2d522590b67b7eef502"
+                  class="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-purple-500 hover:bg-purple-50 transition-all duration-200 group"
+                >
+                  <i class="fas fa-puzzle-piece text-2xl text-purple-600 mb-2 group-hover:text-purple-700"></i>
+                  <span class="text-sm font-medium text-gray-700 group-hover:text-purple-700 text-center">Module</span>
+                </router-link>
+                
+                <router-link 
+                  to="/products?categoryId=68abd2d522590b67b7eef4fe"
+                  class="flex flex-col items-center p-4 rounded-lg border border-gray-200 hover:border-orange-500 hover:bg-orange-50 transition-all duration-200 group"
+                >
+                  <i class="fas fa-tools text-2xl text-orange-600 mb-2 group-hover:text-orange-700"></i>
+                  <span class="text-sm font-medium text-gray-700 group-hover:text-orange-700 text-center">Dụng cụ</span>
+                </router-link>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  </section>
-
-  <!-- Best Sellers -->
-  <bestSeller />
-
-  <!-- New Products -->
-  <newProducts />
-
-  <!-- Services Section -->
-  <section class="py-16 bg-white">
-    <div class="container mx-auto px-4">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-800 mb-4">
-          Tại sao chọn chúng tôi?
-        </h2>
-        <p class="text-gray-600 max-w-2xl mx-auto">
-          Chúng tôi cam kết mang đến trải nghiệm mua sắm tuyệt vời nhất cho
-          khách hàng
-        </p>
-      </div>
-
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
-        <div
-          v-for="service in services"
-          :key="service.title"
-          class="text-center p-6 rounded-xl hover:bg-gray-50 transition-colors duration-300"
-        >
-          <div class="text-4xl mb-4">{{ service.icon }}</div>
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">
-            {{ service.title }}
-          </h3>
-          <p class="text-gray-600 text-sm">{{ service.description }}</p>
+      
+      <!-- Statistics Section -->
+      <section class="py-16 bg-blue-600">
+        <div class="container mx-auto px-4">
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center text-white">
+            <div class="space-y-2">
+              <div class="text-4xl font-bold">10K+</div>
+              <div class="text-blue-100">Khách hàng tin tưởng</div>
+            </div>
+            <div class="space-y-2">
+              <div class="text-4xl font-bold">5K+</div>
+              <div class="text-blue-100">Sản phẩm chất lượng</div>
+            </div>
+            <div class="space-y-2">
+              <div class="text-4xl font-bold">24/7</div>
+              <div class="text-blue-100">Hỗ trợ khách hàng</div>
+            </div>
+            <div class="space-y-2">
+              <div class="text-4xl font-bold">99%</div>
+              <div class="text-blue-100">Khách hàng hài lòng</div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
-  <!-- Newsletter Section -->
-  <section class="py-16 bg-gradient-to-r from-indigo-600 to-purple-600">
-    <div class="container mx-auto px-4 text-center">
-      <div class="max-w-2xl mx-auto">
-        <h2 class="text-3xl font-bold text-white mb-4">
-          🔔 Đăng ký nhận tin tức mới nhất
-        </h2>
-        <p class="text-indigo-100 mb-8">
-          Nhận thông báo về sản phẩm mới, khuyến mãi đặc biệt và tin tức công
-          nghệ
-        </p>
-        <div class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
-          <input
-            type="email"
-            placeholder="Nhập email của bạn"
-            class="flex-1 px-4 py-3 rounded-lg border-0 focus:ring-2 focus:ring-yellow-400 outline-none"
-          />
-          <button
-            class="px-6 py-3 bg-yellow-400 text-gray-800 font-semibold rounded-lg hover:bg-yellow-300 transition-colors"
-          >
-            Đăng ký ngay
-          </button>
+      <!-- Why Choose Us Section -->
+      <section class="py-16 bg-white">
+        <div class="container mx-auto px-4">
+          <div class="text-center mb-12">
+            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Tại sao chọn chúng tôi?
+            </h2>
+            <p class="text-gray-600 max-w-2xl mx-auto">
+              Chúng tôi cam kết mang đến cho bạn trải nghiệm mua sắm tuyệt vời nhất với các sản phẩm electronics chất lượng cao
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <!-- Feature 1 -->
+            <div class="text-center group">
+              <div class="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-blue-600 transition-all duration-300">
+                <i class="fas fa-shipping-fast text-3xl text-blue-600 group-hover:text-white transition-colors duration-300"></i>
+              </div>
+              <h3 class="text-xl font-semibold text-gray-900 mb-3">Giao hàng nhanh chóng</h3>
+              <p class="text-gray-600">
+                Giao hàng miễn phí trong 24h tại TP.HCM và 2-3 ngày toàn quốc với đơn hàng từ 500.000đ
+              </p>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="text-center group">
+              <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-green-600 transition-all duration-300">
+                <i class="fas fa-shield-alt text-3xl text-green-600 group-hover:text-white transition-colors duration-300"></i>
+              </div>
+              <h3 class="text-xl font-semibold text-gray-900 mb-3">Bảo hành chính hãng</h3>
+              <p class="text-gray-600">
+                Tất cả sản phẩm đều có bảo hành chính hãng và hỗ trợ kỹ thuật 24/7 từ đội ngũ chuyên gia
+              </p>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="text-center group">
+              <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-yellow-600 transition-all duration-300">
+                <i class="fas fa-award text-3xl text-yellow-600 group-hover:text-white transition-colors duration-300"></i>
+              </div>
+              <h3 class="text-xl font-semibold text-gray-900 mb-3">Chất lượng đảm bảo</h3>
+              <p class="text-gray-600">
+                Sản phẩm được kiểm tra kỹ lưỡng trước khi giao và có chính sách đổi trả trong 30 ngày
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </section>
+      </section>
 
-  <!-- Featured Products Grid -->
-  <section class="py-16 bg-gray-50">
-    <div class="container mx-auto px-4">
-      <div class="text-center mb-12">
-        <h2 class="text-3xl font-bold text-gray-800 mb-4">Sản phẩm nổi bật</h2>
-        <p class="text-gray-600">Những sản phẩm được yêu thích nhất</p>
-      </div>
-
-      <!-- Loading State -->
-      <div v-if="loading" class="flex justify-center py-12">
-        <div class="flex flex-col items-center">
-          <div
-            class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-500"
-          ></div>
-          <p class="mt-4 text-gray-600">Đang tải sản phẩm...</p>
+      <!-- Newsletter Section -->
+      <section class="py-16 bg-gradient-to-r from-blue-600 to-purple-600">
+        <div class="container mx-auto px-4">
+          <div class="max-w-4xl mx-auto text-center text-white">
+            <h2 class="text-3xl md:text-4xl font-bold mb-4">
+              Đăng ký nhận tin tức mới nhất
+            </h2>
+            <p class="text-xl mb-8 text-blue-100">
+              Nhận thông tin về sản phẩm mới, khuyến mãi và các tips hay về electronics
+            </p>
+            
+            <div class="max-w-md mx-auto">
+              <div class="flex rounded-lg overflow-hidden shadow-lg">
+                <input
+                  type="email"
+                  placeholder="Nhập email của bạn..."
+                  class="flex-1 px-6 py-4 text-gray-900 focus:outline-none"
+                />
+                <button class="bg-yellow-500 hover:bg-yellow-600 px-8 py-4 font-semibold text-gray-900 transition-colors duration-300">
+                  Đăng ký
+                </button>
+              </div>
+              <p class="text-sm text-blue-100 mt-3">
+                * Chúng tôi không spam và bảo vệ thông tin cá nhân của bạn
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
+    </main>
 
-      <!-- Error State -->
-      <div v-else-if="error" class="text-center py-12">
-        <div
-          class="bg-red-50 border border-red-200 rounded-xl p-8 max-w-md mx-auto"
-        >
-          <div class="text-red-500 text-4xl mb-4">⚠️</div>
-          <p class="text-red-600 mb-4">{{ error }}</p>
-          <button
-            @click="retryLoad"
-            class="px-6 py-3 bg-indigo-500 text-white rounded-lg hover:bg-indigo-600 transition-colors"
-          >
-            🔄 Thử lại
-          </button>
-        </div>
-      </div>
-
-      <!-- Products Grid -->
-      <div
-        v-else
-        class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6"
-      >
-        <ProductCard
-          v-for="product in products"
-          :key="product._id"
-          :product="product"
-        />
-      </div>
-
-      <!-- View All Products Button -->
-      <div v-if="products.length > 0" class="text-center mt-12">
-        <router-link
-          to="/products"
-          class="inline-flex items-center px-8 py-4 bg-indigo-600 text-white font-semibold rounded-xl hover:bg-indigo-700 transform hover:scale-105 transition-all duration-300 shadow-lg"
-        >
-          <span>Xem tất cả sản phẩm</span>
-          <svg
-            class="ml-2 w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M17 8l4 4m0 0l-4 4m4-4H3"
-            ></path>
-          </svg>
-        </router-link>
-      </div>
-    </div>
-  </section>
-
-  <Footer />
+    <!-- Footer -->
+    <Footer />
+  </div>
 </template>
 
 <style scoped>
-.container {
-  width: 100%;
-  max-width: 1200px;
-}
-
 /* Custom animations */
 @keyframes fadeInUp {
   from {
@@ -361,16 +219,28 @@ onMounted(() => {
   }
 }
 
-.fade-in-up {
+.animate-fadeInUp {
   animation: fadeInUp 0.6s ease-out;
 }
 
-/* Hover effects */
-.group:hover .group-hover\:scale-110 {
-  transform: scale(1.1);
+/* Smooth transitions */
+* {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Gradient text */
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Gradient text effect */
 .gradient-text {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   -webkit-background-clip: text;
@@ -379,44 +249,18 @@ onMounted(() => {
 }
 
 /* Custom shadows */
-.shadow-xl-colored {
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+.shadow-xl {
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Responsive adjustments */
-@media (max-width: 640px) {
-  .container {
-    padding-left: 1rem;
-    padding-right: 1rem;
-  }
-
-  .grid-cols-2 {
-    grid-template-columns: repeat(2, 1fr);
-  }
+/* Button hover effects */
+button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
 }
 
-@media (max-width: 768px) {
-  .text-3xl {
-    font-size: 1.875rem;
-    line-height: 2.25rem;
-  }
-}
-
-/* Newsletter section styling */
-section:nth-of-type(6) {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-}
-
-/* Service cards hover effect */
-.service-card {
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-}
-
-.service-card:hover {
-  border-color: #6366f1;
-  transform: translateY(-5px);
-  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.1);
+/* Section spacing */
+section {
+  scroll-margin-top: 100px;
 }
 </style>

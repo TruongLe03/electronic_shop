@@ -22,7 +22,7 @@
           <div
             v-for="product in products"
             :key="product.id"
-            class="flex-none w-full sm:w-1/2 md:w-1/3 lg:w-1/4 px-2"
+            class="flex-none w-1/2 sm:w-1/3 md:w-1/4 lg:w-1/5 px-2"
           >
             <div
               class="bg-gray-50 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow duration-200"

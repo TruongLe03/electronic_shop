@@ -61,7 +61,7 @@ const handleCheckout = () => {
                 <img
                   :src="item.image"
                   :alt="item.name"
-                  class="w-full h-full object-cover rounded-lg border"
+                  class="w-full h-full object-contain bg-gray-50 rounded-lg border"
                 />
               </div>
 

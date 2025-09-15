@@ -2,19 +2,56 @@
 import { getFullImage, handleImageError } from "@utils/imageUtils";
 import { useCartStore } from "@stores/cart";
 import { useNotification } from "@composables/useNotification";
-import { ref } from "vue";
+import { ref, computed } from "vue";
 
 const props = defineProps({
   product: {
     type: Object,
     required: true,
   },
+  showQuickView: {
+    type: Boolean,
+    default: true,
+  },
+  showCompare: {
+    type: Boolean,
+    default: true,
+  },
+  showWishlist: {
+    type: Boolean,
+    default: true,
+  }
 });
 
 const cartStore = useCartStore();
-const { showError } = useNotification();
+const { showError, showSuccess } = useNotification();
 const loading = ref(false);
+const isHovered = ref(false);
 
+// Computed properties
+const discountedPrice = computed(() => {
+  if (props.product.discount_percent && props.product.discount_percent > 0) {
+    return props.product.price * (1 - props.product.discount_percent / 100);
+  }
+  return props.product.price;
+});
+
+const hasDiscount = computed(() => {
+  return props.product.discount_percent && props.product.discount_percent > 0;
+});
+
+const stockStatus = computed(() => {
+  const stock = props.product.stock || 0;
+  if (stock === 0) return { text: 'Hết hàng', class: 'bg-red-100 text-red-800' };
+  if (stock <= 5) return { text: 'Sắp hết', class: 'bg-yellow-100 text-yellow-800' };
+  return { text: 'Còn hàng', class: 'bg-green-100 text-green-800' };
+});
+
+const rating = computed(() => {
+  return props.product.rating || 4.5; // Default rating
+});
+
+// Methods
 const formatPrice = (price) => {
   if (!price) return "0 ₫";
   return new Intl.NumberFormat("vi-VN", {
@@ -29,7 +66,7 @@ const handleAddToCart = async () => {
   try {
     loading.value = true;
     await cartStore.addToCart(props.product, 1);
-    // Toast notification sẽ được hiển thị từ cart store
+    showSuccess(`Đã thêm ${props.product.name} vào giỏ hàng!`);
   } catch (error) {
     console.error("Error adding to cart:", error);
     showError("Có lỗi xảy ra khi thêm vào giỏ hàng");
@@ -38,84 +75,217 @@ const handleAddToCart = async () => {
   }
 };
 
-// Debug log để kiểm tra dữ liệu image
-console.log("Product data:", props.product);
-console.log("Main image:", props.product?.main_image);
-console.log("Processed image URL:", getFullImage(props.product?.main_image));
+const handleQuickView = () => {
+  // Implement quick view modal
+  console.log('Quick view:', props.product);
+};
+
+const handleAddToWishlist = () => {
+  // Implement wishlist functionality
+  showSuccess('Đã thêm vào danh sách yêu thích!');
+};
+
+const handleCompare = () => {
+  // Implement compare functionality
+  showSuccess('Đã thêm vào danh sách so sánh!');
+};
 </script>
 
 <template>
   <div
-    class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow"
+    class="group relative bg-white rounded-xl shadow-md overflow-hidden hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1"
+    @mouseenter="isHovered = true"
+    @mouseleave="isHovered = false"
   >
-    <!-- Product Image -->
-    <router-link :to="`/product/${product._id}`" class="block">
-      <div class="relative group">
-        <img
-          :src="getFullImage(product.main_image)"
-          :alt="product.name"
-          class="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-105"
-          @error="handleImageError"
-          @load="
-            () =>
-              console.log(
-                'Image loaded successfully:',
-                getFullImage(product.main_image)
-              )
-          "
-        />
-        <!-- Add to Cart Overlay -->
-        <div
-          class="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center"
-        >
-          <button
-            @click.prevent="handleAddToCart"
-            class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg transform transition-transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-            :disabled="loading"
-          >
-            <span v-if="loading">Đang thêm...</span>
-            <span v-else>Thêm vào giỏ</span>
-          </button>
-        </div>
+    <!-- Product Image Container -->
+    <div class="relative overflow-hidden bg-gray-50">
+      <!-- Discount Badge -->
+      <div
+        v-if="hasDiscount"
+        class="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full"
+      >
+        -{{ Math.round(product.discount_percent) }}%
       </div>
-    </router-link>
 
-    <div class="p-4">
-      <!-- Product Name -->
+      <!-- Stock Status Badge -->
+      <div
+        :class="[
+          'absolute top-3 right-3 z-10 text-xs font-medium px-2 py-1 rounded-full',
+          stockStatus.class
+        ]"
+      >
+        {{ stockStatus.text }}
+      </div>
+
+      <!-- Product Image -->
       <router-link :to="`/product/${product._id}`" class="block">
-        <h3
-          class="text-lg font-semibold mb-2 line-clamp-2 hover:text-blue-600 cursor-pointer transition-colors"
+        <div class="aspect-square relative overflow-hidden">
+          <img
+            :src="getFullImage(product.main_image)"
+            :alt="product.name"
+            @error="handleImageError"
+            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+          
+          <!-- Overlay on Hover -->
+          <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+          
+          <!-- Quick View Button -->
+          <div 
+            v-if="showQuickView"
+            class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
+          >
+            <button
+              @click.prevent="handleQuickView"
+              class="bg-white text-gray-900 px-4 py-2 rounded-lg font-medium hover:bg-gray-100 transition-colors transform scale-90 group-hover:scale-100"
+            >
+              <i class="fas fa-eye mr-1"></i>
+              Xem nhanh
+            </button>
+          </div>
+        </div>
+      </router-link>
+
+      <!-- Action Buttons -->
+      <div class="absolute top-1/2 right-3 transform -translate-y-1/2 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-10 group-hover:translate-x-0">
+        <!-- Wishlist -->
+        <button
+          v-if="showWishlist"
+          @click="handleAddToWishlist"
+          class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-red-500 hover:scale-110 transition-all duration-200"
+          title="Thêm vào yêu thích"
         >
+          <i class="fas fa-heart"></i>
+        </button>
+
+        <!-- Compare -->
+        <button
+          v-if="showCompare"
+          @click="handleCompare"
+          class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-blue-500 hover:scale-110 transition-all duration-200"
+          title="So sánh sản phẩm"
+        >
+          <i class="fas fa-balance-scale"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Product Info -->
+    <div class="p-4">
+      <!-- Category -->
+      <div class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
+        {{ product.category_id?.name || 'Electronics' }}
+      </div>
+
+      <!-- Product Name -->
+      <router-link :to="`/product/${product._id}`">
+        <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors leading-tight">
           {{ product.name }}
         </h3>
       </router-link>
 
-      <!-- Price Section -->
-      <div class="flex items-center gap-2">
-        <!-- When there is a discount -->
-        <template v-if="product.discount_price">
-          <span class="text-xl font-bold text-red-600">
-            {{ formatPrice(product.discount_price) }}
+      <!-- Rating -->
+      <div class="flex items-center mb-3">
+        <div class="flex items-center">
+          <div class="flex">
+            <i
+              v-for="star in 5"
+              :key="star"
+              :class="[
+                'text-sm',
+                star <= Math.floor(rating) 
+                  ? 'fas fa-star text-yellow-400' 
+                  : star <= rating 
+                    ? 'fas fa-star-half-alt text-yellow-400'
+                    : 'far fa-star text-gray-300'
+              ]"
+            ></i>
+          </div>
+          <span class="text-sm text-gray-600 ml-2">({{ rating }})</span>
+        </div>
+        <span class="text-xs text-gray-400 ml-auto">Đã bán: {{ product.sold || 0 }}</span>
+      </div>
+
+      <!-- Price -->
+      <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center space-x-2">
+          <span class="text-lg font-bold text-blue-600">
+            {{ formatPrice(discountedPrice) }}
           </span>
-          <span class="text-sm text-gray-400 line-through">
+          <span
+            v-if="hasDiscount"
+            class="text-sm text-gray-500 line-through"
+          >
             {{ formatPrice(product.price) }}
           </span>
-        </template>
-        <!-- Regular price when no discount -->
-        <span v-else class="text-xl font-bold text-red-600">
-          {{ formatPrice(product.price) }}
-        </span>
+        </div>
       </div>
+
+      <!-- Product Features -->
+      <div class="text-xs text-gray-500 mb-4 space-y-1">
+        <div class="flex items-center">
+          <i class="fas fa-shipping-fast mr-2 text-green-600"></i>
+          <span>Miễn phí vận chuyển</span>
+        </div>
+        <div class="flex items-center">
+          <i class="fas fa-shield-alt mr-2 text-blue-600"></i>
+          <span>Bảo hành chính hãng</span>
+        </div>
+      </div>
+
+      <!-- Add to Cart Button -->
+      <button
+        @click="handleAddToCart"
+        :disabled="loading || product.stock === 0"
+        :class="[
+          'w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-2',
+          product.stock === 0
+            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            : loading
+              ? 'bg-blue-400 text-white cursor-wait'
+              : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:scale-105'
+        ]"
+      >
+        <i 
+          :class="[
+            loading ? 'fas fa-spinner fa-spin' : 'fas fa-shopping-cart'
+          ]"
+        ></i>
+        <span>
+          {{ 
+            product.stock === 0 
+              ? 'Hết hàng' 
+              : loading 
+                ? 'Đang thêm...' 
+                : 'Thêm vào giỏ' 
+          }}
+        </span>
+      </button>
     </div>
+
+    <!-- Hover Effect Border -->
+    <div class="absolute inset-0 border-2 border-transparent group-hover:border-blue-200 rounded-xl transition-colors duration-300 pointer-events-none"></div>
   </div>
 </template>
 
 <style scoped>
+/* Line clamp utility */
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+/* Custom hover animations */
+.group:hover .transform {
+  transform: translateY(-4px);
+}
+
+/* Smooth transitions for all elements */
+* {
+  transition-property: all;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
 </style>

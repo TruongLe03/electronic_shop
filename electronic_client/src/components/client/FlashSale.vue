@@ -1,13 +1,14 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from "vue";
+import { useRouter } from "vue-router";
 import ProductCard from "./productCard.vue";
 import { getDiscountedProducts } from "@api/productService";
 
-const scrollContainer = ref(null);
-let autoScrollInterval = null;
+const router = useRouter();
 const loading = ref(true);
 const error = ref(null);
 const discountedProducts = ref([]);
+const scrollContainer = ref(null);
 
 // Lấy danh sách sản phẩm đang giảm giá
 const fetchDiscountedProducts = async () => {
@@ -23,6 +24,24 @@ const fetchDiscountedProducts = async () => {
   } finally {
     loading.value = false;
   }
+};
+
+// Horizontal scroll functions
+const scrollLeft = () => {
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollBy({ left: -320, behavior: 'smooth' });
+  }
+};
+
+const scrollRight = () => {
+  if (scrollContainer.value) {
+    scrollContainer.value.scrollBy({ left: 320, behavior: 'smooth' });
+  }
+};
+
+// Navigate to deals page
+const goToDeals = () => {
+  router.push('/deals');
 };
 
 // Tính toán thời gian còn lại của flash sale
@@ -52,37 +71,10 @@ const updateTimer = () => {
   }
 };
 
-// Horizontal scroll functions
-const scrollLeft = () => {
-  if (scrollContainer.value) {
-    scrollContainer.value.scrollBy({ left: -320, behavior: 'smooth' });
-  }
-};
-
-const scrollRight = () => {
-  if (scrollContainer.value) {
-    scrollContainer.value.scrollBy({ left: 320, behavior: 'smooth' });
-  }
-};
-
-const startAutoScroll = () => {
-  stopAutoScroll();
-  autoScrollInterval = setInterval(() => {
-    scrollRight();
-  }, 5000);
-};
-
-const stopAutoScroll = () => {
-  if (autoScrollInterval) {
-    clearInterval(autoScrollInterval);
-  }
-};
-
 // Start auto-scroll on mount
 // Khởi tạo khi component được mount
 onMounted(() => {
   fetchDiscountedProducts();
-  startAutoScroll();
   updateTimer();
   // Cập nhật timer mỗi giây
   const timerInterval = setInterval(updateTimer, 1000);
@@ -95,17 +87,8 @@ onMounted(() => {
 
 // Clean up on unmount
 onUnmounted(() => {
-  stopAutoScroll();
+  // No additional cleanup needed
 });
-
-// Pause auto-scroll on hover
-const handleMouseEnter = () => {
-  stopAutoScroll();
-};
-
-const handleMouseLeave = () => {
-  startAutoScroll();
-};
 </script>
 
 <template>
@@ -143,26 +126,7 @@ const handleMouseLeave = () => {
       </div>
 
       <!-- Cards Container -->
-      <div
-        class="relative group"
-        @mouseenter="handleMouseEnter"
-        @mouseleave="handleMouseLeave"
-      >
-        <!-- Navigation Buttons -->
-        <button
-          @click="scrollLeft"
-          class="absolute -left-5 top-1/2 -translate-y-1/2 z-10 md:flex items-center justify-center w-10 h-10 bg-white/80 hover:bg-white shadow-lg rounded-full transition-all duration-200"
-        >
-          <span class="text-2xl">←</span>
-        </button>
-
-        <button
-          @click="scrollRight"
-          class="absolute -right-5 top-1/2 -translate-y-1/2 z-10 md:flex items-center justify-center w-10 h-10 bg-white/80 hover:bg-white shadow-lg rounded-full transition-all duration-200"
-        >
-          <span class="text-2xl">→</span>
-        </button>
-
+      <div class="relative">
         <!-- Loading State -->
         <div
           v-if="loading"
@@ -184,25 +148,8 @@ const handleMouseLeave = () => {
           </button>
         </div>
 
-        <!-- Single Row Scroll -->
-        <div
-          v-else
-          class="relative overflow-hidden"
-        >
-          <!-- Navigation Buttons -->
-          <button
-            @click="scrollLeft"
-            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 opacity-0 group-hover:opacity-100"
-          >
-            ‹
-          </button>
-          <button
-            @click="scrollRight"
-            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200 opacity-0 group-hover:opacity-100"
-          >
-            ›
-          </button>
-
+        <!-- Flash Sale Products Slider -->
+        <div v-else-if="discountedProducts.length > 0" class="relative">
           <!-- Scrollable Container -->
           <div
             ref="scrollContainer"
@@ -210,27 +157,51 @@ const handleMouseLeave = () => {
             style="scrollbar-width: none; -ms-overflow-style: none;"
           >
             <div
-              v-for="item in discountedProducts"
-              :key="item._id"
-              class="flex-none w-48 sm:w-56 md:w-64 transform transition duration-300 hover:scale-105"
+              v-for="product in discountedProducts"
+              :key="product._id"
+              class="flex-none w-64 transform transition duration-300 hover:scale-105"
             >
-              <ProductCard :product="item">
+              <ProductCard :product="product">
                 <!-- Flash Sale Badge -->
                 <template #badge>
                   <div
                     class="absolute top-2 left-2 bg-red-600 text-white px-2 py-1 rounded-lg text-sm font-semibold"
                   >
-                    -{{ item.discount_percent }}%
+                    -{{ product.discount_percent }}%
                   </div>
                 </template>
               </ProductCard>
             </div>
           </div>
+
+          <!-- Navigation Buttons -->
+          <button
+            @click="scrollLeft"
+            class="absolute left-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            ‹
+          </button>
+          <button
+            @click="scrollRight"
+            class="absolute right-0 top-1/2 -translate-y-1/2 z-10 bg-white/90 hover:bg-white text-gray-800 rounded-full w-12 h-12 flex items-center justify-center shadow-lg hover:shadow-xl transition-all duration-200"
+          >
+            ›
+          </button>
+
+          <!-- View More Button -->
+          <div class="text-center mt-8">
+            <button
+              @click="goToDeals"
+              class="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-lg font-semibold transition-colors duration-200 transform hover:scale-105"
+            >
+              Xem thêm Flash Sale
+            </button>
+          </div>
         </div>
 
         <!-- Empty State -->
         <div
-          v-if="!loading && !error && discountedProducts.length === 0"
+          v-else
           class="text-center py-12"
         >
           <div class="text-gray-500">Không có sản phẩm giảm giá</div>

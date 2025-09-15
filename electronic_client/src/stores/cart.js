@@ -9,13 +9,21 @@ import {
   updateCartItem as updateCartItemApi,
   removeFromCart as removeFromCartApi,
 } from "../api/cartService";
+import { checkStock } from "../api/inventoryService";
 
 export const useCartStore = defineStore("cart", () => {
   const cartItems = ref([]);
   const authStore = useAuthStore();
   const router = useRouter();
   const loading = ref(false);
-  const { notifyAddToCart, notifyRemoveFromCart, notifyUpdateCart, notifyClearCart, showError, showWarning } = useNotification();
+  const {
+    notifyAddToCart,
+    notifyRemoveFromCart,
+    notifyUpdateCart,
+    notifyClearCart,
+    showError,
+    showWarning,
+  } = useNotification();
 
   const cartTotal = computed(() => {
     return cartItems.value.reduce((total, item) => {
@@ -40,13 +48,13 @@ export const useCartStore = defineStore("cart", () => {
       loading.value = true;
       const cart = await getCart();
       if (cart && cart.products) {
-        cartItems.value = cart.products.map(item => ({
+        cartItems.value = cart.products.map((item) => ({
           id: item.product_id._id,
           name: item.product_id.name,
           price: item.price,
           quantity: item.quantity,
           image: item.product_id.images[0],
-          subtotal: item.subtotal
+          subtotal: item.subtotal,
         }));
       }
     } catch (error) {
@@ -69,6 +77,40 @@ export const useCartStore = defineStore("cart", () => {
 
     try {
       loading.value = true;
+
+      // Check stock availability first
+      const stockCheck = await checkStock(product._id, quantity);
+
+      if (!stockCheck.data.available) {
+        showError(
+          `Sản phẩm "${product.name}" chỉ còn ${stockCheck.data.currentStock} sản phẩm trong kho!`
+        );
+        return false;
+      }
+
+      // Check if adding this quantity would exceed available stock
+      const existingItem = cartItems.value.find(
+        (item) => item.id === product._id
+      );
+      const currentCartQuantity = existingItem ? existingItem.quantity : 0;
+      const totalRequestedQuantity = currentCartQuantity + quantity;
+
+      if (totalRequestedQuantity > stockCheck.data.currentStock) {
+        const availableToAdd =
+          stockCheck.data.currentStock - currentCartQuantity;
+        if (availableToAdd <= 0) {
+          showError(
+            `Bạn đã có tối đa số lượng sản phẩm "${product.name}" trong giỏ hàng!`
+          );
+          return false;
+        } else {
+          showWarning(
+            `Chỉ có thể thêm tối đa ${availableToAdd} sản phẩm "${product.name}" nữa!`
+          );
+          return false;
+        }
+      }
+
       await addToCartApi(product._id, quantity);
       await fetchCart(); // Refresh cart data from server
       notifyAddToCart(product.name);
@@ -85,9 +127,21 @@ export const useCartStore = defineStore("cart", () => {
   const updateQuantity = async (productId, quantity) => {
     try {
       loading.value = true;
+
+      // Check stock availability for the new quantity
+      const stockCheck = await checkStock(productId, quantity);
+
+      if (!stockCheck.data.available) {
+        showError(
+          `Chỉ còn ${stockCheck.data.currentStock} sản phẩm trong kho!`
+        );
+        return false;
+      }
+
       await updateCartItemApi(productId, quantity);
       await fetchCart();
       notifyUpdateCart();
+      return true;
     } catch (error) {
       console.error("Error updating cart:", error);
       showError("Không thể cập nhật giỏ hàng");
@@ -101,9 +155,9 @@ export const useCartStore = defineStore("cart", () => {
     try {
       loading.value = true;
       // Lấy tên sản phẩm trước khi xóa
-      const item = cartItems.value.find(item => item.id === productId);
-      const productName = item ? item.name : 'Sản phẩm';
-      
+      const item = cartItems.value.find((item) => item.id === productId);
+      const productName = item ? item.name : "Sản phẩm";
+
       await removeFromCartApi(productId);
       await fetchCart();
       notifyRemoveFromCart(productName);

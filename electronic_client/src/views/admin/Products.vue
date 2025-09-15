@@ -261,13 +261,13 @@ const getStockStatus = (stock) => {
                 
                 <!-- Stock -->
                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ product.stock_quantity || 0 }}
+                  {{ product.stock || 0 }}
                 </td>
                 
                 <!-- Status -->
                 <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStockStatus(product.stock_quantity || 0).class}`">
-                    {{ getStockStatus(product.stock_quantity || 0).text }}
+                  <span :class="`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStockStatus(product.stock || 0).class}`">
+                    {{ getStockStatus(product.stock || 0).text }}
                   </span>
                 </td>
                 

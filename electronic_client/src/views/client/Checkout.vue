@@ -237,7 +237,7 @@
                 <img 
                   :src="item.image" 
                   :alt="item.name"
-                  class="w-12 h-12 object-cover rounded-md"
+                  class="w-12 h-12 object-contain bg-gray-50 rounded-md"
                 />
                 <div class="flex-1 min-w-0">
                   <div class="font-medium text-gray-800 text-sm truncate">{{ item.name }}</div>

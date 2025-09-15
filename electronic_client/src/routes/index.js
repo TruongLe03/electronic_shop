@@ -11,10 +11,10 @@ const routes = [
   { path: "/login", name: "login", component: Login },
   { path: "/signup", name: "signup", component: Signup },
   { path: "/products", name: "product", component: Product },
-  { 
-    path: "/product/:id", 
-    name: "productDetail", 
-    component: () => import("@views/client/ProductDetail.vue") 
+  {
+    path: "/product/:id",
+    name: "productDetail",
+    component: () => import("@views/client/ProductDetail.vue"),
   },
   {
     path: "/cart",
@@ -49,13 +49,8 @@ const routes = [
     component: () => import("@views/client/ForgotPassword.vue"),
   },
   {
-    path: "/categories",
-    name: "categories",
-    component: () => import("@views/client/Categories.vue"),
-  },
-  {
     path: "/deals",
-    name: "deals", 
+    name: "deals",
     component: () => import("@views/client/Deals.vue"),
   },
   {
@@ -67,6 +62,11 @@ const routes = [
     path: "/support",
     name: "support",
     component: () => import("@views/client/Support.vue"),
+  },
+  {
+    path: "/search",
+    name: "search",
+    component: () => import("@views/client/Search.vue"),
   },
   // Admin Routes
   {
@@ -120,7 +120,10 @@ router.beforeEach((to, from, next) => {
     // Lưu route muốn truy cập để redirect sau khi đăng nhập
     localStorage.setItem("intendedRoute", to.fullPath);
     next("/login");
-  } else if (to.meta.requiresAdmin && (!authStore.isAuthenticated || authStore.user?.role !== 'admin')) {
+  } else if (
+    to.meta.requiresAdmin &&
+    (!authStore.isAuthenticated || authStore.user?.role !== "admin")
+  ) {
     // Kiểm tra quyền admin
     next("/"); // Redirect về trang chủ nếu không phải admin
   } else {

@@ -1,16 +1,34 @@
 import axiosInstance from "../utils/axiosConfig";
 
-// Lấy tất cả sản phẩm có phân trang
-export const getProducts = async (page = 1, limit = 20) => {
+// Lấy tất cả sản phẩm với filtering và phân trang
+export const getProducts = async (options = {}) => {
   try {
-    const params = { page, limit };
-    const response = await axiosInstance.get("/products", { params });
+    const params = new URLSearchParams();
+    
+    // Pagination
+    if (options.page) params.append('page', options.page);
+    if (options.limit) params.append('limit', options.limit);
+    
+    // Filters
+    if (options.categoryId) params.append('categoryId', options.categoryId);
+    if (options.minPrice) params.append('minPrice', options.minPrice);
+    if (options.maxPrice) params.append('maxPrice', options.maxPrice);
+    if (options.inStock) params.append('inStock', 'true');
+    if (options.onSale) params.append('onSale', 'true');
+    if (options.search) params.append('search', options.search);
+    
+    // Sorting
+    if (options.sortBy) params.append('sortBy', options.sortBy);
+    if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+
+    const response = await axiosInstance.get(`/products?${params}`);
 
     return {
       data: response.data.products,
       total: response.data.total,
       page: response.data.page,
       totalPages: response.data.totalPages,
+      filters: response.data.filters
     };
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -26,16 +44,10 @@ export const getProductById = async (id) => {
 
     // Handle different response structures for single product
     if (response.data.product) {
-      console.log("Product data:", response.data.product);
-      console.log("Main image:", response.data.product.main_image);
       return { data: response.data.product };
     } else if (response.data.data) {
-      console.log("Product data:", response.data.data);
-      console.log("Main image:", response.data.data.main_image);
       return { data: response.data.data };
     } else {
-      console.log("Product data:", response.data);
-      console.log("Main image:", response.data.main_image);
       return { data: response.data };
     }
   } catch (error) {
@@ -45,31 +57,74 @@ export const getProductById = async (id) => {
 };
 
 // Lấy sản phẩm liên quan
-export const getRelatedProducts = async (categoryId, excludeProductId, limit = 4) => {
+export const getRelatedProducts = async (productId, limit = 4) => {
   try {
-    const response = await axiosInstance.get(`/products/category/${categoryId}`, {
-      params: { 
-        limit,
-        exclude: excludeProductId 
-      }
+    const response = await axiosInstance.get(`/products/${productId}/related`, {
+      params: { limit }
     });
 
     return {
       data: response.data.products || response.data.data || response.data,
     };
   } catch (error) {
-    console.error(`Error fetching related products for category ${categoryId}:`, error);
-    // Return empty array if error
+    console.error(`Error fetching related products for product ${productId}:`, error);
     return { data: [] };
   }
 };
 
-// Lấy sp có khuyến mãi > 40%
-export const getDiscountedProducts = async (limit = 10) => {
+// Lấy sản phẩm nổi bật
+export const getFeaturedProducts = async (limit = 8) => {
   try {
-    const params = { limit };
+    const response = await axiosInstance.get("/products/featured", {
+      params: { limit }
+    });
+
+    return {
+      data: response.data.products,
+    };
+  } catch (error) {
+    console.error("Error fetching featured products:", error);
+    throw error;
+  }
+};
+
+// Lấy sản phẩm mới nhất
+export const getNewestProducts = async (limit = 8) => {
+  try {
+    const response = await axiosInstance.get("/products/newest", {
+      params: { limit }
+    });
+
+    return {
+      data: response.data.products,
+    };
+  } catch (error) {
+    console.error("Error fetching newest products:", error);
+    throw error;
+  }
+};
+
+// Lấy sản phẩm bán chạy nhất
+export const getBestSellingProducts = async (limit = 8) => {
+  try {
+    const response = await axiosInstance.get("/products/best-selling", {
+      params: { limit }
+    });
+
+    return {
+      data: response.data.products,
+    };
+  } catch (error) {
+    console.error("Error fetching best selling products:", error);
+    throw error;
+  }
+};
+
+// Lấy sản phẩm có khuyến mãi > 40%
+export const getDiscountedProducts = async (page = 1, limit = 10) => {
+  try {
     const response = await axiosInstance.get("/products/discounted", {
-      params,
+      params: { page, limit }
     });
 
     return {
@@ -85,18 +140,11 @@ export const getDiscountedProducts = async (limit = 10) => {
 };
 
 // Lấy sản phẩm theo Category (có phân trang)
-export const getProductsByCategory = async (
-  categoryId,
-  page = 1,
-  limit = 12
-) => {
+export const getProductsByCategory = async (categoryId, page = 1, limit = 12) => {
   try {
-    const response = await axiosInstance.get(
-      `/products/category/${categoryId}`,
-      {
-        params: { page, limit },
-      }
-    );
+    const response = await axiosInstance.get(`/products/category/${categoryId}`, {
+      params: { page, limit }
+    });
 
     return {
       data: response.data.products,
@@ -110,45 +158,78 @@ export const getProductsByCategory = async (
   }
 };
 
-// Search products by name/title
-export const searchProducts = async (query, page = 1, limit = 20) => {
+// Tìm kiếm sản phẩm nâng cao
+export const searchProducts = async (query, options = {}) => {
   try {
-    const response = await axiosInstance.get("/products/search", {
-      params: { q: query, page, limit },
-    });
+    const params = new URLSearchParams();
+    params.append('q', query);
+    
+    if (options.page) params.append('page', options.page);
+    if (options.limit) params.append('limit', options.limit);
+    if (options.categoryId) params.append('categoryId', options.categoryId);
+    if (options.sortBy) params.append('sortBy', options.sortBy);
+    if (options.sortOrder) params.append('sortOrder', options.sortOrder);
 
-    console.log("Search products response:", response.data);
-
-    // Handle response structure similar to getProducts
-    let products = [];
-    let total = 0;
-
-    if (Array.isArray(response.data)) {
-      products = response.data;
-      total = response.data.length;
-    } else if (
-      response.data.products &&
-      Array.isArray(response.data.products)
-    ) {
-      products = response.data.products;
-      total = response.data.total || response.data.count || products.length;
-    } else if (response.data.data && Array.isArray(response.data.data)) {
-      products = response.data.data;
-      total = response.data.total || response.data.count || products.length;
-    } else {
-      products = [];
-      total = 0;
-    }
+    const response = await axiosInstance.get(`/products/search?${params}`);
 
     return {
-      data: products,
-      total: total,
-      page: page,
-      limit: limit,
-      query: query,
+      data: response.data.products,
+      total: response.data.total,
+      page: response.data.page,
+      totalPages: response.data.totalPages,
+      query: response.data.query,
+      categoryId: response.data.categoryId,
+      sortBy: response.data.sortBy,
+      sortOrder: response.data.sortOrder
     };
   } catch (error) {
     console.error(`Error searching products with query "${query}":`, error);
+    throw error;
+  }
+};
+
+// Lấy thống kê sản phẩm theo category
+export const getProductStats = async () => {
+  try {
+    const response = await axiosInstance.get("/products/stats");
+    return {
+      data: response.data.stats
+    };
+  } catch (error) {
+    console.error("Error fetching product stats:", error);
+    throw error;
+  }
+};
+
+// Tạo sản phẩm mới (Admin)
+export const createProduct = async (productData) => {
+  try {
+    const response = await axiosInstance.post("/products", productData);
+    return response.data;
+  } catch (error) {
+    console.error("Error creating product:", error);
+    throw error;
+  }
+};
+
+// Cập nhật sản phẩm (Admin)
+export const updateProduct = async (id, productData) => {
+  try {
+    const response = await axiosInstance.put(`/products/${id}`, productData);
+    return response.data;
+  } catch (error) {
+    console.error("Error updating product:", error);
+    throw error;
+  }
+};
+
+// Xóa sản phẩm (Admin)
+export const deleteProduct = async (id) => {
+  try {
+    const response = await axiosInstance.delete(`/products/${id}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting product:", error);
     throw error;
   }
 };
