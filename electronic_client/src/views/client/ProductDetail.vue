@@ -490,6 +490,7 @@ import { useAuthStore } from "@stores/auth";
 import { useNotification } from "@composables/useNotification";
 import { useGlobalLoading } from "@composables/useLoading";
 import { getProductById, getRelatedProducts } from "@api/productService";
+import { orderService } from "@api/orderService";
 import { getFullImage } from "@utils/imageUtils";
 import {
   extractSpecifications,
@@ -571,8 +572,8 @@ const fetchProduct = async (productId) => {
     // Fetch related products
     if (response.data.category_id?._id) {
       const relatedResponse = await getRelatedProducts(
-        response.data.category_id._id,
-        productId
+        productId, // productId để tìm related products
+        4 // limit
       );
       relatedProducts.value = relatedResponse.data;
     }
@@ -627,17 +628,46 @@ const addToCart = async () => {
   }
 };
 
-const buyNow = () => {
+const buyNow = async () => {
   if (!authStore.isAuthenticated) {
     showError("Vui lòng đăng nhập để mua hàng");
     router.push("/login");
     return;
   }
 
-  // Add to cart then go to checkout
-  addToCart().then(() => {
-    router.push("/cart");
-  });
+  if (product.value.stock === 0) {
+    showError("Sản phẩm đã hết hàng");
+    return;
+  }
+
+  let loader;
+  try {
+    loader = showApiLoading("Đang tạo đơn hàng...");
+    
+    // Tạo đơn hàng trực tiếp với sản phẩm hiện tại
+    const orderResponse = await orderService.createDirectOrder(
+      product.value._id,
+      quantity.value
+    );
+
+    if (orderResponse.success) {
+      showSuccess("Đã tạo đơn hàng thành công!");
+      // Chuyển hướng đến trang thanh toán với thông tin đơn hàng
+      router.push({
+        name: "Payment",
+        params: { orderId: orderResponse.data._id }
+      });
+    } else {
+      showError(orderResponse.message || "Có lỗi xảy ra khi tạo đơn hàng");
+    }
+  } catch (error) {
+    console.error("Error creating order:", error);
+    console.error("Error response data:", error.response?.data);
+    const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi tạo đơn hàng";
+    showError(errorMessage);
+  } finally {
+    hideLoading(loader);
+  }
 };
 
 const toggleWishlist = () => {
@@ -659,6 +689,9 @@ watch(
   () => route.params.id,
   (newId) => {
     if (newId) {
+      // Scroll to top when viewing different product
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
       fetchProduct(newId);
       quantity.value = 1;
       activeTab.value = "description";
@@ -669,6 +702,9 @@ watch(
 
 // Lifecycle
 onMounted(() => {
+  // Scroll to top when component mounts
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  
   if (route.params.id) {
     fetchProduct(route.params.id);
   }

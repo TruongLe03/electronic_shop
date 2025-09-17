@@ -1,11 +1,18 @@
 <script setup>
 import { useCartStore } from "@stores/cart";
+import { useAuthStore } from "@stores/auth";
 import { useRouter } from "vue-router";
+import { useNotification } from "@composables/useNotification";
+import { useGlobalLoading } from "@composables/useLoading";
+import { orderService } from "@api/orderService";
 import Header from "@components/client/Header.vue";
 import Footer from "@components/client/Footer.vue";
 
 const cart = useCartStore();
+const authStore = useAuthStore();
 const router = useRouter();
+const { showSuccess, showError } = useNotification();
+const { showApiLoading, hideLoading } = useGlobalLoading();
 
 const handleUpdateQuantity = (productId, event) => {
   const quantity = parseInt(event.target.value);
@@ -20,8 +27,43 @@ const handleRemoveItem = (productId) => {
   }
 };
 
-const handleCheckout = () => {
-  router.push("/checkout");
+const handleCheckout = async () => {
+  if (!authStore.isAuthenticated) {
+    showError("Vui lòng đăng nhập để thanh toán");
+    router.push("/login");
+    return;
+  }
+
+  if (cart.cartItems.length === 0) {
+    showError("Giỏ hàng trống");
+    return;
+  }
+
+  let loader;
+  try {
+    loader = showApiLoading("Đang tạo đơn hàng...");
+    
+    // Tạo đơn hàng từ giỏ hàng
+    const orderResponse = await orderService.createOrderFromCart();
+
+    if (orderResponse.success) {
+      showSuccess("Đã tạo đơn hàng thành công!");
+      // Xóa giỏ hàng sau khi tạo đơn hàng thành công
+      cart.clearCart();
+      // Chuyển hướng đến trang thanh toán với thông tin đơn hàng
+      router.push({
+        name: "Payment",
+        params: { orderId: orderResponse.data._id }
+      });
+    } else {
+      showError(orderResponse.message || "Có lỗi xảy ra khi tạo đơn hàng");
+    }
+  } catch (error) {
+    console.error("Error creating order from cart:", error);
+    showError(error.response?.data?.message || "Có lỗi xảy ra khi tạo đơn hàng");
+  } finally {
+    hideLoading(loader);
+  }
 };
 </script>
 

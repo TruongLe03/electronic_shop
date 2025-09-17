@@ -16,16 +16,14 @@ const adminOnly = (req, res, next) => {
   }
 };
 
-// Apply auth middleware to all routes
-router.use(authMiddleware);
-
-// Public routes (for checking stock availability)
+// Public routes (no auth required)
 router.get('/check/:productId', inventoryController.checkStock);
 
-// Admin only routes
+// Apply auth middleware to protected routes
+router.use(authMiddleware);
 router.use(adminOnly);
 
-// Get all inventories with filters and pagination
+// Admin only routes
 router.get('/', inventoryController.getInventories);
 
 // Get inventory dashboard stats

@@ -1,4 +1,4 @@
-import Category from "../models/categrories.model.js";
+import Category from "../models/categories.model.js";
 import Product from "../models/products.model.js";
 import mongoose from "mongoose";
 

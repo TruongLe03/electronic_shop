@@ -22,9 +22,9 @@ const routes = [
     component: Cart,
   },
   {
-    path: "/checkout",
-    name: "checkout",
-    component: () => import("@views/client/Checkout.vue"),
+    path: "/payment/:orderId?",
+    name: "Payment",
+    component: () => import("@views/client/Payment.vue"),
   },
   {
     path: "/order-success",
@@ -105,11 +105,25 @@ const routes = [
     component: () => import("@views/admin/Users.vue"),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
+  {
+    path: "/admin/inventory",
+    name: "adminInventory",
+    component: () => import("@views/admin/Inventory.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
 ];
 
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    // Always scroll to top when navigating to a different route
+    if (savedPosition) {
+      return savedPosition;
+    } else {
+      return { top: 0, behavior: 'smooth' };
+    }
+  },
 });
 
 // Kiểm tra xác thực trước khi vào các route yêu cầu đăng nhập

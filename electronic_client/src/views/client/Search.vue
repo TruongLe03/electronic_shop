@@ -1,97 +1,123 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <div class="container mx-auto px-4 py-8">
+  <div class="min-h-screen bg-gray-50 py-8">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <!-- Search Header -->
       <div class="mb-8">
-        <h1 class="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-          Kết quả tìm kiếm
-        </h1>
-        <p class="text-gray-600">
-          <span v-if="searchQuery">Tìm kiếm cho: "<span class="font-semibold">{{ searchQuery }}</span>"</span>
-          <span v-if="totalResults > 0" class="ml-2">({{ totalResults }} sản phẩm)</span>
-        </p>
-      </div>
-
-      <!-- Loading -->
-      <div v-if="loading" class="text-center py-12">
-        <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-r-transparent rounded-full"></div>
-        <p class="mt-4 text-gray-600">Đang tìm kiếm...</p>
-      </div>
-
-      <!-- No Results -->
-      <div v-else-if="!loading && products.length === 0 && searchQuery" class="text-center py-12">
-        <svg class="w-24 h-24 mx-auto mb-4 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-        </svg>
-        <h3 class="text-xl font-semibold text-gray-600 mb-2">Không tìm thấy sản phẩm</h3>
-        <p class="text-gray-500 mb-6">Không có sản phẩm nào phù hợp với từ khóa "{{ searchQuery }}"</p>
-        <router-link 
-          to="/" 
-          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition-colors"
-        >
-          Về trang chủ
-        </router-link>
-      </div>
-
-      <!-- Results Grid -->
-      <div v-else-if="products.length > 0" class="space-y-6">
-        <!-- Results count and basic sort -->
-        <div class="flex justify-between items-center">
-          <p class="text-gray-600">Hiển thị {{ products.length }} sản phẩm</p>
-          <select 
-            v-model="sortBy"
-            @change="applySorting"
-            class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="relevance">Liên quan nhất</option>
-            <option value="price-asc">Giá tăng dần</option>
-            <option value="price-desc">Giá giảm dần</option>
-            <option value="name-asc">Tên A-Z</option>
-          </select>
-        </div>
-
-        <!-- Products Grid -->
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 md:gap-6">
-          <ProductCard 
-            v-for="product in sortedProducts" 
-            :key="product._id" 
-            :product="product" 
-          />
-        </div>
-
-        <!-- Pagination -->
-        <div v-if="totalPages > 1" class="flex justify-center">
-          <div class="flex items-center space-x-2">
-            <button
-              @click="goToPage(currentPage - 1)"
-              :disabled="currentPage <= 1"
-              class="px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Tìm kiếm sản phẩm</h1>
+        
+        <!-- Search Input -->
+        <div class="max-w-2xl">
+          <div class="relative">
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="Nhập tên sản phẩm bạn muốn tìm..."
+              class="w-full px-4 py-3 pl-12 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              @keyup.enter="performSearch"
             >
-              ‹ Trước
-            </button>
-            
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+              </svg>
+            </div>
             <button
-              v-for="page in visiblePages"
-              :key="page"
-              @click="goToPage(page)"
-              :class="[
-                'px-3 py-2 rounded-lg',
-                page === currentPage 
-                  ? 'bg-blue-600 text-white' 
-                  : 'bg-gray-100 hover:bg-gray-200'
-              ]"
+              @click="performSearch"
+              class="absolute inset-y-0 right-0 pr-3 flex items-center"
             >
-              {{ page }}
-            </button>
-            
-            <button
-              @click="goToPage(currentPage + 1)"
-              :disabled="currentPage >= totalPages"
-              class="px-3 py-2 bg-gray-100 hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg"
-            >
-              Sau ›
+              <span class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors">
+                Tìm kiếm
+              </span>
             </button>
           </div>
+        </div>
+      </div>
+
+      <!-- Search Results -->
+      <div v-if="searchPerformed">
+        <!-- Results Header -->
+        <div class="mb-6">
+          <p class="text-gray-600">
+            <span v-if="searchResults.length > 0">
+              Tìm thấy {{ searchResults.length }} sản phẩm cho "<strong>{{ currentSearchQuery }}</strong>"
+            </span>
+            <span v-else>
+              Không tìm thấy sản phẩm nào cho "<strong>{{ currentSearchQuery }}</strong>"
+            </span>
+          </p>
+        </div>
+
+        <!-- Loading State -->
+        <div v-if="loading" class="text-center py-12">
+          <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p class="mt-4 text-gray-600">Đang tìm kiếm...</p>
+        </div>
+
+        <!-- Search Results Grid -->
+        <div v-else-if="searchResults.length > 0" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div
+            v-for="product in searchResults"
+            :key="product._id"
+            class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow cursor-pointer"
+            @click="viewProduct(product._id)"
+          >
+            <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-200">
+              <img
+                :src="product.images?.[0] || '/placeholder.jpg'"
+                :alt="product.name"
+                class="w-full h-48 object-cover object-center hover:scale-105 transition-transform duration-300"
+              >
+            </div>
+            <div class="p-4">
+              <h3 class="text-lg font-medium text-gray-900 mb-2 line-clamp-2">
+                {{ product.name }}
+              </h3>
+              <div class="flex items-center justify-between">
+                <div>
+                  <span class="text-xl font-bold text-blue-600">
+                    {{ formatPrice(product.price) }}
+                  </span>
+                  <span v-if="product.discount_percent > 0" class="ml-2 text-sm text-gray-500 line-through">
+                    {{ formatPrice(product.original_price) }}
+                  </span>
+                </div>
+                <span v-if="product.discount_percent > 0" class="bg-red-100 text-red-800 text-xs font-medium px-2 py-1 rounded">
+                  -{{ product.discount_percent }}%
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Results -->
+        <div v-else class="text-center py-12">
+          <div class="mb-4">
+            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Không tìm thấy sản phẩm</h3>
+          <p class="text-gray-600 mb-4">Hãy thử tìm kiếm với từ khóa khác</p>
+          <button
+            @click="clearSearch"
+            class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors"
+          >
+            Xóa tìm kiếm
+          </button>
+        </div>
+      </div>
+
+      <!-- Popular Searches -->
+      <div v-else class="mt-12">
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Tìm kiếm phổ biến</h2>
+        <div class="flex flex-wrap gap-2">
+          <button
+            v-for="term in popularSearches"
+            :key="term"
+            @click="searchQuery = term; performSearch()"
+            class="bg-gray-100 text-gray-700 px-4 py-2 rounded-full hover:bg-gray-200 transition-colors"
+          >
+            {{ term }}
+          </button>
         </div>
       </div>
     </div>
@@ -99,146 +125,84 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { searchProducts } from '@api/productService'
-import ProductCard from '@components/client/productCard.vue'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { searchProducts } from '../api/productService'
 
-const route = useRoute()
 const router = useRouter()
+const route = useRoute()
 
+// Reactive data
 const searchQuery = ref('')
-const products = ref([])
+const currentSearchQuery = ref('')
+const searchResults = ref([])
 const loading = ref(false)
-const currentPage = ref(1)
-const totalResults = ref(0)
-const totalPages = ref(0)
-const limit = 20
+const searchPerformed = ref(false)
 
-// Filters
-const sortBy = ref('relevance')
-const priceRange = ref('')
-
-// Computed
-const visiblePages = computed(() => {
-  const pages = []
-  const start = Math.max(1, currentPage.value - 2)
-  const end = Math.min(totalPages.value, currentPage.value + 2)
-  
-  for (let i = start; i <= end; i++) {
-    pages.push(i)
-  }
-  
-  return pages
-})
+// Popular search terms
+const popularSearches = ref([
+  'Arduino',
+  'Raspberry Pi',
+  'Cảm biến',
+  'LED',
+  'Motor',
+  'Breadboard',
+  'Resistor',
+  'Capacitor'
+])
 
 // Methods
-const searchProducts = async () => {
-  if (!searchQuery.value.trim()) {
-    products.value = []
-    totalResults.value = 0
-    totalPages.value = 0
-    return
-  }
-
+const performSearch = async () => {
+  if (!searchQuery.value.trim()) return
+  
   loading.value = true
+  currentSearchQuery.value = searchQuery.value
+  searchPerformed.value = true
   
   try {
-    const response = await searchProducts(
-      searchQuery.value.trim(),
-      currentPage.value,
-      limit
-    )
-    
-    let searchResults = response.data || []
-    
-    // Apply client-side filtering if needed
-    if (priceRange.value) {
-      searchResults = filterByPrice(searchResults)
-    }
-    
-    // Apply client-side sorting
-    searchResults = sortProducts(searchResults)
-    
-    products.value = searchResults
-    totalResults.value = response.total || searchResults.length
-    totalPages.value = Math.ceil(totalResults.value / limit)
-    
+    const response = await searchProducts(searchQuery.value)
+    searchResults.value = response.products || []
   } catch (error) {
     console.error('Search error:', error)
-    products.value = []
-    totalResults.value = 0
-    totalPages.value = 0
+    searchResults.value = []
   } finally {
     loading.value = false
   }
 }
 
-const filterByPrice = (products) => {
-  if (!priceRange.value) return products
-  
-  const [min, max] = priceRange.value.split('-').map(p => p.replace('+', ''))
-  const minPrice = parseInt(min) || 0
-  const maxPrice = max ? parseInt(max) : Infinity
-  
-  return products.filter(product => {
-    const price = product.price || 0
-    return price >= minPrice && (maxPrice === Infinity || price <= maxPrice)
-  })
+const viewProduct = (productId) => {
+  router.push(`/product/${productId}`)
 }
 
-const sortProducts = (products) => {
-  const sorted = [...products]
-  
-  switch (sortBy.value) {
-    case 'price-asc':
-      return sorted.sort((a, b) => (a.price || 0) - (b.price || 0))
-    case 'price-desc':
-      return sorted.sort((a, b) => (b.price || 0) - (a.price || 0))
-    case 'name-asc':
-      return sorted.sort((a, b) => a.name.localeCompare(b.name))
-    case 'name-desc':
-      return sorted.sort((a, b) => b.name.localeCompare(a.name))
-    case 'newest':
-      return sorted.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
-    default:
-      return sorted
-  }
+const clearSearch = () => {
+  searchQuery.value = ''
+  currentSearchQuery.value = ''
+  searchResults.value = []
+  searchPerformed.value = false
 }
 
-const applyFilters = () => {
-  currentPage.value = 1
-  searchProducts()
+const formatPrice = (price) => {
+  return new Intl.NumberFormat('vi-VN', {
+    style: 'currency',
+    currency: 'VND'
+  }).format(price)
 }
 
-const clearFilters = () => {
-  sortBy.value = 'relevance'
-  priceRange.value = ''
-  applyFilters()
-}
-
-const goToPage = (page) => {
-  if (page < 1 || page > totalPages.value) return
-  currentPage.value = page
-  searchProducts()
-  
-  // Scroll to top
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-// Watch route query changes
-watch(() => route.query.q, (newQuery) => {
-  if (newQuery) {
-    searchQuery.value = newQuery
-    currentPage.value = 1
-    searchProducts()
-  }
-}, { immediate: true })
-
+// Initialize search from URL query
 onMounted(() => {
-  searchQuery.value = route.query.q || ''
-  if (searchQuery.value) {
-    searchProducts()
+  if (route.query.q) {
+    searchQuery.value = route.query.q
+    performSearch()
   }
 })
 </script>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

@@ -7,6 +7,11 @@ const inventorySchema = new mongoose.Schema({
     required: true,
     unique: true
   },
+  sku: {
+    type: String,
+    required: true,
+    unique: true
+  },
   quantity: {
     type: Number,
     required: true,
@@ -39,10 +44,25 @@ const inventorySchema = new mongoose.Schema({
     default: 20,
     min: 0
   },
+  purchasePrice: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
+  salePrice: {
+    type: Number,
+    default: 0,
+    min: 0
+  },
   cost: {
     type: Number,
     default: 0,
     min: 0
+  },
+  supplier: {
+    name: String,
+    contact: String,
+    email: String
   },
   location: {
     warehouse: {

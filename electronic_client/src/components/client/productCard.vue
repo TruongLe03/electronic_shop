@@ -102,7 +102,7 @@ const handleCompare = () => {
       <!-- Discount Badge -->
       <div
         v-if="hasDiscount"
-        class="absolute top-3 left-3 z-10 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full"
+        class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-red-500 text-white text-xs font-bold px-1 sm:px-2 py-1 rounded-full"
       >
         -{{ Math.round(product.discount_percent) }}%
       </div>
@@ -110,7 +110,7 @@ const handleCompare = () => {
       <!-- Stock Status Badge -->
       <div
         :class="[
-          'absolute top-3 right-3 z-10 text-xs font-medium px-2 py-1 rounded-full',
+          'absolute top-2 right-2 sm:top-3 sm:right-3 z-10 text-xs font-medium px-1 sm:px-2 py-1 rounded-full',
           stockStatus.class
         ]"
       >
@@ -133,7 +133,7 @@ const handleCompare = () => {
           <!-- Quick View Button -->
           <div 
             v-if="showQuickView"
-            class="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
+            class="absolute inset-0 hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
           >
             <button
               @click.prevent="handleQuickView"
@@ -147,52 +147,52 @@ const handleCompare = () => {
       </router-link>
 
       <!-- Action Buttons -->
-      <div class="absolute top-1/2 right-3 transform -translate-y-1/2 flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-10 group-hover:translate-x-0">
+      <div class="absolute top-1/2 right-2 sm:right-3 transform -translate-y-1/2 hidden sm:flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-10 group-hover:translate-x-0">
         <!-- Wishlist -->
         <button
           v-if="showWishlist"
           @click="handleAddToWishlist"
-          class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-red-500 hover:scale-110 transition-all duration-200"
+          class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-red-500 hover:scale-110 transition-all duration-200"
           title="Thêm vào yêu thích"
         >
-          <i class="fas fa-heart"></i>
+          <i class="fas fa-heart text-xs sm:text-sm"></i>
         </button>
 
         <!-- Compare -->
         <button
           v-if="showCompare"
           @click="handleCompare"
-          class="w-10 h-10 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-blue-500 hover:scale-110 transition-all duration-200"
+          class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-blue-500 hover:scale-110 transition-all duration-200"
           title="So sánh sản phẩm"
         >
-          <i class="fas fa-balance-scale"></i>
+          <i class="fas fa-balance-scale text-xs sm:text-sm"></i>
         </button>
       </div>
     </div>
 
     <!-- Product Info -->
-    <div class="p-4">
+    <div class="p-2 sm:p-3 md:p-4">
       <!-- Category -->
-      <div class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-2">
+      <div class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1 sm:mb-2">
         {{ product.category_id?.name || 'Electronics' }}
       </div>
 
       <!-- Product Name -->
       <router-link :to="`/product/${product._id}`">
-        <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2 hover:text-blue-600 transition-colors leading-tight">
+        <h3 class="font-semibold text-gray-900 mb-1 sm:mb-2 line-clamp-2 hover:text-blue-600 transition-colors leading-tight text-sm sm:text-base">
           {{ product.name }}
         </h3>
       </router-link>
 
       <!-- Rating -->
-      <div class="flex items-center mb-3">
+      <div class="flex items-center mb-2 sm:mb-3">
         <div class="flex items-center">
           <div class="flex">
             <i
               v-for="star in 5"
               :key="star"
               :class="[
-                'text-sm',
+                'text-xs sm:text-sm',
                 star <= Math.floor(rating) 
                   ? 'fas fa-star text-yellow-400' 
                   : star <= rating 
@@ -201,20 +201,20 @@ const handleCompare = () => {
               ]"
             ></i>
           </div>
-          <span class="text-sm text-gray-600 ml-2">({{ rating }})</span>
+          <span class="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">({{ rating }})</span>
         </div>
-        <span class="text-xs text-gray-400 ml-auto">Đã bán: {{ product.sold || 0 }}</span>
+        <span class="text-xs text-gray-400 ml-auto">{{ product.sold || 0 }}</span>
       </div>
 
       <!-- Price -->
-      <div class="flex items-center justify-between mb-4">
-        <div class="flex items-center space-x-2">
-          <span class="text-lg font-bold text-blue-600">
+      <div class="flex items-center justify-between mb-2 sm:mb-4">
+        <div class="flex items-center space-x-1 sm:space-x-2">
+          <span class="text-sm sm:text-lg font-bold text-blue-600">
             {{ formatPrice(discountedPrice) }}
           </span>
           <span
             v-if="hasDiscount"
-            class="text-sm text-gray-500 line-through"
+            class="text-xs sm:text-sm text-gray-500 line-through"
           >
             {{ formatPrice(product.price) }}
           </span>
@@ -222,7 +222,7 @@ const handleCompare = () => {
       </div>
 
       <!-- Product Features -->
-      <div class="text-xs text-gray-500 mb-4 space-y-1">
+      <div class="text-xs text-gray-500 mb-2 sm:mb-4 space-y-1 hidden sm:block">
         <div class="flex items-center">
           <i class="fas fa-shipping-fast mr-2 text-green-600"></i>
           <span>Miễn phí vận chuyển</span>
@@ -238,7 +238,7 @@ const handleCompare = () => {
         @click="handleAddToCart"
         :disabled="loading || product.stock === 0"
         :class="[
-          'w-full py-3 px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-2',
+          'w-full py-2 sm:py-3 px-2 sm:px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-1 sm:space-x-2 text-sm sm:text-base',
           product.stock === 0
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
             : loading

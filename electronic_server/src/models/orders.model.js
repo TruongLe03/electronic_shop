@@ -1,89 +1,31 @@
 import mongoose from 'mongoose';
 
-const orderItemSchema = new mongoose.Schema({
-  productId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true
-  },
-  name: {
-    type: String,
-    required: true
-  },
-  price: {
-    type: Number,
-    required: true
-  },
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1
-  },
-  image: String
-});
-
-const shippingAddressSchema = new mongoose.Schema({
-  fullName: {
-    type: String,
-    required: true
-  },
-  phone: {
-    type: String,
-    required: true
-  },
-  email: {
-    type: String,
-    required: true
-  },
-  province: {
-    type: String,
-    required: true
-  },
-  district: {
-    type: String,
-    required: true
-  },
-  ward: {
-    type: String,
-    required: true
-  },
-  address: {
-    type: String,
-    required: true
-  },
-  notes: String
-});
-
 const orderSchema = new mongoose.Schema({
   orderId: {
     type: String,
     unique: true,
-    required: true
+    default: function() {
+      return 'ORD' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+    }
   },
-  userId: {
+  user_id: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  },
-  items: [orderItemSchema],
-  shippingAddress: shippingAddressSchema,
-  paymentMethod: {
-    type: String,
-    enum: ['cod', 'bank', 'momo', 'vnpay'],
+    ref: 'User',
     required: true
   },
+  products: [{
+    type: mongoose.Schema.Types.Mixed // Flexible cho product data
+  }],
   subtotal: {
     type: Number,
     required: true
   },
-  shippingFee: {
-    type: Number,
-    default: 0
+  coupon_id: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Coupon',
+    default: null
   },
-  tax: {
-    type: Number,
-    default: 0
-  },
-  discount: {
+  shipping_fee: {
     type: Number,
     default: 0
   },
@@ -91,18 +33,37 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  shipping_address: {
+    type: String,
+    required: true
+  },
+  payment_method: {
+    type: String,
+    enum: ['COD', 'Bank', 'MoMo', 'VNPay'],
+    default: 'COD'
+  },
+  payment_status: {
+    type: String,
+    enum: ['pending', 'paid', 'failed'],
+    default: 'pending'
+  },
+  tracking_number: {
+    type: String,
+    default: null
+  },
   status: {
     type: String,
     enum: ['pending', 'confirmed', 'processing', 'shipping', 'delivered', 'cancelled'],
     default: 'pending'
   },
-  paymentStatus: {
+  notes: {
     type: String,
-    enum: ['pending', 'paid', 'failed', 'refunded'],
-    default: 'pending'
+    default: ''
   },
-  couponCode: String,
-  notes: String,
+  delivery_date: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -113,18 +74,9 @@ const orderSchema = new mongoose.Schema({
   }
 });
 
-// Generate order ID
-orderSchema.pre('save', async function(next) {
-  if (!this.orderId) {
-    this.orderId = 'ES' + Date.now().toString() + Math.random().toString(36).substring(2, 5).toUpperCase();
-  }
-  this.updatedAt = new Date();
-  next();
-});
-
-// Calculate total before saving
+// Update the updatedAt field before saving
 orderSchema.pre('save', function(next) {
-  this.total = this.subtotal + this.shippingFee + this.tax - this.discount;
+  this.updatedAt = new Date();
   next();
 });
 

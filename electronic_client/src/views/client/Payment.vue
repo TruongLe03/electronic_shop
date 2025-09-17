@@ -229,24 +229,49 @@
             
             <!-- Order Items -->
             <div class="space-y-3 mb-6">
-              <div 
-                v-for="item in cartStore.items" 
-                :key="item.id"
-                class="flex items-center gap-3"
-              >
-                <img 
-                  :src="item.image" 
-                  :alt="item.name"
-                  class="w-12 h-12 object-contain bg-gray-50 rounded-md"
-                />
-                <div class="flex-1 min-w-0">
-                  <div class="font-medium text-gray-800 text-sm truncate">{{ item.name }}</div>
-                  <div class="text-xs text-gray-600">Số lượng: {{ item.quantity }}</div>
+              <!-- Items from order -->
+              <template v-if="order">
+                <div 
+                  v-for="item in order.products" 
+                  :key="item.productId"
+                  class="flex items-center gap-3"
+                >
+                  <img 
+                    :src="item.image || '/assets/images/placeholder.jpg'" 
+                    :alt="item.name"
+                    class="w-12 h-12 object-contain bg-gray-50 rounded-md"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-800 text-sm truncate">{{ item.name }}</div>
+                    <div class="text-xs text-gray-600">Số lượng: {{ item.quantity }}</div>
+                  </div>
+                  <div class="text-sm font-semibold text-gray-800">
+                    {{ formatPrice(item.subtotal) }}
+                  </div>
                 </div>
-                <div class="text-sm font-semibold text-gray-800">
-                  {{ formatPrice(item.price * item.quantity) }}
+              </template>
+
+              <!-- Items from cart (fallback) -->
+              <template v-else>
+                <div 
+                  v-for="item in cartStore.items" 
+                  :key="item.id"
+                  class="flex items-center gap-3"
+                >
+                  <img 
+                    :src="item.image" 
+                    :alt="item.name"
+                    class="w-12 h-12 object-contain bg-gray-50 rounded-md"
+                  />
+                  <div class="flex-1 min-w-0">
+                    <div class="font-medium text-gray-800 text-sm truncate">{{ item.name }}</div>
+                    <div class="text-xs text-gray-600">Số lượng: {{ item.quantity }}</div>
+                  </div>
+                  <div class="text-sm font-semibold text-gray-800">
+                    {{ formatPrice(item.price * item.quantity) }}
+                  </div>
                 </div>
-              </div>
+              </template>
             </div>
             
             <hr class="border-gray-200 mb-4">
@@ -294,12 +319,22 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useCartStore } from '@stores/cart'
+import { useNotification } from '@composables/useNotification'
+import { useGlobalLoading } from '@composables/useLoading'
+import { orderService } from '@api/orderService'
 
 const router = useRouter()
+const route = useRoute()
 const cartStore = useCartStore()
+const { showSuccess, showError } = useNotification()
+const { showPageLoading, hideLoading } = useGlobalLoading()
+
+// State
+const order = ref(null)
+const loading = ref(false)
 
 // Form data
 const form = ref({
@@ -319,6 +354,9 @@ const taxRate = 0.1
 
 // Computed values
 const subtotal = computed(() => {
+  if (order.value) {
+    return order.value.subtotal
+  }
   return cartStore.totalPrice
 })
 
@@ -327,6 +365,9 @@ const tax = computed(() => {
 })
 
 const total = computed(() => {
+  if (order.value) {
+    return order.value.total
+  }
   return subtotal.value + shippingFee + tax.value
 })
 
@@ -342,6 +383,34 @@ const isFormValid = computed(() => {
 })
 
 // Methods
+const fetchOrder = async (orderId) => {
+  let loader
+  try {
+    loading.value = true
+    loader = showPageLoading("Đang tải thông tin đơn hàng...")
+    
+    const response = await orderService.getOrderById(orderId)
+    if (response.success) {
+      order.value = response.data
+      console.log('Loaded order:', order.value)
+      // Pre-fill form with order info if available
+      if (order.value.shipping_address) {
+        form.value.address = order.value.shipping_address
+      }
+    } else {
+      showError("Không thể tải thông tin đơn hàng")
+      router.push('/cart')
+    }
+  } catch (error) {
+    console.error("Error fetching order:", error)
+    showError("Có lỗi xảy ra khi tải thông tin đơn hàng")
+    router.push('/cart')
+  } finally {
+    loading.value = false
+    hideLoading(loader)
+  }
+}
+
 const formatPrice = (price) => {
   return new Intl.NumberFormat('vi-VN', {
     style: 'currency',
@@ -351,20 +420,41 @@ const formatPrice = (price) => {
 
 const processCheckout = async () => {
   if (!isFormValid.value) {
-    alert('Vui lòng điền đầy đủ thông tin')
+    showError('Vui lòng điền đầy đủ thông tin')
     return
   }
 
   try {
-    // Simulate API call
-    console.log('Processing checkout...', form.value)
+    const loader = showPageLoading("Đang xử lý thanh toán...")
     
-    // Clear cart and redirect to success page
-    cartStore.clearCart()
-    router.push('/order-success')
+    // If we have an order, update payment info, otherwise create new order
+    if (order.value) {
+      // Update order with shipping and payment info
+      console.log('Processing payment for order:', order.value._id, form.value)
+      showSuccess('Đã xử lý thanh toán thành công!')
+      router.push({
+        name: 'orderSuccess',
+        params: { orderId: order.value._id }
+      })
+    } else {
+      // Fallback for cart-based checkout
+      console.log('Processing checkout from cart...', form.value)
+      cartStore.clearCart()
+      router.push('/order-success')
+    }
+    
+    hideLoading(loader)
   } catch (error) {
     console.error('Checkout error:', error)
-    alert('Đã có lỗi xảy ra. Vui lòng thử lại.')
+    showError('Đã có lỗi xảy ra. Vui lòng thử lại.')
   }
 }
+
+// Lifecycle
+onMounted(() => {
+  const orderId = route.params.orderId
+  if (orderId) {
+    fetchOrder(orderId)
+  }
+})
 </script>

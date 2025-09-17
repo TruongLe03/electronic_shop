@@ -2,12 +2,13 @@
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@stores/auth";
-import { login } from "@api/authService";
+import { useCartStore } from "@stores/cart";
 import { useNotification } from "@composables/useNotification";
 import { useGlobalLoading } from "@composables/useLoading";
 
 const router = useRouter();
 const authStore = useAuthStore();
+const cartStore = useCartStore();
 const { notifyLogin, showError } = useNotification();
 const { showFormLoading, hideLoading } = useGlobalLoading();
 
@@ -42,13 +43,25 @@ const handleLogin = async () => {
     // Hiển thị loading overlay
     loader = showFormLoading("Đang đăng nhập...");
 
-    const response = await login(email.value, password.value);
+    // Sử dụng authStore.login thay vì gọi trực tiếp API
+    const response = await authStore.login(email.value, password.value);
 
-    // Cập nhật store
-    authStore.updateUser(response.user);
+    console.log("Login response:", response);
+    console.log("Auth store after login:", { 
+      user: authStore.user, 
+      token: authStore.token, 
+      isAuthenticated: authStore.isAuthenticated 
+    });
 
     // Hiển thị thông báo thành công
     notifyLogin(true, response.user.name || response.user.email);
+
+    // Load cart sau khi login thành công
+    try {
+      await cartStore.fetchCart();
+    } catch (error) {
+      console.error("Error loading cart after login:", error);
+    }
 
     // Chuyển hướng dựa trên role
     if (response.user.role === "admin") {
