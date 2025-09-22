@@ -1,8 +1,8 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@stores/auth";
-import { register } from "@api/authService";
+import { register, validateEmailFormat, checkEmailExists } from "@api/authService";
 import { useNotification } from "@composables/useNotification";
 import { useGlobalLoading } from "@composables/useLoading";
 
@@ -22,6 +22,27 @@ onMounted(() => {
   }
 });
 
+// Watch email changes with debounce
+let emailTimeout;
+watch(
+  () => formData.value.email,
+  (newEmail) => {
+    clearTimeout(emailTimeout);
+    
+    // Reset validation state immediately
+    emailValidation.value = { isChecking: false, isValid: null, message: "" };
+    
+    // If email is empty, don't validate
+    if (!newEmail || newEmail.trim() === "") {
+      return;
+    }
+    
+    emailTimeout = setTimeout(() => {
+      validateEmailAsync(newEmail);
+    }, 500); // Debounce 500ms
+  }
+);
+
 const formData = ref({
   email: "",
   username: "",
@@ -32,6 +53,11 @@ const formData = ref({
 
 const errors = ref({});
 const loading = ref(false);
+const emailValidation = ref({
+  isChecking: false,
+  isValid: null,
+  message: ""
+});
 
 const validateForm = () => {
   const newErrors = {};
@@ -39,8 +65,10 @@ const validateForm = () => {
   // Validate email
   if (!formData.value.email) {
     newErrors.email = "Vui lòng nhập email";
-  } else if (!/\S+@\S+\.\S+/.test(formData.value.email)) {
-    newErrors.email = "Email không hợp lệ";
+  } else if (!validateEmailFormat(formData.value.email)) {
+    newErrors.email = "Email không đúng định dạng";
+  } else if (emailValidation.value.isValid === false) {
+    newErrors.email = emailValidation.value.message;
   }
 
   // Validate username
@@ -71,6 +99,54 @@ const validateForm = () => {
   }
 
   return newErrors;
+};
+
+// Email validation functions
+const validateEmailAsync = async (email) => {
+  // Reset validation state first
+  emailValidation.value = { isChecking: false, isValid: null, message: "" };
+  
+  if (!email || email.trim() === "") {
+    return;
+  }
+
+  if (!validateEmailFormat(email)) {
+    emailValidation.value = { 
+      isChecking: false, 
+      isValid: false, 
+      message: "Email không đúng định dạng" 
+    };
+    return;
+  }
+
+  emailValidation.value.isChecking = true;
+
+  try {
+    const response = await checkEmailExists(email);
+    console.log('Email validation response:', response); // Debug log
+    
+    // Sửa lại: response đã là response.data từ authService
+    if (response.data.exists) {
+      emailValidation.value = {
+        isChecking: false,
+        isValid: false,
+        message: "Email đã được sử dụng. Vui lòng chọn email khác hoặc đăng nhập."
+      };
+    } else {
+      emailValidation.value = {
+        isChecking: false,
+        isValid: true,
+        message: "Email hợp lệ, có thể đăng ký"
+      };
+    }
+  } catch (error) {
+    console.error('Email validation error:', error); // Debug log
+    emailValidation.value = {
+      isChecking: false,
+      isValid: false,
+      message: "Không thể kiểm tra email. Vui lòng thử lại."
+    };
+  }
 };
 
 const handleSubmit = async () => {
@@ -196,16 +272,56 @@ const handleSubmit = async () => {
             <label class="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
-            <input
-              v-model="formData.email"
-              type="email"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              :class="{ 'border-red-500': errors.email }"
-              :disabled="loading"
-            />
+            <div class="relative">
+              <input
+                v-model="formData.email"
+                type="email"
+                required
+                class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10"
+                :class="{
+                  'border-red-500': errors.email || emailValidation.isValid === false,
+                  'border-green-500': emailValidation.isValid === true,
+                  'border-gray-300': emailValidation.isValid === null
+                }"
+                :disabled="loading"
+                placeholder="Nhập email của bạn"
+              />
+              
+              <!-- Loading spinner -->
+              <div v-if="emailValidation.isChecking" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+              </div>
+              
+              <!-- Success icon -->
+              <div v-else-if="emailValidation.isValid === true" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              
+              <!-- Error icon -->
+              <div v-else-if="emailValidation.isValid === false" class="absolute inset-y-0 right-0 pr-3 flex items-center">
+                <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                </svg>
+              </div>
+            </div>
+            
+            <!-- Error message -->
             <p v-if="errors.email" class="mt-1 text-sm text-red-600">
               {{ errors.email }}
+            </p>
+            
+            <!-- Email validation message -->
+            <p v-else-if="emailValidation.message" 
+               :class="[
+                 'mt-1 text-sm',
+                 emailValidation.isValid === true ? 'text-green-600' : 'text-red-600'
+               ]">
+              {{ emailValidation.message }}
             </p>
           </div>
 

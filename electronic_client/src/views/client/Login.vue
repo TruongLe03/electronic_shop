@@ -1,10 +1,11 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@stores/auth";
 import { useCartStore } from "@stores/cart";
 import { useNotification } from "@composables/useNotification";
 import { useGlobalLoading } from "@composables/useLoading";
+import { checkEmailExists } from "@api/authService";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -16,6 +17,100 @@ const email = ref("");
 const password = ref("");
 const error = ref("");
 const loading = ref(false);
+
+// Email validation states
+const emailValidation = ref({
+  isChecking: false,
+  isValid: null,
+  message: "",
+  exists: null
+});
+
+let emailCheckTimeout = null;
+
+// Email validation function
+const validateEmailAsync = async (emailValue) => {
+  if (!emailValue) {
+    emailValidation.value = {
+      isChecking: false,
+      isValid: null,
+      message: "",
+      exists: null
+    };
+    return;
+  }
+
+  // Check email format first
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(emailValue)) {
+    emailValidation.value = {
+      isChecking: false,
+      isValid: false,
+      message: "Email không đúng định dạng",
+      exists: null
+    };
+    return;
+  }
+
+  try {
+    emailValidation.value.isChecking = true;
+    emailValidation.value.message = "Đang kiểm tra email...";
+    
+    const response = await checkEmailExists(emailValue);
+    
+    await nextTick();
+    
+    // Sửa lại: response đã là response.data từ authService  
+    if (response.data.exists) {
+      emailValidation.value = {
+        isChecking: false,
+        isValid: true,
+        message: "Email đã đăng ký, có thể đăng nhập",
+        exists: true
+      };
+    } else {
+      emailValidation.value = {
+        isChecking: false,
+        isValid: false,
+        message: "Email chưa được đăng ký. Vui lòng đăng ký trước.",
+        exists: false
+      };
+    }
+  } catch (error) {
+    console.error("Email validation error:", error);
+    emailValidation.value = {
+      isChecking: false,
+      isValid: false,
+      message: "Không thể kiểm tra email",
+      exists: null
+    };
+  }
+};
+
+// Watch email changes with debounce
+watch(email, (newEmail) => {
+  if (emailCheckTimeout) {
+    clearTimeout(emailCheckTimeout);
+  }
+  
+  emailCheckTimeout = setTimeout(() => {
+    validateEmailAsync(newEmail);
+  }, 500);
+});
+
+// Get email input style
+const getEmailInputStyle = () => {
+  if (emailValidation.value.isChecking) {
+    return "border-blue-300 focus:border-blue-500 focus:ring-blue-500";
+  }
+  if (emailValidation.value.isValid === true) {
+    return "border-green-300 focus:border-green-500 focus:ring-green-500";
+  }
+  if (emailValidation.value.isValid === false) {
+    return "border-red-300 focus:border-red-500 focus:ring-red-500";
+  }
+  return "border-gray-300 focus:border-blue-500 focus:ring-blue-500";
+};
 
 // Kiểm tra nếu user đã đăng nhập và là admin thì redirect
 onMounted(() => {
@@ -37,6 +132,13 @@ const handleLogin = async () => {
       return;
     }
 
+    // Kiểm tra email validation trước khi đăng nhập
+    if (emailValidation.value.isValid === false) {
+      error.value = emailValidation.value.message;
+      showError(emailValidation.value.message);
+      return;
+    }
+
     loading.value = true;
     error.value = "";
 
@@ -47,10 +149,10 @@ const handleLogin = async () => {
     const response = await authStore.login(email.value, password.value);
 
     console.log("Login response:", response);
-    console.log("Auth store after login:", { 
-      user: authStore.user, 
-      token: authStore.token, 
-      isAuthenticated: authStore.isAuthenticated 
+    console.log("Auth store after login:", {
+      user: authStore.user,
+      token: authStore.token,
+      isAuthenticated: authStore.isAuthenticated
     });
 
     // Hiển thị thông báo thành công
@@ -79,7 +181,18 @@ const handleLogin = async () => {
     }
   } catch (err) {
     console.error("Login error:", err);
-    error.value = err.message || "Đã có lỗi xảy ra";
+    
+    // Xử lý các loại lỗi khác nhau
+    if (err.message.includes("Email không tồn tại")) {
+      error.value = "Email này chưa được đăng ký. Vui lòng kiểm tra lại hoặc đăng ký tài khoản mới.";
+    } else if (err.message.includes("Mật khẩu không đúng")) {
+      error.value = "Mật khẩu không đúng. Vui lòng thử lại hoặc sử dụng chức năng quên mật khẩu.";
+    } else if (err.message.includes("Email không đúng định dạng")) {
+      error.value = "Email không đúng định dạng. Vui lòng kiểm tra lại.";
+    } else {
+      error.value = err.message || "Đã có lỗi xảy ra khi đăng nhập";
+    }
+    
     notifyLogin(false);
   } finally {
     loading.value = false;
@@ -122,14 +235,84 @@ const handleLogin = async () => {
             >
               Email
             </label>
-            <input
-              id="email"
-              v-model="email"
-              type="email"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              :disabled="loading"
-            />
+            <div class="relative">
+              <input
+                id="email"
+                v-model="email"
+                type="email"
+                required
+                :class="`w-full px-4 py-2 pr-10 border rounded-lg transition-colors ${getEmailInputStyle()}`"
+                :disabled="loading"
+                placeholder="Nhập email của bạn"
+              />
+              
+              <!-- Email validation icons -->
+              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                <!-- Loading icon -->
+                <svg
+                  v-if="emailValidation.isChecking"
+                  class="w-5 h-5 text-blue-500 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                
+                <!-- Success icon -->
+                <svg
+                  v-else-if="emailValidation.isValid === true"
+                  class="w-5 h-5 text-green-500"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+                
+                <!-- Error icon -->
+                <svg
+                  v-else-if="emailValidation.isValid === false"
+                  class="w-5 h-5 text-red-500"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clip-rule="evenodd"
+                  />
+                </svg>
+              </div>
+            </div>
+            
+            <!-- Email validation message -->
+            <div
+              v-if="emailValidation.message && email"
+              :class="`mt-1 text-xs ${
+                emailValidation.isChecking
+                  ? 'text-blue-600'
+                  : emailValidation.isValid === true
+                  ? 'text-green-600'
+                  : 'text-red-600'
+              }`"
+            >
+              {{ emailValidation.message }}
+            </div>
           </div>
 
           <!-- Password Input -->

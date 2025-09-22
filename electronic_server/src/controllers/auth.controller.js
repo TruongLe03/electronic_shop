@@ -6,25 +6,40 @@ export const login = async (req, res) => {
   try {
     const { email, password } = req.body;
 
+    // Validation
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Email và mật khẩu là bắt buộc" 
+      });
+    }
+
     // Tìm user theo email
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
-      return res
-        .status(401)
-        .json({ message: "Email hoặc mật khẩu không đúng" });
+      return res.status(404).json({ 
+        success: false,
+        message: "Email không tồn tại trong hệ thống",
+        type: "email_not_found"
+      });
     }
 
     // Kiểm tra trạng thái tài khoản
     if (user.status === "inactive") {
-      return res.status(401).json({ message: "Tài khoản đã bị khóa" });
+      return res.status(401).json({ 
+        success: false,
+        message: "Tài khoản đã bị khóa" 
+      });
     }
 
     // So sánh mật khẩu
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) {
-      return res
-        .status(401)
-        .json({ message: "Email hoặc mật khẩu không đúng" });
+      return res.status(401).json({ 
+        success: false,
+        message: "Mật khẩu không đúng",
+        type: "wrong_password"
+      });
     }
 
     // Tạo token
@@ -35,6 +50,7 @@ export const login = async (req, res) => {
     );
 
     return res.json({
+      success: true,
       message: "Đăng nhập thành công",
       token,
       user: {
@@ -45,9 +61,11 @@ export const login = async (req, res) => {
       },
     });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Lỗi server", error: error.message });
+    return res.status(500).json({ 
+      success: false,
+      message: "Lỗi server", 
+      error: error.message 
+    });
   }
 };
 
@@ -55,16 +73,49 @@ export const register = async (req, res) => {
   try {
     const { email, password, phone_number, username } = req.body;
 
+    // Validation
     if (!email || !password || !phone_number || !username) {
       return res.status(400).json({ 
+        success: false,
         message: "Vui lòng điền đầy đủ thông tin bắt buộc" 
       });
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Email không đúng định dạng" 
+      });
+    }
+
+    // Validate password length
+    if (password.length < 6) {
+      return res.status(400).json({ 
+        success: false,
+        message: "Mật khẩu phải có ít nhất 6 ký tự" 
+      });
+    }
+
     // Kiểm tra email đã tồn tại chưa
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: email.toLowerCase() });
     if (existingUser) {
-      return res.status(400).json({ message: "Email đã tồn tại" });
+      return res.status(409).json({ 
+        success: false,
+        message: "Email đã được đăng ký trong hệ thống",
+        type: "email_exists"
+      });
+    }
+
+    // Kiểm tra phone number đã tồn tại chưa  
+    const existingPhone = await User.findOne({ phone_number });
+    if (existingPhone) {
+      return res.status(409).json({ 
+        success: false,
+        message: "Số điện thoại đã được đăng ký",
+        type: "phone_exists"
+      });
     }
 
     // Mã hoá mật khẩu
@@ -72,12 +123,12 @@ export const register = async (req, res) => {
 
     // Tạo user mới
     const newUser = new User({
-      email,
+      email: email.toLowerCase(),
       password: hashedPassword,
       phone_number,
-      username: username, // Set username field
-      name: username, // Map username to name field as well
-      role: "customer", // Mặc định là khách hàng
+      username: username,
+      name: username,
+      role: "customer",
     });
 
     await newUser.save();
@@ -90,6 +141,7 @@ export const register = async (req, res) => {
     );
 
     return res.status(201).json({
+      success: true,
       message: "Đăng ký thành công",
       token,
       user: {

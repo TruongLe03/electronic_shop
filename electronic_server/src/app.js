@@ -10,6 +10,7 @@ import userRouter from "./routes/user.router.js";
 import ordersRouter from "./routes/orders.router.js";
 import inventoryRouter from "./routes/inventory.router.js";
 import paymentRouter from "./routes/payment.router.js";
+import passwordRouter from "./routes/password.router.js";
 
 dotenv.config();
 connectDB();
@@ -26,6 +27,7 @@ app.use("/api/users", userRouter);
 app.use("/api/orders", ordersRouter);
 app.use("/api/inventory", inventoryRouter);
 app.use("/api/payment", paymentRouter);
+app.use("/api/password", passwordRouter);
 
 app.get("/", (req, res) => {
   res.send("Server API đang chạy 🚀");

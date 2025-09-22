@@ -1,77 +1,77 @@
-import { ref } from 'vue'
-import { useLoading } from 'vue-loading-overlay'
+import { ref } from "vue";
+import { useLoading as useOverlayLoading } from "vue-loading-overlay";
 
-const globalLoading = ref(false)
+const globalLoading = ref(false);
 
 export const useGlobalLoading = () => {
-  const $loading = useLoading({
+  const $loading = useOverlayLoading({
     // Cấu hình mặc định
-    color: '#3b82f6',
+    color: "#3b82f6",
     height: 4,
     width: 64,
     radius: 4,
     opacity: 0.8,
-    backgroundColor: '#000000',
+    backgroundColor: "#000000",
     zIndex: 999,
-  })
+  });
 
-  const showLoading = (message = 'Đang tải...', options = {}) => {
+  const showLoading = (message = "Đang tải...", options = {}) => {
     const defaultOptions = {
-      color: '#3b82f6',
+      color: "#3b82f6",
       height: 4,
       width: 64,
       radius: 4,
       opacity: 0.8,
-      backgroundColor: '#000000',
+      backgroundColor: "#000000",
       zIndex: 999,
-      ...options
-    }
+      ...options,
+    };
 
-    globalLoading.value = true
+    globalLoading.value = true;
     return $loading.show({
       container: null,
       canCancel: false,
       onCancel: () => {
-        globalLoading.value = false
+        globalLoading.value = false;
       },
-      loader: 'spinner',
-      ...defaultOptions
-    })
-  }
+      loader: "spinner",
+      ...defaultOptions,
+    });
+  };
 
   const hideLoading = (loader) => {
-    globalLoading.value = false
-    if (loader && typeof loader.hide === 'function') {
-      loader.hide()
+    globalLoading.value = false;
+    if (loader && typeof loader.hide === "function") {
+      loader.hide();
     }
-  }
+  };
 
-  const showPageLoading = (message = 'Đang tải trang...') => {
+  const showPageLoading = (message = "Đang tải trang...") => {
     return showLoading(message, {
-      color: '#3b82f6',
-      backgroundColor: '#ffffff',
+      color: "#3b82f6",
+      backgroundColor: "#ffffff",
       opacity: 0.9,
-      loader: 'dots'
-    })
-  }
+      loader: "dots", // ✅ sửa lỗi ở đây
+    });
+  };
 
-  const showFormLoading = (message = 'Đang xử lý...') => {
+  const showFormLoading = (message = "Đang xử lý...") => {
     return showLoading(message, {
-      color: '#10b981',
-      backgroundColor: '#f9fafb',
+      color: "#10b981",
+      backgroundColor: "#f9fafb",
       opacity: 0.7,
-      loader: 'spinner'
-    })
-  }
+      loader: "spinner",
+    });
+  };
 
-  const showApiLoading = (message = 'Đang kết nối...') => {
+  const showApiLoading = (message = "Đang kết nối...") => {
     return showLoading(message, {
-      color: '#f59e0b',
-      backgroundColor: '#1f2937',
+      color: "#f59e0b",
+      backgroundColor: "#1f2937",
       opacity: 0.8,
-      loader: 'bars'
-    })
-  }
+      loader: "bars",
+    });
+  };
 
   return {
     globalLoading,
@@ -79,6 +79,10 @@ export const useGlobalLoading = () => {
     hideLoading,
     showPageLoading,
     showFormLoading,
-    showApiLoading
-  }
-}
+    showApiLoading,
+  };
+};
+
+// Export both for backward compatibility
+export const useLoading = useGlobalLoading;
+export default useGlobalLoading;

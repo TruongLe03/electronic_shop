@@ -54,3 +54,21 @@ export const getCurrentUser = () => {
 export const isAuthenticated = () => {
   return !!localStorage.getItem("token");
 };
+
+// Email validation functions
+export const validateEmailFormat = (email) => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  return emailRegex.test(email);
+};
+
+export const checkEmailExists = async (email) => {
+  try {
+    const response = await axiosInstance.post("/password/check-email", {
+      email
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Check email error:", error);
+    throw error.response ? error.response.data : error;
+  }
+};
