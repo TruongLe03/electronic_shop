@@ -149,10 +149,6 @@
                       </svg>
                     </div>
                     <span class="font-medium">Đơn hàng của tôi</span>
-                    <span
-                      class="ml-auto bg-red-500 text-white text-xs px-2 py-1 rounded-full"
-                      >3</span
-                    >
                   </button>
                 </li>
                 <li>
@@ -678,7 +674,7 @@
                     </div>
                     <div>
                       <h3 class="text-lg font-bold text-gray-900">
-                        Đơn hàng #{{ order.id }}
+                        Đơn hàng #{{ order.orderId || order.id }}
                       </h3>
                       <p class="text-sm text-gray-600 flex items-center">
                         <svg
@@ -711,9 +707,10 @@
                 <div class="bg-gray-50 rounded-2xl p-4">
                   <div class="flex items-center space-x-4">
                     <img
-                      :src="order.image"
-                      alt="Product"
+                      :src="getFullImage(order.image)"
+                      :alt="order.productName"
                       class="w-20 h-20 rounded-xl object-cover border-2 border-white shadow-md"
+                      @error="(e) => (e.target.src = getFullImage(null))"
                     />
                     <div class="flex-1">
                       <h4 class="font-semibold text-gray-900 text-lg">
@@ -741,13 +738,15 @@
                         {{ formatPrice(order.total) }}
                       </p>
                       <div class="flex space-x-2 mt-2">
-                        <button
-                          class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors"
+                        <router-link
+                          :to="`/order-detail/${order.id}`"
+                          class="bg-blue-100 text-blue-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-200 transition-colors inline-block"
                         >
                           Xem chi tiết
-                        </button>
+                        </router-link>
                         <button
                           v-if="order.status === 'pending'"
+                          @click="cancelOrder(order.id)"
                           class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
                         >
                           Hủy đơn
@@ -1086,6 +1085,8 @@ import { ref, reactive, computed, onMounted } from "vue";
 import { useAuthStore } from "@stores/auth";
 import { useNotification } from "@composables/useNotification";
 import { userService } from "@api/userService";
+import { orderService } from "@api/orderService";
+import { getFullImage } from "@utils/imageUtils";
 
 const authStore = useAuthStore();
 const { user } = authStore;
@@ -1137,26 +1138,85 @@ const orderStatuses = [
   { value: "cancelled", label: "Đã hủy" },
 ];
 
-const orders = ref([
-  {
-    id: "12345",
-    date: "15/08/2024",
-    status: "delivered",
-    productName: "iPhone 15 Pro Max",
-    quantity: 1,
-    total: 29990000,
-    image: "https://via.placeholder.com/100",
-  },
-  {
-    id: "12346",
-    date: "20/08/2024",
-    status: "shipping",
-    productName: "MacBook Air M2",
-    quantity: 1,
-    total: 24990000,
-    image: "https://via.placeholder.com/100",
-  },
-]);
+const orders = ref([]);
+
+const loadUserOrders = async () => {
+  try {
+    console.log("=== LOADING USER ORDERS ===");
+    console.log("Auth store user:", authStore.user);
+    console.log("Is authenticated:", authStore.isAuthenticated);
+
+    // Test API connection first
+    try {
+      const testResponse = await orderService.testAPI();
+      console.log("Test API successful:", testResponse);
+    } catch (testError) {
+      console.error("Test API failed:", testError);
+    }
+
+    loading.value = true;
+    const response = await orderService.getUserOrders();
+    console.log("API response:", response);
+
+    if (response.success) {
+      console.log("Orders from API:", response.data);
+      // Map order data to match the expected format
+      orders.value = response.data.map((order) => ({
+        id: order._id,
+        orderId: order.orderId || order._id,
+        date: new Date(order.createdAt).toLocaleDateString("vi-VN"),
+        status: order.status,
+        productName:
+          order.products.length > 1
+            ? `${order.products[0].name} (+${
+                order.products.length - 1
+              } sản phẩm khác)`
+            : order.products[0]?.name || "Sản phẩm",
+        quantity: order.products.reduce((sum, p) => sum + p.quantity, 0),
+        total: order.total,
+        image: getFullImage(order.products[0]?.image),
+        products: order.products,
+      }));
+      console.log("Mapped orders:", orders.value);
+    } else {
+      console.error("API returned error:", response);
+      showError("Không thể tải danh sách đơn hàng");
+    }
+  } catch (error) {
+    console.error("Error loading user orders:", error);
+    console.error("Error details:", error.response?.data);
+    showError("Có lỗi xảy ra khi tải đơn hàng");
+  } finally {
+    loading.value = false;
+  }
+};
+
+const cancelOrder = async (orderId) => {
+  if (!confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) return;
+
+  try {
+    loading.value = true;
+    const response = await orderService.cancelOrder(orderId);
+
+    if (response.success) {
+      showSuccess("Đơn hàng đã được hủy thành công");
+      // Update order status in local array
+      const orderIndex = orders.value.findIndex(
+        (order) => order.id === orderId
+      );
+      if (orderIndex !== -1) {
+        orders.value[orderIndex].status = "cancelled";
+      }
+    } else {
+      showError(response.message || "Không thể hủy đơn hàng");
+    }
+  } catch (error) {
+    console.error("Error cancelling order:", error);
+    showError("Có lỗi xảy ra khi hủy đơn hàng");
+  } finally {
+    loading.value = false;
+  }
+};
 
 const filteredOrders = computed(() => {
   if (selectedOrderStatus.value === "all") {
@@ -1360,7 +1420,13 @@ const formatPrice = (price) => {
   }).format(price);
 };
 
-onMounted(() => {
-  // Load user data
+onMounted(async () => {
+  // Only load orders if user is authenticated
+  if (authStore.isAuthenticated) {
+    await loadUserOrders();
+  } else {
+    console.warn("User not authenticated, skipping order load");
+    showError("Bạn cần đăng nhập để xem đơn hàng");
+  }
 });
 </script>

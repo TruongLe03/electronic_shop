@@ -39,10 +39,10 @@
         <!-- Action Buttons -->
         <div class="space-y-3 mt-8">
           <router-link 
-            to="/orders"
+            :to="`/order-detail/${orderId}`"
             class="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 px-6 rounded-lg font-semibold transition-colors block"
           >
-            Theo dõi đơn hàng
+            Xem chi tiết đơn hàng
           </router-link>
           
           <router-link 
@@ -69,11 +69,13 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const orderId = ref('')
 
 onMounted(() => {
-  // Generate random order ID
-  orderId.value = 'ES' + Date.now().toString().slice(-8)
+  // Get orderId from query parameter
+  orderId.value = route.query.orderId || 'ES' + Date.now().toString().slice(-8)
 })
 </script>

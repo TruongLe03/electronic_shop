@@ -66,7 +66,7 @@ const handleAddToCart = async () => {
   try {
     loading.value = true;
     await cartStore.addToCart(props.product, 1);
-    showSuccess(`Đã thêm ${props.product.name} vào giỏ hàng!`);
+    // Thông báo sẽ hiển thị từ cart store
   } catch (error) {
     console.error("Error adding to cart:", error);
     showError("Có lỗi xảy ra khi thêm vào giỏ hàng");

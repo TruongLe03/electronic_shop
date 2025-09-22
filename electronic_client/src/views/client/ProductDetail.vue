@@ -618,7 +618,7 @@ const addToCart = async () => {
     loader = showApiLoading("Đang thêm vào giỏ hàng...");
 
     await cartStore.addToCart(product.value, quantity.value);
-    showSuccess(`Đã thêm ${quantity.value} sản phẩm vào giỏ hàng`);
+    // Thông báo sẽ hiển thị từ cart store
   } catch (error) {
     console.error("Error adding to cart:", error);
     showError("Có lỗi xảy ra khi thêm vào giỏ hàng");
@@ -640,33 +640,31 @@ const buyNow = async () => {
     return;
   }
 
-  let loader;
   try {
-    loader = showApiLoading("Đang tạo đơn hàng...");
+    // Chuẩn bị thông tin sản phẩm để truyền sang Payment
+    const productInfo = {
+      productId: product.value._id,
+      name: product.value.name,
+      price: product.value.price,
+      discount_price: product.value.discount_price,
+      image: product.value.images && product.value.images.length > 0 ? product.value.images[0] : null,
+      quantity: quantity.value,
+      stock: product.value.stock
+    };
     
-    // Tạo đơn hàng trực tiếp với sản phẩm hiện tại
-    const orderResponse = await orderService.createDirectOrder(
-      product.value._id,
-      quantity.value
-    );
-
-    if (orderResponse.success) {
-      showSuccess("Đã tạo đơn hàng thành công!");
-      // Chuyển hướng đến trang thanh toán với thông tin đơn hàng
-      router.push({
-        name: "Payment",
-        params: { orderId: orderResponse.data._id }
-      });
-    } else {
-      showError(orderResponse.message || "Có lỗi xảy ra khi tạo đơn hàng");
-    }
+    console.log('Product info to send to Payment:', productInfo);
+    
+    // Chuyển hướng đến trang thanh toán với thông tin sản phẩm
+    router.push({
+      name: "Payment",
+      query: {
+        type: "direct", // Đánh dấu là mua trực tiếp
+        productData: JSON.stringify(productInfo)
+      }
+    });
   } catch (error) {
-    console.error("Error creating order:", error);
-    console.error("Error response data:", error.response?.data);
-    const errorMessage = error.response?.data?.message || error.message || "Có lỗi xảy ra khi tạo đơn hàng";
-    showError(errorMessage);
-  } finally {
-    hideLoading(loader);
+    console.error("Error preparing product data:", error);
+    showError("Có lỗi xảy ra khi chuẩn bị thông tin sản phẩm");
   }
 };
 
