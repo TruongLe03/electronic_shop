@@ -4,6 +4,8 @@ import Login from "@views/client/Login.vue";
 import Signup from "@views/client/Signup.vue";
 import Product from "@views/client/Product.vue";
 import Cart from "@views/client/Cart.vue";
+import Orders from "@views/admin/Orders.vue";
+import OrderDetail from "@views/admin/OrderDetail.vue";
 import { useAuthStore } from "@stores/auth";
 
 const routes = [
@@ -100,12 +102,6 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
-    path: "/admin/orders",
-    name: "adminOrders",
-    component: () => import("@views/admin/Orders.vue"),
-    meta: { requiresAuth: true, requiresAdmin: true },
-  },
-  {
     path: "/admin/users",
     name: "adminUsers",
     component: () => import("@views/admin/Users.vue"),
@@ -115,7 +111,25 @@ const routes = [
     path: "/admin/inventory",
     name: "adminInventory",
     component: () => import("@views/admin/Inventory.vue"),
+    meta: { requiresAuth: true, adminOnly: true },
+  },
+  {
+    path: "/admin/analytics",
+    name: "adminAnalytics",
+    component: () => import("@views/admin/Analytics.vue"),
     meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/admin/orders",
+    name: "AdminOrders",
+    component: Orders,
+    meta: { requiresAuth: true, adminOnly: true },
+  },
+  {
+    path: "/admin/orders/:id",
+    name: "AdminOrderDetail",
+    component: OrderDetail,
+    meta: { requiresAuth: true, adminOnly: true },
   },
 ];
 
@@ -127,7 +141,7 @@ const router = createRouter({
     if (savedPosition) {
       return savedPosition;
     } else {
-      return { top: 0, behavior: 'smooth' };
+      return { top: 0, behavior: "smooth" };
     }
   },
 });

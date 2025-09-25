@@ -1,49 +1,47 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '../../stores/auth.js'
-import { useLoading } from '../../composables/useLoading.js'
+import { useAuthStore } from '@stores/auth.js'
+import { useLoading } from '@composables/useLoading.js'
+import { useNotification } from '@composables/useNotification.js'
+import { getCategories } from '@api/categoryService.js'
+import { getProductById, createProduct, updateProduct } from '@api/productService.js'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const { showFormLoading, hideLoading } = useLoading()
+const { showSuccess, showError } = useNotification()
 
 const isEditMode = ref(false)
 const productId = ref(null)
 const loading = ref(false)
 const saving = ref(false)
 
-// Form data
+// Form data mapped to backend schema
 const form = ref({
   name: '',
-  description: '',
+  sku: '',
+  category_id: '',
   price: '',
-  original_price: '',
-  category: '',
-  brand: '',
-  SKU: '',
-  stock_quantity: '',
+  discount_price: '',
+  stock: '',
   warranty: '',
-  main_image: '',
-  additional_images: [],
+  images: [], // Will combine main_image + additional_images when submitting
+  main_image: '', // UI only
+  additional_images: [], // UI only
+  description: '',
+  description_detail: '',
   specifications: {
     'Kích thước': '',
     'Trọng lượng': '',
     'Bảo hành': '',
     'Xuất xứ': ''
   },
-  features: []
+  tags: [] // map from features
 })
 
-const categories = ref([
-  'Arduino & Vi điều khiển',
-  'Cảm biến IoT',
-  'Robot & Automation', 
-  'Phụ kiện điện tử',
-  'Module & Shield',
-  'Màn hình & Display'
-])
+const categories = ref([])
 
 const newFeature = ref('')
 const newSpecKey = ref('')
@@ -54,8 +52,7 @@ onMounted(async () => {
     router.push('/login')
     return
   }
-  
-  // Check if edit mode
+  await loadCategories()
   if (route.params.id) {
     isEditMode.value = true
     productId.value = route.params.id
@@ -63,45 +60,39 @@ onMounted(async () => {
   }
 })
 
+const loadCategories = async () => {
+  try {
+    const res = await getCategories({ parentOnly: false })
+    categories.value = res.categories || []
+  } catch (e) {
+    console.error('Load categories failed:', e)
+    categories.value = []
+  }
+}
+
 const loadProduct = async () => {
   try {
     loading.value = true
-    
-    // Mock product data - replace with real API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Sample product data
-    form.value = {
-      name: 'Arduino Uno R3',
-      description: 'Bo mạch vi điều khiển Arduino Uno R3 chính hãng với chip ATmega328P',
-      price: '350000',
-      original_price: '400000',
-      category: 'Arduino & Vi điều khiển',
-      brand: 'Arduino',
-      SKU: 'ARD-UNO-R3',
-      stock_quantity: '25',
-      warranty: '12 tháng',
-      main_image: 'https://example.com/arduino-uno.jpg',
-      additional_images: [
-        'https://example.com/arduino-uno-2.jpg',
-        'https://example.com/arduino-uno-3.jpg'
-      ],
-      specifications: {
-        'Kích thước': '68.6 x 53.4mm',
-        'Trọng lượng': '25g',
-        'Bảo hành': '12 tháng',
-        'Xuất xứ': 'Italy'
-      },
-      features: [
-        'Chip ATmega328P',
-        '14 chân digital I/O',
-        '6 chân analog input',
-        'USB connection'
-      ]
-    }
+    const res = await getProductById(productId.value)
+    const p = res.data
+    // Populate form fields
+    form.value.name = p.name || ''
+    form.value.sku = p.sku || ''
+    form.value.category_id = p.category_id?._id || p.category_id || ''
+    form.value.price = p.price ?? ''
+    form.value.discount_price = p.discount_price ?? ''
+    form.value.stock = p.stock ?? ''
+    form.value.warranty = p.warranty || ''
+    form.value.description = p.description || ''
+    form.value.description_detail = p.description_detail || ''
+    form.value.specifications = p.specifications && typeof p.specifications === 'object' ? Object.fromEntries(Object.entries(p.specifications)) : {}
+    form.value.tags = Array.isArray(p.tags) ? p.tags : []
+    const imgs = Array.isArray(p.images) ? p.images : []
+    form.value.main_image = imgs[0] || ''
+    form.value.additional_images = imgs.slice(1)
   } catch (error) {
     console.error('Error loading product:', error)
-    alert('Không thể tải thông tin sản phẩm')
+    showError('Không thể tải thông tin sản phẩm')
   } finally {
     loading.value = false
   }
@@ -109,13 +100,13 @@ const loadProduct = async () => {
 
 const addFeature = () => {
   if (newFeature.value.trim()) {
-    form.value.features.push(newFeature.value.trim())
+    form.value.tags.push(newFeature.value.trim())
     newFeature.value = ''
   }
 }
 
 const removeFeature = (index) => {
-  form.value.features.splice(index, 1)
+  form.value.tags.splice(index, 1)
 }
 
 const addSpecification = () => {
@@ -143,54 +134,57 @@ const removeImage = (index) => {
 
 const validateForm = () => {
   const errors = []
-  
   if (!form.value.name.trim()) errors.push('Tên sản phẩm không được để trống')
   if (!form.value.description.trim()) errors.push('Mô tả không được để trống')
   if (!form.value.price || parseFloat(form.value.price) <= 0) errors.push('Giá phải lớn hơn 0')
-  if (!form.value.category) errors.push('Vui lòng chọn danh mục')
-  if (!form.value.stock_quantity || parseInt(form.value.stock_quantity) < 0) errors.push('Số lượng tồn kho không hợp lệ')
-  
+  if (!form.value.category_id) errors.push('Vui lòng chọn danh mục')
+  if (form.value.stock === '' || parseInt(form.value.stock) < 0) errors.push('Số lượng tồn kho không hợp lệ')
+  if (!form.value.sku.trim()) errors.push('SKU không được để trống')
   if (errors.length > 0) {
-    alert('Lỗi:\n' + errors.join('\n'))
+    showError(errors.join('\n'))
     return false
   }
-  
   return true
 }
 
 const submitForm = async () => {
   if (!validateForm()) return
-  
+  let loader
   try {
     saving.value = true
-    showFormLoading('Đang lưu sản phẩm...')
-    
-    // Prepare data
-    const productData = {
-      ...form.value,
-      price: parseFloat(form.value.price),
-      original_price: form.value.original_price ? parseFloat(form.value.original_price) : null,
-      stock_quantity: parseInt(form.value.stock_quantity)
+    loader = showFormLoading('Đang lưu sản phẩm...')
+    // Build payload per backend schema
+    const images = [form.value.main_image, ...form.value.additional_images].filter(Boolean)
+    const payload = {
+      name: form.value.name.trim(),
+      sku: form.value.sku.trim().toUpperCase(),
+      category_id: form.value.category_id,
+      price: Number(form.value.price),
+      discount_price: form.value.discount_price ? Number(form.value.discount_price) : null,
+      stock: Number(form.value.stock),
+      warranty: form.value.warranty || undefined,
+      images,
+      description: form.value.description,
+      description_detail: form.value.description_detail || undefined,
+      specifications: form.value.specifications || {},
+      tags: form.value.tags || [],
+      isActive: true
     }
-    
-    // Mock API call - replace with real implementation
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    
+
     if (isEditMode.value) {
-      console.log('Updating product:', productId.value, productData)
-      alert('Cập nhật sản phẩm thành công!')
+      await updateProduct(productId.value, payload)
+      showSuccess('Cập nhật sản phẩm thành công')
     } else {
-      console.log('Creating product:', productData)
-      alert('Thêm sản phẩm thành công!')
+      await createProduct(payload)
+      showSuccess('Thêm sản phẩm thành công')
     }
-    
     router.push('/admin/products')
   } catch (error) {
     console.error('Error saving product:', error)
-    alert('Có lỗi xảy ra khi lưu sản phẩm')
+    showError('Có lỗi xảy ra khi lưu sản phẩm')
   } finally {
     saving.value = false
-    hideLoading()
+    hideLoading(loader)
   }
 }
 
@@ -248,19 +242,10 @@ const cancelForm = () => {
             <!-- SKU -->
             <div>
               <label class="block text-sm font-medium text-gray-700 mb-2">SKU</label>
-              <input v-model="form.SKU"
+              <input v-model="form.sku"
                      type="text"
                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                      placeholder="Mã sản phẩm...">
-            </div>
-            
-            <!-- Brand -->
-            <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Thương hiệu</label>
-              <input v-model="form.brand"
-                     type="text"
-                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                     placeholder="Tên thương hiệu...">
             </div>
             
             <!-- Category -->
@@ -268,12 +253,12 @@ const cancelForm = () => {
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 Danh mục <span class="text-red-500">*</span>
               </label>
-              <select v-model="form.category"
+              <select v-model="form.category_id"
                       required
                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
                 <option value="">Chọn danh mục</option>
-                <option v-for="category in categories" :key="category" :value="category">
-                  {{ category }}
+                <option v-for="category in categories" :key="category.id" :value="category.id">
+                  {{ category.name }}
                 </option>
               </select>
             </div>
@@ -298,6 +283,11 @@ const cancelForm = () => {
                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
                         placeholder="Mô tả chi tiết về sản phẩm..."></textarea>
             </div>
+            <!-- Long Description -->
+            <div class="md:col-span-2">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Mô tả chi tiết</label>
+              <textarea v-model="form.description_detail" rows="4" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500" placeholder="Thông tin chi tiết, hướng dẫn, v.v..."></textarea>
+            </div>
           </div>
         </div>
 
@@ -320,10 +310,10 @@ const cancelForm = () => {
                      placeholder="0">
             </div>
             
-            <!-- Original Price -->
+            <!-- Discount Price -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">Giá gốc</label>
-              <input v-model="form.original_price"
+              <label class="block text-sm font-medium text-gray-700 mb-2">Giá khuyến mãi</label>
+              <input v-model="form.discount_price"
                      type="number"
                      min="0"
                      step="1000"
@@ -336,7 +326,7 @@ const cancelForm = () => {
               <label class="block text-sm font-medium text-gray-700 mb-2">
                 Số lượng tồn kho <span class="text-red-500">*</span>
               </label>
-              <input v-model="form.stock_quantity"
+              <input v-model="form.stock"
                      type="number"
                      required
                      min="0"
@@ -387,7 +377,7 @@ const cancelForm = () => {
 
         <!-- Features -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6">✨ Tính năng nổi bật</h2>
+          <h2 class="text-lg font-semibold text-gray-900 mb-6">✨ Từ khóa/điểm nổi bật</h2>
           
           <div class="mb-4">
             <div class="flex gap-2">
@@ -403,8 +393,8 @@ const cancelForm = () => {
             </div>
           </div>
           
-          <div v-if="form.features.length > 0" class="space-y-2">
-            <div v-for="(feature, index) in form.features" :key="index"
+          <div v-if="form.tags.length > 0" class="space-y-2">
+            <div v-for="(feature, index) in form.tags" :key="index"
                  class="flex items-center justify-between p-3 bg-gray-50 rounded-md">
               <span class="text-sm text-gray-700">{{ feature }}</span>
               <button type="button" @click="removeFeature(index)"
@@ -472,9 +462,9 @@ const cancelForm = () => {
 <style scoped>
 /* Custom styling for form elements */
 input:focus, select:focus, textarea:focus {
-  ring: 2px;
-  ring-color: #6366f1;
+  outline: none;
   border-color: #6366f1;
+  box-shadow: 0 0 0 2px rgba(99,102,241,0.2);
 }
 
 .required {

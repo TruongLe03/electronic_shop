@@ -214,8 +214,4 @@ const calculateSavings = (originalPrice, salePrice) => {
   </div>
 </template>
 
-<style scoped>
-.router-link-active {
-  @apply text-red-600 bg-red-50;
-}
-</style>
+<style scoped></style>

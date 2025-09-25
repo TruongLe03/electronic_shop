@@ -7,21 +7,18 @@ import {
   updateCategory,
   deleteCategory,
 } from "../controllers/categories.controller.js";
+import { requireAdmin } from "../middleware/adminMiddleware.js";
 
 const categoryRouter = express.Router();
 
-// GET routes
+// Public routes
 categoryRouter.get("/", getCategories);
 categoryRouter.get("/:id", getCategoryById);
 categoryRouter.get("/:parentId/subcategories", getSubcategories);
 
-// POST routes
-categoryRouter.post("/", createCategory);
-
-// PUT routes
-categoryRouter.put("/:id", updateCategory);
-
-// DELETE routes
-categoryRouter.delete("/:id", deleteCategory);
+// Admin routes
+categoryRouter.post("/", requireAdmin, createCategory);
+categoryRouter.put("/:id", requireAdmin, updateCategory);
+categoryRouter.delete("/:id", requireAdmin, deleteCategory);
 
 export default categoryRouter;

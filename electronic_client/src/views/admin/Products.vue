@@ -1,391 +1,364 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { useAuthStore } from '../../stores/auth.js'
-import { getProducts } from '../../api/productService.js'
+import AdminLayout from '@components/admin/AdminLayout.vue'
+import { useAuthStore } from '@stores/auth.js'
+import { getProducts, deleteProduct } from '@api/productService.js'
+import { getCategories } from '@api/categoryService.js'
+import { getFullImage, handleImageError } from '@utils/imageUtils.js'
+import { useNotification } from '@composables/useNotification.js'
+import { usePagination } from '@composables/usePagination.js'
 
+// Router & Auth
 const router = useRouter()
 const authStore = useAuthStore()
+const { showSuccess, showError } = useNotification()
 
-const products = ref([])
+// State
 const loading = ref(false)
-const error = ref(null)
-const searchTerm = ref('')
+const products = ref([])
+const categories = ref([])
+
+// Filters & query params
+const search = ref('')
 const selectedCategory = ref('')
-const currentPage = ref(1)
-const itemsPerPage = 10
-const totalPages = ref(0)
-const showDeleteModal = ref(false)
-const productToDelete = ref(null)
+const inStockOnly = ref(false)
+const onSaleOnly = ref(false)
+const sortBy = ref('createdAt')
+const sortOrder = ref('desc')
+const itemsPerPage = ref(12)
 
-const categories = ref([
-  'Arduino & Vi điều khiển',
-  'Cảm biến IoT', 
-  'Robot & Automation',
-  'Phụ kiện điện tử',
-  'Module & Shield',
-  'Màn hình & Display'
-])
+// Pagination
+const { currentPage, totalItems, updateTotal, reset } = usePagination(itemsPerPage.value)
 
+// Reactive pagination based on itemsPerPage
+const totalPagesCalc = computed(() => Math.max(1, Math.ceil((totalItems.value || 0) / (itemsPerPage.value || 1))))
+const visiblePagesCalc = computed(() => {
+  const total = totalPagesCalc.value
+  const current = currentPage.value
+  const pages = []
+  if (total <= 10) {
+    for (let i = 1; i <= total; i++) pages.push(i)
+  } else if (current <= 3) {
+    for (let i = 1; i <= 3; i++) pages.push(i)
+    if (total > 4) pages.push('...')
+    pages.push(total)
+  } else if (current >= total - 2) {
+    pages.push(1)
+    if (total > 4) pages.push('...')
+    for (let i = total - 2; i <= total; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    if (current > 4) pages.push('...')
+    for (let i = current - 1; i <= current + 1; i++) pages.push(i)
+    if (current < total - 3) pages.push('...')
+    pages.push(total)
+  }
+  return pages
+})
+
+watch(itemsPerPage, () => {
+  // Reset pagination when page size changes
+  reset()
+  currentPage.value = 1
+  loadProducts()
+})
+
+watch([selectedCategory, inStockOnly, onSaleOnly, sortBy, sortOrder], () => {
+  goTo(1)
+})
+
+// Computed helpers
+const hasFilters = computed(() => !!(search.value || selectedCategory.value || inStockOnly.value || onSaleOnly.value))
+
+// Lifecycle
 onMounted(async () => {
   if (!authStore.isAuthenticated || authStore.user?.role !== 'admin') {
     router.push('/login')
     return
   }
-  
-  await loadProducts()
+  await Promise.all([loadCategories(), loadProducts()])
 })
+
+// Loaders
+const loadCategories = async () => {
+  try {
+    const res = await getCategories({ parentOnly: false })
+    categories.value = res.categories || []
+  } catch (e) {
+    console.error('Failed to load categories:', e)
+    categories.value = []
+  }
+}
 
 const loadProducts = async () => {
   try {
     loading.value = true
-    error.value = null
-    
-    const result = await getProducts(currentPage.value, itemsPerPage)
-    if (result && result.data) {
-      products.value = result.data
-      totalPages.value = Math.ceil((result.total || result.data.length) / itemsPerPage)
-    }
-  } catch (err) {
-    console.error('Error loading products:', err)
-    error.value = 'Không thể tải danh sách sản phẩm'
+    const res = await getProducts({
+      page: currentPage.value,
+      limit: itemsPerPage.value,
+      categoryId: selectedCategory.value || undefined,
+      inStock: inStockOnly.value || undefined,
+      onSale: onSaleOnly.value || undefined,
+      search: search.value || undefined,
+      sortBy: sortBy.value,
+      sortOrder: sortOrder.value,
+    })
+
+    products.value = res.data || []
+    updateTotal(res.total || 0)
+  } catch (e) {
+    console.error('Failed to load products:', e)
+    products.value = []
+    updateTotal(0)
   } finally {
     loading.value = false
   }
 }
 
-const filteredProducts = computed(() => {
-  let filtered = products.value
-  
-  if (searchTerm.value) {
-    filtered = filtered.filter(product => 
-      product.name.toLowerCase().includes(searchTerm.value.toLowerCase()) ||
-      product.SKU?.toLowerCase().includes(searchTerm.value.toLowerCase())
-    )
-  }
-  
-  if (selectedCategory.value) {
-    filtered = filtered.filter(product => product.category === selectedCategory.value)
-  }
-  
-  return filtered
-})
+// Handlers
+const handleSearch = () => {
+  goTo(1)
+}
 
-const handlePageChange = (page) => {
-  if (page >= 1 && page <= totalPages.value && page !== currentPage.value) {
-    currentPage.value = page
-    loadProducts()
+const clearFilters = () => {
+  search.value = ''
+  selectedCategory.value = ''
+  inStockOnly.value = false
+  onSaleOnly.value = false
+  sortBy.value = 'createdAt'
+  sortOrder.value = 'desc'
+  goTo(1)
+}
+
+const goTo = async (page) => {
+  const p = Math.min(Math.max(1, page), totalPagesCalc.value)
+  if (p !== currentPage.value) currentPage.value = p
+  await loadProducts()
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+const prev = async () => {
+  if (currentPage.value > 1) {
+    await goTo(currentPage.value - 1)
   }
 }
 
-const editProduct = (productId) => {
-  router.push(`/admin/products/edit/${productId}`)
+const next = async () => {
+  if (currentPage.value < totalPagesCalc.value) {
+    await goTo(currentPage.value + 1)
+  }
 }
 
-const confirmDelete = (product) => {
-  productToDelete.value = product
-  showDeleteModal.value = true
-}
-
-const deleteProduct = async () => {
+const confirmDelete = async (product) => {
+  const ok = window.confirm(`Xóa sản phẩm "${product.name}"? Hành động này không thể hoàn tác.`)
+  if (!ok) return
   try {
-    // Implement delete API call here
-    console.log('Deleting product:', productToDelete.value._id)
-    
-    // Remove from local array
-    products.value = products.value.filter(p => p._id !== productToDelete.value._id)
-    
-    showDeleteModal.value = false
-    productToDelete.value = null
-    
-    // Show success message
-    alert('Xóa sản phẩm thành công!')
-  } catch (error) {
-    console.error('Error deleting product:', error)
-    alert('Có lỗi xảy ra khi xóa sản phẩm')
+    await deleteProduct(product._id)
+    showSuccess('Đã xóa sản phẩm')
+    // Reload current page; if last item removed, may need to step back a page
+    const isLastItemOnPage = products.value.length === 1 && currentPage.value > 1
+    if (isLastItemOnPage) {
+      await goTo(currentPage.value - 1)
+    } else {
+      await loadProducts()
+    }
+  } catch (e) {
+    console.error('Delete product failed:', e)
+    showError('Không thể xóa sản phẩm')
   }
 }
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount)
+  if (amount == null || isNaN(amount)) return '0 ₫'
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount)
 }
 
-const getStockStatus = (stock) => {
-  if (stock > 50) return { text: 'Còn hàng', class: 'text-green-600 bg-green-100' }
-  if (stock > 10) return { text: 'Sắp hết', class: 'text-yellow-600 bg-yellow-100' }
-  if (stock > 0) return { text: 'Ít hàng', class: 'text-orange-600 bg-orange-100' }
-  return { text: 'Hết hàng', class: 'text-red-600 bg-red-100' }
+const discountBadge = (product) => {
+  const percent = product.discount_percent || (product.price && product.discount_price ? Math.round(((product.price - product.discount_price) / product.price) * 100) : 0)
+  return percent > 0 ? `-${percent}%` : null
 }
+
+const categoryName = (product) => product.category_id?.name || product.category?.name || '—'
+
+const goAdd = () => router.push('/admin/products/add')
+const goEdit = (id) => router.push(`/admin/products/edit/${id}`)
+
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-4">
-          <div class="flex items-center">
-            <router-link to="/admin" class="text-indigo-600 hover:text-indigo-700 mr-4">
-              ← Dashboard
-            </router-link>
-            <h1 class="text-2xl font-bold text-gray-900">📦 Quản lý sản phẩm</h1>
+  <AdminLayout title="Quản lý Sản phẩm" subtitle="Danh sách, lọc, sắp xếp và thao tác" icon="fas fa-box">
+    <!-- Filters -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 mb-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
+        <!-- Search -->
+        <div class="md:col-span-2">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            <i class="fas fa-search mr-1" /> Tìm kiếm
+          </label>
+          <div class="relative">
+            <input v-model="search" type="text" placeholder="Tên, mô tả, tag, SKU..." @keyup.enter="handleSearch"
+              class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
-          
-          <router-link to="/admin/products/add" 
-                       class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors font-medium">
-            ➕ Thêm sản phẩm
-          </router-link>
         </div>
-      </div>
-    </header>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-      <!-- Filters -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <!-- Search -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Tìm kiếm</label>
-            <input v-model="searchTerm"
-                   type="text"
-                   placeholder="Tên sản phẩm hoặc SKU..."
-                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-          </div>
-          
-          <!-- Category Filter -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
-            <select v-model="selectedCategory"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500">
-              <option value="">Tất cả danh mục</option>
-              <option v-for="category in categories" :key="category" :value="category">
-                {{ category }}
-              </option>
+        <!-- Category -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Danh mục</label>
+          <select v-model="selectedCategory" class="w-full px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
+            <option value="">Tất cả</option>
+            <option v-for="c in categories" :key="c.id" :value="c.id">{{ c.name }}</option>
+          </select>
+        </div>
+
+        <!-- Toggles -->
+        <div class="flex items-center gap-4">
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" v-model="inStockOnly" class="rounded border-gray-300" />
+            Còn hàng
+          </label>
+          <label class="inline-flex items-center gap-2 text-sm text-gray-700">
+            <input type="checkbox" v-model="onSaleOnly" class="rounded border-gray-300" />
+            Đang giảm giá
+          </label>
+        </div>
+
+        <!-- Sort -->
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-2">Sắp xếp</label>
+          <div class="flex gap-2">
+            <select v-model="sortBy" class="flex-1 px-3 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500">
+              <option value="createdAt">Mới nhất</option>
+              <option value="name">Tên</option>
+              <option value="price">Giá</option>
+              <option value="sold">Bán chạy</option>
+              <option value="rating">Đánh giá</option>
             </select>
-          </div>
-          
-          <!-- Actions -->
-          <div class="flex items-end">
-            <button @click="loadProducts"
-                    class="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors">
-              🔄 Làm mới
+            <button @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'; handleSearch()"
+              class="px-3 py-2 border border-gray-200 rounded-xl hover:bg-gray-50">
+              <i :class="sortOrder === 'asc' ? 'fas fa-arrow-up' : 'fas fa-arrow-down'" />
             </button>
           </div>
         </div>
-      </div>
 
-      <!-- Products Table -->
-      <div class="bg-white rounded-lg shadow-sm border border-gray-100 overflow-hidden">
-        <!-- Loading State -->
-        <div v-if="loading" class="flex justify-center items-center py-12">
-          <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-500"></div>
-          <span class="ml-2 text-gray-600">Đang tải...</span>
-        </div>
-
-        <!-- Error State -->
-        <div v-else-if="error" class="text-center py-12">
-          <div class="text-red-500 mb-4">❌ {{ error }}</div>
-          <button @click="loadProducts" 
-                  class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700">
-            Thử lại
+        <!-- Actions -->
+        <div class="flex justify-end gap-3">
+          <button @click="clearFilters" :disabled="!hasFilters"
+            class="px-4 py-2 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+            <i class="fas fa-times mr-2" /> Xóa lọc
+          </button>
+          <button @click="goAdd" class="px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">
+            <i class="fas fa-plus mr-2" /> Thêm sản phẩm
           </button>
         </div>
-
-        <!-- Table -->
-        <div v-else class="overflow-x-auto">
-          <table class="w-full">
-            <thead class="bg-gray-50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Sản phẩm
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  SKU
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Danh mục
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Giá
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tồn kho
-                </th>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Trạng thái
-                </th>
-                <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Thao tác
-                </th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-200">
-              <tr v-for="product in filteredProducts" :key="product._id" class="hover:bg-gray-50">
-                <!-- Product Info -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="flex items-center">
-                    <img :src="product.main_image || '/assets/images/placeholder.jpg'" 
-                         :alt="product.name"
-                         class="h-10 w-10 rounded-lg object-cover">
-                    <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">{{ product.name }}</div>
-                      <div class="text-sm text-gray-500">{{ product.brand || 'N/A' }}</div>
-                    </div>
-                  </div>
-                </td>
-                
-                <!-- SKU -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ product.SKU || 'N/A' }}
-                </td>
-                
-                <!-- Category -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                  {{ product.category || 'N/A' }}
-                </td>
-                
-                <!-- Price -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">
-                    {{ formatCurrency(product.price) }}
-                  </div>
-                  <div v-if="product.original_price && product.original_price > product.price" 
-                       class="text-xs text-gray-500 line-through">
-                    {{ formatCurrency(product.original_price) }}
-                  </div>
-                </td>
-                
-                <!-- Stock -->
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {{ product.stock || 0 }}
-                </td>
-                
-                <!-- Status -->
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <span :class="`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStockStatus(product.stock || 0).class}`">
-                    {{ getStockStatus(product.stock || 0).text }}
-                  </span>
-                </td>
-                
-                <!-- Actions -->
-                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <div class="flex items-center justify-end space-x-2">
-                    <button @click="editProduct(product._id)"
-                            class="text-indigo-600 hover:text-indigo-900 p-1 rounded">
-                      ✏️
-                    </button>
-                    <button @click="confirmDelete(product)"
-                            class="text-red-600 hover:text-red-900 p-1 rounded">
-                      🗑️
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-          
-          <!-- Empty State -->
-          <div v-if="filteredProducts.length === 0" class="text-center py-12">
-            <div class="text-gray-400 text-lg mb-2">📦</div>
-            <div class="text-gray-500">Không tìm thấy sản phẩm nào</div>
-          </div>
-        </div>
-
-        <!-- Pagination -->
-        <div v-if="totalPages > 1" class="bg-white px-4 py-3 border-t border-gray-200 sm:px-6">
-          <div class="flex items-center justify-between">
-            <div class="flex-1 flex justify-between sm:hidden">
-              <button @click="handlePageChange(currentPage - 1)"
-                      :disabled="currentPage === 1"
-                      class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50">
-                Trước
-              </button>
-              <button @click="handlePageChange(currentPage + 1)"
-                      :disabled="currentPage === totalPages"
-                      class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50">
-                Sau
-              </button>
-            </div>
-            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-              <div>
-                <p class="text-sm text-gray-700">
-                  Hiển thị 
-                  <span class="font-medium">{{ (currentPage - 1) * itemsPerPage + 1 }}</span>
-                  đến 
-                  <span class="font-medium">{{ Math.min(currentPage * itemsPerPage, filteredProducts.length) }}</span>
-                  trong tổng số 
-                  <span class="font-medium">{{ filteredProducts.length }}</span>
-                  sản phẩm
-                </p>
-              </div>
-              <div>
-                <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-                  <button @click="handlePageChange(currentPage - 1)"
-                          :disabled="currentPage === 1"
-                          class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">
-                    ←
-                  </button>
-                  <button v-for="page in totalPages" :key="page"
-                          @click="handlePageChange(page)"
-                          :class="[
-                            'relative inline-flex items-center px-4 py-2 border text-sm font-medium',
-                            currentPage === page 
-                              ? 'z-10 bg-indigo-50 border-indigo-500 text-indigo-600'
-                              : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                          ]">
-                    {{ page }}
-                  </button>
-                  <button @click="handlePageChange(currentPage + 1)"
-                          :disabled="currentPage === totalPages"
-                          class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50">
-                    →
-                  </button>
-                </nav>
-              </div>
-            </div>
-          </div>
-        </div>
       </div>
-    </main>
 
-    <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-      <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-        <div class="mt-3 text-center">
-          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-            <span class="text-2xl">⚠️</span>
-          </div>
-          <h3 class="text-lg font-medium text-gray-900 mt-4">Xác nhận xóa sản phẩm</h3>
-          <div class="mt-2 px-7 py-3">
-            <p class="text-sm text-gray-500">
-              Bạn có chắc chắn muốn xóa sản phẩm 
-              <strong>{{ productToDelete?.name }}</strong>?
-              <br>
-              Hành động này không thể hoàn tác.
-            </p>
-          </div>
-          <div class="flex items-center justify-center gap-4 mt-4">
-            <button @click="showDeleteModal = false"
-                    class="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors">
-              Hủy
-            </button>
-            <button @click="deleteProduct"
-                    class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors">
-              Xóa
-            </button>
-          </div>
+      <!-- Refresh Row -->
+      <div class="mt-4 flex items-center justify-between">
+        <div class="text-sm text-gray-500">
+          Tổng: <span class="font-medium text-gray-900">{{ totalItems }}</span> sản phẩm
+        </div>
+        <div class="flex items-center gap-3">
+          <label class="text-sm text-gray-700">Hiển thị</label>
+          <select v-model.number="itemsPerPage" class="px-2 py-1 border border-gray-200 rounded-lg">
+            <option :value="8">8</option>
+            <option :value="12">12</option>
+            <option :value="20">20</option>
+            <option :value="50">50</option>
+          </select>
+          <button @click="handleSearch" :disabled="loading"
+            class="px-3 py-1.5 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50">
+            <i class="fas fa-sync" :class="{ 'animate-spin': loading }" /> Làm mới
+          </button>
         </div>
       </div>
     </div>
-  </div>
+
+    <!-- Grid/List -->
+    <div v-if="loading" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div v-for="i in 8" :key="i" class="bg-white rounded-2xl border border-gray-100 p-4 animate-pulse">
+        <div class="w-full h-40 bg-gray-200 rounded-xl mb-4" />
+        <div class="h-4 bg-gray-200 rounded w-3/4 mb-2" />
+        <div class="h-3 bg-gray-200 rounded w-1/2" />
+      </div>
+    </div>
+
+    <div v-else>
+      <div v-if="products.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        <div v-for="p in products" :key="p._id" class="group bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg transition-all overflow-hidden">
+          <!-- Image -->
+          <div class="relative">
+            <img :src="getFullImage(p.images?.[0])" @error="handleImageError" class="w-full h-44 object-cover" alt="product" />
+            <div v-if="discountBadge(p)" class="absolute top-3 left-3 bg-red-500 text-white text-xs px-2 py-1 rounded-md">
+              {{ discountBadge(p) }}
+            </div>
+            <div v-if="(p.stock ?? 0) <= 0" class="absolute top-3 right-3 bg-gray-800 text-white text-xs px-2 py-1 rounded-md">Hết hàng</div>
+          </div>
+
+          <!-- Body -->
+          <div class="p-4 space-y-2">
+            <div class="flex items-start justify-between gap-2">
+              <h3 class="font-semibold text-gray-900 line-clamp-2">{{ p.name }}</h3>
+            </div>
+            <div class="text-sm text-gray-500">SKU: <span class="text-gray-700 font-medium">{{ p.sku }}</span></div>
+            <div class="text-sm text-gray-500">Danh mục: <span class="text-gray-700">{{ categoryName(p) }}</span></div>
+
+            <div class="flex items-baseline gap-2">
+              <div class="text-lg font-bold text-indigo-600">{{ formatCurrency(p.discount_price ?? p.price) }}</div>
+              <div v-if="p.discount_price" class="text-sm line-through text-gray-400">{{ formatCurrency(p.price) }}</div>
+            </div>
+
+            <div class="flex items-center justify-between text-sm">
+              <div class="text-gray-600">Tồn: <span class="font-medium">{{ p.stock ?? 0 }}</span></div>
+              <div class="text-gray-600">Bán: <span class="font-medium">{{ p.sold ?? 0 }}</span></div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="px-4 pb-4 pt-2 flex items-center justify-between gap-2">
+            <button @click="goEdit(p._id)" class="flex-1 px-3 py-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+              <i class="fas fa-edit mr-2 text-indigo-600" /> Sửa
+            </button>
+            <button @click="confirmDelete(p)" class="px-3 py-2 bg-red-50 text-red-600 border border-red-200 rounded-lg hover:bg-red-100">
+              <i class="fas fa-trash" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div v-else class="bg-white rounded-2xl border border-gray-100 p-10 text-center text-gray-600">
+        <div class="text-5xl mb-3">🗂️</div>
+        Không có sản phẩm nào khớp bộ lọc.
+      </div>
+
+      <!-- Pagination -->
+      <div v-if="totalPagesCalc > 1" class="mt-8 flex items-center justify-center gap-2">
+        <button @click="prev" :disabled="currentPage === 1" class="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50">
+          <i class="fas fa-chevron-left" />
+        </button>
+        <button v-for="p in visiblePagesCalc" :key="p" @click="typeof p === 'number' && goTo(p)"
+          :disabled="p === '...'" :class="[
+            'px-3 py-2 border rounded-lg hover:bg-gray-50',
+            currentPage === p ? 'bg-indigo-600 text-white border-indigo-600 hover:bg-indigo-700' : '',
+            p === '...' ? 'cursor-default' : ''
+          ]">
+          {{ p }}
+        </button>
+        <button @click="next" :disabled="currentPage === totalPagesCalc" class="px-3 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50">
+          <i class="fas fa-chevron-right" />
+        </button>
+      </div>
+    </div>
+  </AdminLayout>
 </template>
 
 <style scoped>
-.router-link-active {
-  @apply text-indigo-600;
+.line-clamp-2 {
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 </style>

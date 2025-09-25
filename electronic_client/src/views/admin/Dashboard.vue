@@ -1,13 +1,16 @@
 <script setup>
-import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@stores/auth.js'
-import StatsCard from '@components/admin/StatsCard.vue'
-import DataCard from '@components/admin/DataCard.vue'
-import QuickAction from '@components/admin/QuickAction.vue'
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useAuthStore } from "@stores/auth.js";
+import {
+  getDashboardStats,
+  getRecentOrders,
+  getRecentUsers,
+} from "@api/adminService.js";
+import AdminLayout from "@components/admin/AdminLayout.vue";
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
 // Dashboard stats
 const stats = ref({
@@ -15,208 +18,261 @@ const stats = ref({
   totalUsers: 0,
   totalOrders: 0,
   totalRevenue: 0,
-  loading: true
-})
+  loading: true,
+});
 
-const recentOrders = ref([])
-const recentUsers = ref([])
+const recentOrders = ref([]);
+const recentUsers = ref([]);
 
 // Check admin permissions
 onMounted(async () => {
-  if (!authStore.isAuthenticated || authStore.user?.role !== 'admin') {
-    router.push('/login')
-    return
+  if (!authStore.isAuthenticated || authStore.user?.role !== "admin") {
+    router.push("/login");
+    return;
   }
-  
-  await loadDashboardData()
-})
+
+  await loadDashboardData();
+});
 
 const loadDashboardData = async () => {
   try {
-    stats.value.loading = true
-    
-    // Mock data - replace with real API calls
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    stats.value = {
-      totalProducts: 156,
-      totalUsers: 2843,
-      totalOrders: 1247,
-      totalRevenue: 58420000,
-      loading: false
+    stats.value.loading = true;
+
+    const [dashboardStats, ordersData, usersData] = await Promise.all([
+      getDashboardStats(),
+      getRecentOrders(5),
+      getRecentUsers(5),
+    ]);
+
+    if (dashboardStats?.success) {
+      stats.value = {
+        ...stats.value,
+        ...dashboardStats.data,
+        loading: false,
+      };
+    } else {
+      stats.value.loading = false;
     }
-    
-    recentOrders.value = [
-      { id: '#12345', customer: 'Nguyễn Văn A', amount: 2340000, status: 'completed', date: '2025-09-06' },
-      { id: '#12346', customer: 'Trần Thị B', amount: 1560000, status: 'pending', date: '2025-09-06' },
-      { id: '#12347', customer: 'Lê Văn C', amount: 890000, status: 'processing', date: '2025-09-05' },
-      { id: '#12348', customer: 'Phạm Thị D', amount: 3200000, status: 'completed', date: '2025-09-05' },
-      { id: '#12349', customer: 'Hoàng Văn E', amount: 670000, status: 'cancelled', date: '2025-09-04' }
-    ]
-    
-    recentUsers.value = [
-      { id: 1, name: 'Nguyễn Minh F', email: 'minht@email.com', joinDate: '2025-09-06', status: 'active' },
-      { id: 2, name: 'Trần Thị G', email: 'trang@email.com', joinDate: '2025-09-06', status: 'active' },
-      { id: 3, name: 'Lê Văn H', email: 'leh@email.com', joinDate: '2025-09-05', status: 'inactive' },
-      { id: 4, name: 'Phạm Thị I', email: 'phami@email.com', joinDate: '2025-09-05', status: 'active' }
-    ]
+
+    if (ordersData?.success) {
+      recentOrders.value = ordersData.data || [];
+    }
+
+    if (usersData?.success) {
+      recentUsers.value = (usersData.data || []).map((user) => ({
+        id: user._id || user.id,
+        name: user.name,
+        email: user.email,
+        joinDate: user.createdAt?.slice(0, 10),
+        status: user.status || "active",
+      }));
+    }
   } catch (error) {
-    console.error('Error loading dashboard data:', error)
-    stats.value.loading = false
+    console.error("Error loading dashboard data:", error);
+    stats.value = {
+      totalProducts: 0,
+      totalUsers: 0,
+      totalOrders: 0,
+      totalRevenue: 0,
+      loading: false,
+    };
+    recentOrders.value = [];
+    recentUsers.value = [];
   }
-}
+};
 
 const formatCurrency = (amount) => {
-  return new Intl.NumberFormat('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  }).format(amount)
-}
+  if (!amount || isNaN(amount)) return "0 ₫";
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+  }).format(amount);
+};
 
 const getStatusColor = (status) => {
   const colors = {
-    completed: 'text-green-600 bg-green-100',
-    pending: 'text-yellow-600 bg-yellow-100',
-    processing: 'text-blue-600 bg-blue-100',
-    cancelled: 'text-red-600 bg-red-100',
-    active: 'text-green-600 bg-green-100',
-    inactive: 'text-gray-600 bg-gray-100'
-  }
-  return colors[status] || 'text-gray-600 bg-gray-100'
-}
+    completed: "text-green-600 bg-green-100",
+    pending: "text-yellow-600 bg-yellow-100",
+    processing: "text-blue-600 bg-blue-100",
+    cancelled: "text-red-600 bg-red-100",
+    active: "text-green-600 bg-green-100",
+    inactive: "text-gray-600 bg-gray-100",
+  };
+  return colors[status] || "text-gray-600 bg-gray-100";
+};
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex justify-between items-center py-4">
-          <div class="flex items-center">
-            <h1 class="text-2xl font-bold text-gray-900">🏪 Admin Dashboard</h1>
-          </div>
-          
-          <div class="flex items-center space-x-4">
-            <button class="p-2 text-gray-500 hover:text-gray-700 transition-colors">
-              🔔
-              <span class="sr-only">Notifications</span>
-            </button>
-            
-            <div class="flex items-center space-x-2">
-              <img class="h-8 w-8 rounded-full bg-gray-300" 
-                   src="https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff" 
-                   alt="Admin">
-              <span class="text-sm font-medium text-gray-700">{{ authStore.user?.name || 'Admin' }}</span>
+  <AdminLayout 
+    title="Dashboard" 
+    subtitle="Tổng quan hệ thống"
+    icon="fas fa-chart-line"
+  >
+    <!-- Welcome Section -->
+    <div class="mb-8">
+      <div class="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl p-6 text-white relative overflow-hidden">
+        <div class="absolute inset-0 bg-black/10"></div>
+        <div class="relative z-10">
+          <h2 class="text-2xl font-bold mb-2">
+            <i class="fas fa-star mr-2"></i>
+            Chào mừng trở lại!
+          </h2>
+          <p class="text-white/90">Hôm nay là {{ new Date().toLocaleDateString('vi-VN') }}. Hãy cùng xem tổng quan hệ thống nhé!</p>
+        </div>
+        <!-- Decorative elements -->
+        <div class="absolute -top-4 -right-4 w-24 h-24 bg-white/10 rounded-full"></div>
+        <div class="absolute -bottom-8 -left-8 w-32 h-32 bg-white/5 rounded-full"></div>
+      </div>
+    </div>
+
+    <!-- Stats Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- Total Users Card -->
+      <div class="group">
+        <div class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group-hover:scale-105">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 mb-1">Tổng Người Dùng</p>
+              <p class="text-3xl font-bold text-gray-900">
+                {{ stats.loading ? '...' : stats.totalUsers.toLocaleString() }}
+              </p>
+              <p class="text-sm text-green-600 flex items-center mt-2">
+                <i class="fas fa-arrow-up mr-1"></i>
+                +12% so với tháng trước
+              </p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-r from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
+              <i class="fas fa-users text-white text-2xl"></i>
             </div>
           </div>
         </div>
       </div>
-    </header>
 
-    <!-- Navigation -->
-    <nav class="bg-indigo-600">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div class="flex space-x-8">
-          <router-link to="/admin" 
-                       class="text-white px-3 py-4 text-sm font-medium border-b-2 border-indigo-300">
-            📊 Dashboard
-          </router-link>
-          <router-link to="/admin/products" 
-                       class="text-indigo-200 hover:text-white px-3 py-4 text-sm font-medium hover:border-b-2 hover:border-white transition-all">
-            📦 Sản phẩm
-          </router-link>
-          <router-link to="/admin/orders" 
-                       class="text-indigo-200 hover:text-white px-3 py-4 text-sm font-medium hover:border-b-2 hover:border-white transition-all">
-            🛒 Đơn hàng
-          </router-link>
-          <router-link to="/admin/users" 
-                       class="text-indigo-200 hover:text-white px-3 py-4 text-sm font-medium hover:border-b-2 hover:border-white transition-all">
-            👥 Người dùng
-          </router-link>
-          <router-link to="/admin/analytics" 
-                       class="text-indigo-200 hover:text-white px-3 py-4 text-sm font-medium hover:border-b-2 hover:border-white transition-all">
-            📈 Thống kê
-          </router-link>
+      <!-- Total Products Card -->
+      <div class="group">
+        <div class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group-hover:scale-105">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 mb-1">Tổng Sản Phẩm</p>
+              <p class="text-3xl font-bold text-gray-900">
+                {{ stats.loading ? '...' : stats.totalProducts.toLocaleString() }}
+              </p>
+              <p class="text-sm text-green-600 flex items-center mt-2">
+                <i class="fas fa-arrow-up mr-1"></i>
+                +8% so với tháng trước
+              </p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
+              <i class="fas fa-box text-white text-2xl"></i>
+            </div>
+          </div>
         </div>
       </div>
-    </nav>
 
-    <!-- Main Content -->
-    <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-      <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <StatsCard 
-          title="Tổng sản phẩm"
-          :value="stats.totalProducts.toLocaleString()"
-          icon="📦"
-          color="blue"
-          trend="+12% so với tháng trước"
-          :loading="stats.loading" />
-          
-        <StatsCard 
-          title="Tổng người dùng"
-          :value="stats.totalUsers.toLocaleString()"
-          icon="👥"
-          color="green"
-          trend="+8% so với tháng trước"
-          :loading="stats.loading" />
-          
-        <StatsCard 
-          title="Tổng đơn hàng"
-          :value="stats.totalOrders.toLocaleString()"
-          icon="🛒"
-          color="yellow"
-          trend="+24% so với tháng trước"
-          :loading="stats.loading" />
-          
-        <StatsCard 
-          title="Tổng doanh thu"
-          :value="formatCurrency(stats.totalRevenue)"
-          icon="💰"
-          color="purple"
-          trend="+18% so với tháng trước"
-          :loading="stats.loading" />
+      <!-- Total Orders Card -->
+      <div class="group">
+        <div class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group-hover:scale-105">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 mb-1">Tổng Đơn Hàng</p>
+              <p class="text-3xl font-bold text-gray-900">
+                {{ stats.loading ? '...' : stats.totalOrders.toLocaleString() }}
+              </p>
+              <p class="text-sm text-green-600 flex items-center mt-2">
+                <i class="fas fa-arrow-up mr-1"></i>
+                +15% so với tháng trước
+              </p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-r from-orange-400 to-orange-600 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
+              <i class="fas fa-shopping-cart text-white text-2xl"></i>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Charts and Tables -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <!-- Recent Orders -->
-        <DataCard title="Đơn hàng gần đây" view-all-link="/admin/orders">
-          <div class="overflow-x-auto">
-            <table class="w-full">
-              <thead class="bg-gray-50">
-                <tr>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Mã đơn</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Khách hàng</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Tổng tiền</th>
-                  <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-gray-200">
-                <tr v-for="order in recentOrders" :key="order.id" class="hover:bg-gray-50">
-                  <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ order.id }}</td>
-                  <td class="px-4 py-3 text-sm text-gray-600">{{ order.customer }}</td>
-                  <td class="px-4 py-3 text-sm text-gray-900 font-medium">{{ formatCurrency(order.amount) }}</td>
-                  <td class="px-4 py-3">
-                    <span :class="`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`">
-                      {{ order.status }}
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
+      <!-- Total Revenue Card -->
+      <div class="group">
+        <div class="bg-white rounded-2xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100 group-hover:scale-105">
+          <div class="flex items-center justify-between">
+            <div>
+              <p class="text-sm font-medium text-gray-600 mb-1">Tổng Doanh Thu</p>
+              <p class="text-3xl font-bold text-gray-900">
+                {{ stats.loading ? '...' : formatCurrency(stats.totalRevenue) }}
+              </p>
+              <p class="text-sm text-green-600 flex items-center mt-2">
+                <i class="fas fa-arrow-up mr-1"></i>
+                +22% so với tháng trước
+              </p>
+            </div>
+            <div class="w-16 h-16 bg-gradient-to-r from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center group-hover:rotate-12 transition-transform duration-300">
+              <i class="fas fa-dollar-sign text-white text-2xl"></i>
+            </div>
           </div>
-        </DataCard>
+        </div>
+      </div>
+    </div>
 
-        <!-- Recent Users -->
-        <DataCard title="Người dùng mới" view-all-link="/admin/users">
+    <!-- Data Tables -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+      <!-- Recent Orders -->
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
+        <div class="p-6 border-b border-gray-100">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-shopping-cart text-orange-500 mr-2"></i>
+              Đơn hàng gần đây
+            </h3>
+            <router-link to="/admin/orders" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+              Xem tất cả <i class="fas fa-arrow-right ml-1"></i>
+            </router-link>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Mã đơn</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Khách hàng</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tổng tiền</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Trạng thái</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+              <tr v-for="order in recentOrders" :key="order._id || order.id" class="hover:bg-gray-50">
+                <td class="px-6 py-4 text-sm font-medium text-gray-900"># {{ order.id || order._id }}</td>
+                <td class="px-6 py-4 text-sm text-gray-600">{{ order.customer }}</td>
+                <td class="px-6 py-4 text-sm text-gray-900 font-medium">{{ formatCurrency(order.amount) }}</td>
+                <td class="px-6 py-4">
+                  <span :class="`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(order.status)}`">
+                    {{ order.status }}
+                  </span>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Recent Users -->
+      <div class="bg-white rounded-2xl shadow-lg border border-gray-100">
+        <div class="p-6 border-b border-gray-100">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+              <i class="fas fa-users text-blue-500 mr-2"></i>
+              Người dùng mới
+            </h3>
+            <router-link to="/admin/users" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium">
+              Xem tất cả <i class="fas fa-arrow-right ml-1"></i>
+            </router-link>
+          </div>
+        </div>
+        <div class="p-6">
           <div class="space-y-4">
-            <div v-for="user in recentUsers" :key="user.id" 
-                 class="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
+            <div v-for="user in recentUsers" :key="user.id" class="flex items-center justify-between py-3 border-b border-gray-100 last:border-b-0">
               <div class="flex items-center space-x-3">
-                <img :src="`https://ui-avatars.com/api/?name=${user.name}&background=random`" 
-                     :alt="user.name"
-                     class="h-8 w-8 rounded-full">
+                <div class="w-10 h-10 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+                  <i class="fas fa-user text-white"></i>
+                </div>
                 <div>
                   <p class="text-sm font-medium text-gray-900">{{ user.name }}</p>
                   <p class="text-xs text-gray-500">{{ user.email }}</p>
@@ -230,48 +286,57 @@ const getStatusColor = (status) => {
               </div>
             </div>
           </div>
-        </DataCard>
-      </div>
-
-      <!-- Quick Actions -->
-      <div class="mt-8">
-        <h2 class="text-lg font-semibold text-gray-900 mb-4">Thao tác nhanh</h2>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <QuickAction 
-            to="/admin/products/add"
-            icon="➕"
-            title="Thêm sản phẩm"
-            description="Thêm sản phẩm mới"
-            color="blue" />
-            
-          <QuickAction 
-            to="/admin/orders"
-            icon="📋"
-            title="Quản lý đơn hàng"
-            description="Xem và xử lý đơn hàng"
-            color="green" />
-            
-          <QuickAction 
-            to="/admin/analytics"
-            icon="📊"
-            title="Xem báo cáo"
-            description="Thống kê và phân tích"
-            color="yellow" />
-            
-          <QuickAction 
-            to="/admin/settings"
-            icon="⚙️"
-            title="Cài đặt"
-            description="Cấu hình hệ thống"
-            color="purple" />
         </div>
       </div>
-    </main>
-  </div>
-</template>
+    </div>
 
-<style scoped>
-.router-link-active {
-  @apply text-white border-b-2 border-white;
-}
-</style>
+    <!-- Quick Actions -->
+    <div class="bg-white rounded-2xl shadow-lg border border-gray-100 p-6">
+      <h3 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+        <i class="fas fa-bolt text-yellow-500 mr-2"></i>
+        Thao tác nhanh
+      </h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <router-link to="/admin/products/add" class="group p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-indigo-400 hover:bg-indigo-50 transition-all duration-200">
+          <div class="text-center">
+            <div class="w-12 h-12 bg-gradient-to-r from-indigo-400 to-indigo-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+              <i class="fas fa-plus text-white text-xl"></i>
+            </div>
+            <h4 class="font-medium text-gray-900 mb-1">Thêm sản phẩm</h4>
+            <p class="text-sm text-gray-500">Thêm sản phẩm mới vào cửa hàng</p>
+          </div>
+        </router-link>
+
+        <router-link to="/admin/orders" class="group p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-green-400 hover:bg-green-50 transition-all duration-200">
+          <div class="text-center">
+            <div class="w-12 h-12 bg-gradient-to-r from-green-400 to-green-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+              <i class="fas fa-clipboard-list text-white text-xl"></i>
+            </div>
+            <h4 class="font-medium text-gray-900 mb-1">Quản lý đơn hàng</h4>
+            <p class="text-sm text-gray-500">Xem và xử lý đơn hàng</p>
+          </div>
+        </router-link>
+
+        <router-link to="/admin/analytics" class="group p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-yellow-400 hover:bg-yellow-50 transition-all duration-200">
+          <div class="text-center">
+            <div class="w-12 h-12 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+              <i class="fas fa-chart-bar text-white text-xl"></i>
+            </div>
+            <h4 class="font-medium text-gray-900 mb-1">Xem báo cáo</h4>
+            <p class="text-sm text-gray-500">Thống kê và phân tích</p>
+          </div>
+        </router-link>
+
+        <router-link to="/admin/settings" class="group p-4 rounded-xl border-2 border-dashed border-gray-200 hover:border-purple-400 hover:bg-purple-50 transition-all duration-200">
+          <div class="text-center">
+            <div class="w-12 h-12 bg-gradient-to-r from-purple-400 to-purple-600 rounded-xl flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+              <i class="fas fa-cog text-white text-xl"></i>
+            </div>
+            <h4 class="font-medium text-gray-900 mb-1">Cài đặt</h4>
+            <p class="text-sm text-gray-500">Cấu hình hệ thống</p>
+          </div>
+        </router-link>
+      </div>
+    </div>
+  </AdminLayout>
+</template>

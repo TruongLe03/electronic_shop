@@ -23,7 +23,7 @@ const emailValidation = ref({
   isChecking: false,
   isValid: null,
   message: "",
-  exists: null
+  exists: null,
 });
 
 let emailCheckTimeout = null;
@@ -35,7 +35,7 @@ const validateEmailAsync = async (emailValue) => {
       isChecking: false,
       isValid: null,
       message: "",
-      exists: null
+      exists: null,
     };
     return;
   }
@@ -47,7 +47,7 @@ const validateEmailAsync = async (emailValue) => {
       isChecking: false,
       isValid: false,
       message: "Email không đúng định dạng",
-      exists: null
+      exists: null,
     };
     return;
   }
@@ -55,25 +55,25 @@ const validateEmailAsync = async (emailValue) => {
   try {
     emailValidation.value.isChecking = true;
     emailValidation.value.message = "Đang kiểm tra email...";
-    
+
     const response = await checkEmailExists(emailValue);
-    
+
     await nextTick();
-    
-    // Sửa lại: response đã là response.data từ authService  
+
+    // Sửa lại: response đã là response.data từ authService
     if (response.data.exists) {
       emailValidation.value = {
         isChecking: false,
         isValid: true,
         message: "Email đã đăng ký, có thể đăng nhập",
-        exists: true
+        exists: true,
       };
     } else {
       emailValidation.value = {
         isChecking: false,
         isValid: false,
         message: "Email chưa được đăng ký. Vui lòng đăng ký trước.",
-        exists: false
+        exists: false,
       };
     }
   } catch (error) {
@@ -82,7 +82,7 @@ const validateEmailAsync = async (emailValue) => {
       isChecking: false,
       isValid: false,
       message: "Không thể kiểm tra email",
-      exists: null
+      exists: null,
     };
   }
 };
@@ -92,7 +92,7 @@ watch(email, (newEmail) => {
   if (emailCheckTimeout) {
     clearTimeout(emailCheckTimeout);
   }
-  
+
   emailCheckTimeout = setTimeout(() => {
     validateEmailAsync(newEmail);
   }, 500);
@@ -152,7 +152,7 @@ const handleLogin = async () => {
     console.log("Auth store after login:", {
       user: authStore.user,
       token: authStore.token,
-      isAuthenticated: authStore.isAuthenticated
+      isAuthenticated: authStore.isAuthenticated,
     });
 
     // Hiển thị thông báo thành công
@@ -181,18 +181,20 @@ const handleLogin = async () => {
     }
   } catch (err) {
     console.error("Login error:", err);
-    
+
     // Xử lý các loại lỗi khác nhau
     if (err.message.includes("Email không tồn tại")) {
-      error.value = "Email này chưa được đăng ký. Vui lòng kiểm tra lại hoặc đăng ký tài khoản mới.";
+      error.value =
+        "Email này chưa được đăng ký. Vui lòng kiểm tra lại hoặc đăng ký tài khoản mới.";
     } else if (err.message.includes("Mật khẩu không đúng")) {
-      error.value = "Mật khẩu không đúng. Vui lòng thử lại hoặc sử dụng chức năng quên mật khẩu.";
+      error.value =
+        "Mật khẩu không đúng. Vui lòng thử lại hoặc sử dụng chức năng quên mật khẩu.";
     } else if (err.message.includes("Email không đúng định dạng")) {
       error.value = "Email không đúng định dạng. Vui lòng kiểm tra lại.";
     } else {
       error.value = err.message || "Đã có lỗi xảy ra khi đăng nhập";
     }
-    
+
     notifyLogin(false);
   } finally {
     loading.value = false;
@@ -245,9 +247,11 @@ const handleLogin = async () => {
                 :disabled="loading"
                 placeholder="Nhập email của bạn"
               />
-              
+
               <!-- Email validation icons -->
-              <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+              <div
+                class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none"
+              >
                 <!-- Loading icon -->
                 <svg
                   v-if="emailValidation.isChecking"
@@ -269,7 +273,7 @@ const handleLogin = async () => {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                
+
                 <!-- Success icon -->
                 <svg
                   v-else-if="emailValidation.isValid === true"
@@ -283,7 +287,7 @@ const handleLogin = async () => {
                     clip-rule="evenodd"
                   />
                 </svg>
-                
+
                 <!-- Error icon -->
                 <svg
                   v-else-if="emailValidation.isValid === false"
@@ -299,7 +303,7 @@ const handleLogin = async () => {
                 </svg>
               </div>
             </div>
-            
+
             <!-- Email validation message -->
             <div
               v-if="emailValidation.message && email"
