@@ -1,53 +1,26 @@
-import User from "../models/user.model.js";
-import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { login} from "../services/auth.service.js";
 
-export const login = async (req, res) => {
+export const handleLogin = async (req, res) => {
   try {
     const { email, password } = req.body;
-
-    // Tìm user theo email
-    const user = await User.findOne({ email });
-    if (!user) {
+    if (!email || !password) {
       return res
-        .status(401)
-        .json({ message: "Email hoặc mật khẩu không đúng" });
+        .status(400)
+        .json({ message: "Vui lòng điền đầy đủ thông tin bắt buộc" });
     }
-
-    // Kiểm tra trạng thái tài khoản
-    if (user.status === "inactive") {
-      return res.status(401).json({ message: "Tài khoản đã bị khóa" });
-    }
-
-    // So sánh mật khẩu
-    const validPassword = await bcrypt.compare(password, user.password);
-    if (!validPassword) {
-      return res
-        .status(401)
-        .json({ message: "Email hoặc mật khẩu không đúng" });
-    }
-
-    // Tạo token
-    const token = jwt.sign(
-      { id: user._id, role: user.role },
-      process.env.JWT_SECRET_KEY,
-      { expiresIn: "1d" }
-    );
-
+    const { user, token } = await login(email, password);
     return res.json({
       message: "Đăng nhập thành công",
       token,
       user: {
         id: user._id,
-        email: user.email,
         name: user.name,
+        email: user.email,
         role: user.role,
       },
     });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Lỗi server", error: error.message });
+    return res.status(500).json({ message: "Lỗi server", error: error.message });
   }
 };
 
