@@ -1,18 +1,21 @@
 # 🛒 Electronic Shop - E-commerce Platform
 
 ## 📋 Mô tả dự án
+
 Ứng dụng thương mại điện tử hiện đại cho cửa hàng điện tử, được xây dựng với Vue 3 và Node.js/Express.
 
 ## 🛠️ Công nghệ sử dụng
 
 ### Frontend
+
 - **Vue 3** - Framework JavaScript progressive
 - **Vue Router** - Routing cho SPA
 - **Tailwind CSS** - Framework CSS utility-first
 - **Vite** - Build tool nhanh
 - **Vue Loading Overlay** - Component loading chuyên nghiệp
 
-### Backend  
+### Backend
+
 - **Node.js** - Runtime JavaScript
 - **Express.js** - Web framework
 - **MongoDB** - Cơ sở dữ liệu NoSQL
@@ -24,7 +27,7 @@
 
 ```
 electronic_shop/
-├── electronic_client/     # Frontend Vue 3 application
+├── FE/                    # Frontend Vue 3 application
 │   ├── src/
 │   │   ├── api/           # API service layer
 │   │   ├── components/    # Vue components
@@ -33,7 +36,7 @@ electronic_shop/
 │   │   ├── routes/        # Router configuration
 │   │   └── utils/         # Utility functions
 │   └── public/            # Static assets
-└── electronic_server/     # Backend Express application
+└── BE/     # Backend Express application
     ├── src/
     │   ├── controllers/   # Route controllers
     │   ├── models/        # Mongoose models
@@ -45,6 +48,7 @@ electronic_shop/
 ## ✨ Tính năng chính
 
 ### 🎯 Người dùng
+
 - ✅ Đăng ký/Đăng nhập tài khoản
 - ✅ Xem danh sách sản phẩm với phân trang
 - ✅ Chi tiết sản phẩm với gallery ảnh
@@ -54,6 +58,7 @@ electronic_shop/
 - ✅ Đổi mật khẩu
 
 ### 🏪 Giao diện
+
 - ✅ Responsive design cho mọi thiết bị
 - ✅ Hero section với animation
 - ✅ Flash sale và sản phẩm nổi bật
@@ -63,6 +68,7 @@ electronic_shop/
 - ✅ Trải nghiệm UX mượt mà
 
 ### 🔧 Kỹ thuật
+
 - ✅ Authentication với JWT
 - ✅ State management hiệu quả
 - ✅ API service layer
@@ -73,20 +79,23 @@ electronic_shop/
 ## 🚀 Cài đặt và chạy dự án
 
 ### Yêu cầu hệ thống
+
 - Node.js >= 16.0.0
 - MongoDB >= 4.4
 - npm hoặc yarn
 
 ### Backend Setup
+
 ```bash
 cd electronic_server
 npm install
 npm start
 ```
 
-### Frontend Setup  
+### Frontend Setup
+
 ```bash
-cd electronic_client
+cd FE
 npm install
 npm run dev
 ```
@@ -94,6 +103,7 @@ npm run dev
 ## 🔑 Environment Variables
 
 ### Backend (.env)
+
 ```env
 NODE_ENV=development
 PORT=5000
@@ -102,6 +112,7 @@ JWT_SECRET=your_jwt_secret_key
 ```
 
 ### Frontend (.env)
+
 ```env
 VITE_API_URL=http://localhost:5000/api
 ```
@@ -109,25 +120,30 @@ VITE_API_URL=http://localhost:5000/api
 ## 📱 Screenshots
 
 ### Trang chủ
+
 - Hero section với animation
 - Statistics và categories nổi bật
 - Flash sale và sản phẩm mới
 - Newsletter signup
 
 ### Chi tiết sản phẩm
+
 - Gallery ảnh với zoom
 - Thông tin chi tiết sản phẩm
 - Specifications tabs
 - Related products
 
 ### Giỏ hàng
+
 - Quản lý số lượng sản phẩm
 - Tính toán tổng tiền tự động
 - Guest cart support
 - Responsive design
 
 ## 🤝 Đóng góp
+
 Mọi đóng góp đều được chào đón! Vui lòng:
+
 1. Fork repository
 2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
@@ -135,17 +151,21 @@ Mọi đóng góp đều được chào đón! Vui lòng:
 5. Mở Pull Request
 
 ## 📄 License
+
 Distributed under the MIT License. See `LICENSE` for more information.
 
 ## 📞 Liên hệ
+
 - **Author**: truongle03
 - **Project Link**: https://github.com/truongle03/electronic_shop
 
 ## 🎉 Acknowledgments
+
 - Vue.js team for the amazing framework
 - Tailwind CSS for the utility-first CSS framework
 - MongoDB team for the powerful database
 - All contributors and testers
 
 ---
+
 ⭐ **Nếu dự án hữu ích, hãy cho một star nhé!** ⭐
