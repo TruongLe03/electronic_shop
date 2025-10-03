@@ -2,9 +2,13 @@ import express from "express";
 import {
   createPayment,
   vnpayReturn,
-  momoIpn,
-  confirmCodPayment,
-  getPaymentStatus,
+  vnpayIPN,
+  momoIPN,
+  momoReturn,
+  getPaymentByOrderId,
+  getUserPayments,
+  refundPayment,
+  verifyPaymentStatus
 } from "../controllers/payment.controller.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
@@ -13,16 +17,20 @@ const paymentRouter = express.Router();
 // Create payment for order
 paymentRouter.post("/create", authMiddleware, createPayment);
 
-// VNPay return URL
+// VNPay routes
 paymentRouter.get("/vnpay/return", vnpayReturn);
+paymentRouter.post("/vnpay/ipn", vnpayIPN);
 
-// MoMo IPN
-paymentRouter.post("/momo/ipn", momoIpn);
+// MoMo routes
+paymentRouter.post("/momo/ipn", momoIPN);
+paymentRouter.post("/momo/return", momoReturn);
 
-// Confirm COD payment (admin only)
-paymentRouter.put("/cod/:paymentId/confirm", authMiddleware, confirmCodPayment);
+// Get payment info
+paymentRouter.get("/order/:orderId", authMiddleware, getPaymentByOrderId);
+paymentRouter.get("/user", authMiddleware, getUserPayments);
+paymentRouter.get("/:paymentId/verify", authMiddleware, verifyPaymentStatus);
 
-// Get payment status
-paymentRouter.get("/:paymentId/status", getPaymentStatus);
+// Admin routes
+paymentRouter.post("/:paymentId/refund", authMiddleware, refundPayment);
 
 export default paymentRouter;

@@ -65,8 +65,8 @@ const productSchema = new mongoose.Schema(
     },
     status: { 
       type: String, 
-      enum: ['Còn hàng', 'Hết hàng', 'Ngừng kinh doanh', 'Sắp về hàng'],
-      default: "Còn hàng" 
+      enum: ['Còn hàng', 'Hết hàng', 'Ngừng kinh doanh', 'Sắp về hàng', 'active', 'inactive', 'discontinued'],
+      default: "active" 
     },
     rating: { 
       type: Number,

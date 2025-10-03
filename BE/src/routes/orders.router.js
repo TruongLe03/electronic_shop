@@ -4,12 +4,14 @@ import {
   getOrderById,
   getUserOrders,
   updateOrderStatus,
+  getAllOrders,
+  getOrderStats,
   cancelOrder,
-  getOrderStatistics,
   createOrderFromCart,
   createDirectOrder,
   updateOrderInfo,
   confirmPayment,
+  getOrderStatistics
 } from "../controllers/orders.controller.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 

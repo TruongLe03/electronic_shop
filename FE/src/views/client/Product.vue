@@ -4,11 +4,11 @@ import { useRoute } from "vue-router";
 import Header from "@components/client/Header.vue";
 import ProductCard from "@components/client/productCard.vue";
 import Footer from "@components/client/Footer.vue";
-import { useCartStore } from "@stores/cart";
-import { useCategories } from "@composables/useCategories";
-import { useProducts } from "@composables/useProducts";
-import { usePagination } from "@composables/usePagination";
-import { useProductFilters } from "@composables/useProductFilters";
+import { useCartStore } from "@stores/cart.js";
+import { useCategories } from "@/composables/client/useCategories.js";
+import { useProducts } from "@/composables/client/useProducts.js";
+import { usePagination } from "@/composables/client/usePagination.js";
+import { useProductFilters } from "@/composables/client/useProductFilters.js";
 
 const cartStore = useCartStore();
 const quantity = ref(1);
@@ -614,7 +614,9 @@ onMounted(async () => {
 
       <!-- Products Grid -->
       <div v-if="!loading && !error && products.length > 0">
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4 lg:gap-6">
+        <div
+          class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-2 sm:gap-3 md:gap-4 lg:gap-6"
+        >
           <ProductCard
             v-for="product in getFilteredAndSortedProducts()"
             :key="product._id || product.id"

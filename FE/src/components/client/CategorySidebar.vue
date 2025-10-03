@@ -1,7 +1,7 @@
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { useCategories } from '@composables/useCategories';
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
+import { useCategories } from "@/composables/client/useCategories.js";
 
 const router = useRouter();
 const { categories, loading, error, loadCategories } = useCategories();
@@ -11,15 +11,15 @@ onMounted(async () => {
   try {
     await loadCategories();
   } catch (err) {
-    console.error('Failed to load categories:', err);
+    console.error("Failed to load categories:", err);
   }
 });
 
 // Navigate to products page with category filter
 const navigateToCategory = (category) => {
   router.push({
-    path: '/products',
-    query: { categoryId: category.id }
+    path: "/products",
+    query: { categoryId: category.id },
   });
 };
 </script>
@@ -60,22 +60,21 @@ const navigateToCategory = (category) => {
       >
         <!-- Category Icon -->
         <div class="w-8 h-8 mr-3 flex items-center justify-center">
-          <img 
-            v-if="category.image" 
-            :src="category.image" 
+          <img
+            v-if="category.image"
+            :src="category.image"
             :alt="category.name"
             class="w-6 h-6 object-contain"
             @error="$event.target.style.display = 'none'"
           />
-          <i 
-            v-else
-            class="fas fa-microchip text-blue-500 text-sm"
-          ></i>
+          <i v-else class="fas fa-microchip text-blue-500 text-sm"></i>
         </div>
 
         <!-- Category Info -->
         <div class="flex-1">
-          <div class="font-medium text-gray-900 group-hover:text-blue-600 transition-colors">
+          <div
+            class="font-medium text-gray-900 group-hover:text-blue-600 transition-colors"
+          >
             {{ category.name }}
           </div>
           <div v-if="category.description" class="text-xs text-gray-500 mt-1">

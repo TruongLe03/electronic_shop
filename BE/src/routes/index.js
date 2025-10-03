@@ -8,6 +8,7 @@ import ordersRouter from "./orders.router.js";
 import inventoryRouter from "./inventory.router.js";
 import paymentRouter from "./payment.router.js";
 import otpRouter from "./otp.router.js";
+import adminRouter from "./admin.router.js";
 
 const appRouter = express();
 
@@ -20,5 +21,6 @@ appRouter.use("/orders", ordersRouter);
 appRouter.use("/inventory", inventoryRouter);
 appRouter.use("/payment", paymentRouter);
 appRouter.use("/otp", otpRouter);
+appRouter.use("/admin", adminRouter);
 
 export default appRouter;

@@ -1,83 +1,32 @@
-import User from "../models/user.model.js";
-import bcrypt from "bcryptjs";
+import { UserService } from "../services/userService.js";
+import { ResponseUtil, asyncHandler } from "../utils/response.util.js";
+import { ValidationUtil } from "../utils/validation.util.js";
 
 // Lấy thông tin profile
-export const getProfile = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select(
-      "-password -resetPasswordToken -resetPasswordExpires"
-    );
-
-    if (!user) {
-      return res.status(404).json({ message: "Không tìm thấy người dùng" });
-    }
-
-    res.json({
-      success: true,
-      data: user,
-    });
-  } catch (error) {
-    console.error("Get profile error:", error);
-    res.status(500).json({ message: "Lỗi server" });
-  }
-};
+export const getProfile = asyncHandler(async (req, res) => {
+  const user = await UserService.getUserById(req.user.id);
+  return ResponseUtil.success(res, user, "Lấy thông tin profile thành công");
+});
 
 // Cập nhật profile
-export const updateProfile = async (req, res) => {
-  try {
-    const { name, email, phone, address } = req.body;
-    const userId = req.user.id;
+export const updateProfile = asyncHandler(async (req, res) => {
+  const updateData = req.body;
+  const userId = req.user.id;
 
-    // Validate required fields
-    if (!name || !phone) {
-      return res.status(400).json({ message: "Tên và số điện thoại là bắt buộc" });
-    }
-
-    // Validate phone number
-    const phoneRegex = /^[0-9]{10}$/;
-    if (!phoneRegex.test(phone)) {
-      return res.status(400).json({ message: "Số điện thoại không hợp lệ" });
-    }
-
-    // Kiểm tra email đã tồn tại (nếu thay đổi)
-    if (email) {
-      const existingUser = await User.findOne({
-        email,
-        _id: { $ne: userId },
-      });
-
-      if (existingUser) {
-        return res.status(400).json({ message: "Email đã được sử dụng" });
-      }
-    }
-
-    const updatedUser = await User.findByIdAndUpdate(
-      userId,
-      {
-        name,
-        username: name, // Also update username field
-        phone_number: phone,
-        phone: phone, // Update both phone fields for compatibility  
-        address: address || '',
-        updatedAt: new Date(),
-      },
-      { new: true, runValidators: true }
-    ).select("-password -resetPasswordToken -resetPasswordExpires");
-
-    res.json({
-      success: true,
-      message: "Cập nhật thông tin thành công",
-      data: updatedUser,
-    });
-  } catch (error) {
-    console.error("Update profile error:", error);
-    if (error.name === "ValidationError") {
-      const errors = Object.values(error.errors).map((err) => err.message);
-      return res.status(400).json({ message: errors.join(", ") });
-    }
-    res.status(500).json({ message: "Lỗi server" });
+  // Validate phone number if provided
+  if (updateData.phone_number && !ValidationUtil.isValidPhoneNumber(updateData.phone_number)) {
+    return ResponseUtil.validationError(res, ['Số điện thoại không hợp lệ']);
   }
-};
+
+  // Validate email if provided
+  if (updateData.email && !ValidationUtil.isValidEmail(updateData.email)) {
+    return ResponseUtil.validationError(res, ['Email không hợp lệ']);
+  }
+
+  const updatedUser = await UserService.updateUser(userId, updateData);
+  
+  return ResponseUtil.success(res, updatedUser, "Cập nhật profile thành công");
+});
 
 // Đổi mật khẩu
 export const changePassword = async (req, res) => {

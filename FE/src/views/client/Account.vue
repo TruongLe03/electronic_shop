@@ -1083,7 +1083,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from "vue";
 import { useAuthStore } from "@stores/auth";
-import { useNotification } from "@composables/useNotification";
+import { useNotification } from "@/composables/client/useNotification";
 import { userService } from "@api/userService";
 import { orderService } from "@api/orderService";
 import { getFullImage } from "@utils/imageUtils";

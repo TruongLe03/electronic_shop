@@ -1,4 +1,5 @@
 import axiosInstance from "../utils/axiosConfig";
+import { extractResponseData } from "../utils/responseUtils";
 
 // Lấy tất cả sản phẩm với filtering và phân trang
 export const getProducts = async (options = {}) => {
@@ -23,12 +24,15 @@ export const getProducts = async (options = {}) => {
 
     const response = await axiosInstance.get(`/products?${params}`);
 
+    // Extract data using utility function
+    const responseData = extractResponseData(response);
+    
     return {
-      data: response.data.products,
-      total: response.data.total,
-      page: response.data.page,
-      totalPages: response.data.totalPages,
-      filters: response.data.filters
+      data: responseData.products || responseData,
+      total: responseData.total,
+      page: responseData.page || responseData.pagination?.currentPage,
+      totalPages: responseData.totalPages || responseData.pagination?.totalPages,
+      pagination: responseData.pagination
     };
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -42,14 +46,8 @@ export const getProductById = async (id) => {
     const response = await axiosInstance.get(`/products/${id}`);
     console.log("Product by ID response:", response.data);
 
-    // Handle different response structures for single product
-    if (response.data.product) {
-      return { data: response.data.product };
-    } else if (response.data.data) {
-      return { data: response.data.data };
-    } else {
-      return { data: response.data };
-    }
+    // Extract data using utility function
+    return { data: extractResponseData(response) };
   } catch (error) {
     console.error(`Error fetching product with ID ${id}:`, error);
     throw error;
@@ -146,11 +144,15 @@ export const getProductsByCategory = async (categoryId, page = 1, limit = 12) =>
       params: { page, limit }
     });
 
+    // Extract data using utility function
+    const responseData = extractResponseData(response);
+    console.log('Products by category responseData:', responseData);
+
     return {
-      data: response.data.products,
-      total: response.data.total,
-      page: response.data.page,
-      totalPages: response.data.totalPages,
+      data: responseData.products || responseData,
+      total: responseData.total,
+      page: responseData.page,
+      totalPages: responseData.totalPages,
     };
   } catch (error) {
     console.error(`Error fetching products for category ${categoryId}:`, error);

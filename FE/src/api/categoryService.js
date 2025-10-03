@@ -1,4 +1,5 @@
 import axiosInstance from "../utils/axiosConfig";
+import { extractResponseData } from "../utils/responseUtils";
 
 // Lấy tất cả categories với options
 export const getCategories = async (options = {}) => {
@@ -12,20 +13,30 @@ export const getCategories = async (options = {}) => {
 
     const response = await axiosInstance.get(`/categories?${params}`);
     
-    // Handle both paginated and non-paginated responses
-    if (response.data.categories) {
+    // Extract data using responseUtils
+    const responseData = extractResponseData(response);
+    console.log('Categories API responseData:', responseData);
+    
+    // Backend trả về trực tiếp mảng categories
+    if (Array.isArray(responseData)) {
       return {
-        categories: response.data.categories.map(transformCategory),
-        pagination: {
-          total: response.data.total,
-          page: response.data.page,
-          totalPages: response.data.totalPages
+        categories: responseData.map(transformCategory),
+        pagination: null
+      };
+    } else if (responseData.categories) {
+      // Nếu có structure với categories property
+      return {
+        categories: responseData.categories.map(transformCategory),
+        pagination: responseData.pagination || {
+          total: responseData.total,
+          page: responseData.page,
+          totalPages: responseData.totalPages
         }
       };
     } else {
-      // Legacy format
+      // Fallback - trả về empty array
       return {
-        categories: response.data.map(transformCategory),
+        categories: [],
         pagination: null
       };
     }
@@ -39,10 +50,12 @@ export const getCategories = async (options = {}) => {
 export const getCategoryById = async (id) => {
   try {
     const response = await axiosInstance.get(`/categories/${id}`);
+    const category = extractResponseData(response);
+    
     return {
-      category: transformCategory(response.data.category),
-      subcategories: response.data.category.subcategories?.map(transformCategory) || [],
-      productCount: response.data.category.productCount || 0
+      category: transformCategory(category),
+      subcategories: category.subcategories?.map(transformCategory) || [],
+      productCount: category.productCount || 0
     };
   } catch (error) {
     console.error("Error fetching category:", error);
@@ -54,7 +67,8 @@ export const getCategoryById = async (id) => {
 export const getSubcategories = async (parentId) => {
   try {
     const response = await axiosInstance.get(`/categories/${parentId}/subcategories`);
-    return response.data.subcategories.map(transformCategory);
+    const subcategories = extractResponseData(response);
+    return subcategories.map(transformCategory);
   } catch (error) {
     console.error("Error fetching subcategories:", error);
     throw error;
@@ -65,7 +79,8 @@ export const getSubcategories = async (parentId) => {
 export const createCategory = async (categoryData) => {
   try {
     const response = await axiosInstance.post("/categories", categoryData);
-    return transformCategory(response.data);
+    const category = extractResponseData(response);
+    return transformCategory(category);
   } catch (error) {
     console.error("Error creating category:", error);
     throw error;
@@ -76,7 +91,8 @@ export const createCategory = async (categoryData) => {
 export const updateCategory = async (id, categoryData) => {
   try {
     const response = await axiosInstance.put(`/categories/${id}`, categoryData);
-    return transformCategory(response.data);
+    const category = extractResponseData(response);
+    return transformCategory(category);
   } catch (error) {
     console.error("Error updating category:", error);
     throw error;
@@ -87,7 +103,7 @@ export const updateCategory = async (id, categoryData) => {
 export const deleteCategory = async (id) => {
   try {
     const response = await axiosInstance.delete(`/categories/${id}`);
-    return response.data;
+    return extractResponseData(response);
   } catch (error) {
     console.error("Error deleting category:", error);
     throw error;

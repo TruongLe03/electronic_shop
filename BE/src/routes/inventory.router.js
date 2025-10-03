@@ -1,5 +1,15 @@
 import express from "express";
-import inventoryController from "../controllers/inventory.controller.js";
+import {
+  getInventoryByProduct,
+  getAllInventories,
+  updateInventory,
+  createInventory,
+  adjustStock,
+  getStockHistory,
+  reserveStock,
+  releaseReservedStock,
+  getLowStockReport
+} from "../controllers/inventory.controller.js";
 import authMiddleware from "../middleware/authMiddleware.js";
 
 const inventoryRouter = express.Router();
@@ -17,40 +27,25 @@ const adminOnly = (req, res, next) => {
 };
 
 // Public routes (no auth required)
-inventoryRouter.get("/check/:productId", inventoryController.checkStock);
+inventoryRouter.get("/check/:productId", getInventoryByProduct); // Check stock for adding to cart
 
 // Apply auth middleware to protected routes
 inventoryRouter.use(authMiddleware);
 inventoryRouter.use(adminOnly);
 
 // Admin only routes
-inventoryRouter.get("/", inventoryController.getInventories);
+inventoryRouter.get("/", getAllInventories);
+inventoryRouter.get("/product/:productId", getInventoryByProduct);
+inventoryRouter.get("/low-stock", getLowStockReport);
+inventoryRouter.get("/history/:productId", getStockHistory);
 
-// Get inventory dashboard stats
-inventoryRouter.get("/stats", inventoryController.getInventoryStats);
+// Update/Create inventory
+inventoryRouter.put("/product/:productId", updateInventory);
+inventoryRouter.post("/create", createInventory);
 
-// Run stock migration (one-time setup)
-inventoryRouter.post("/migrate-stock", inventoryController.runStockMigration);
-
-// Get inventory by product ID
-inventoryRouter.get(
-  "/product/:productId",
-  inventoryController.getInventoryByProduct
-);
-
-// Get stock movements history for a product
-inventoryRouter.get(
-  "/movements/:productId",
-  inventoryController.getStockMovements
-);
-
-// Update inventory settings
-inventoryRouter.put("/product/:productId", inventoryController.updateInventory);
-
-// Add stock (stock in)
-inventoryRouter.post("/add/:productId", inventoryController.addStock);
-
-// Remove stock (stock out)
-inventoryRouter.post("/remove/:productId", inventoryController.removeStock);
+// Stock operations
+inventoryRouter.post("/adjust/:productId", adjustStock);
+inventoryRouter.post("/reserve", reserveStock);
+inventoryRouter.post("/release", releaseReservedStock);
 
 export default inventoryRouter;

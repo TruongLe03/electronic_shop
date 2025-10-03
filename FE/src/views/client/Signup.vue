@@ -3,8 +3,8 @@ import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@stores/auth";
 import { register, validateEmailFormat, checkEmailExists } from "@api/authService";
-import { useNotification } from "@composables/useNotification";
-import { useGlobalLoading } from "@composables/useLoading";
+import { useNotification } from "@/composables/client/useNotification";
+import { useGlobalLoading } from "@/composables/client/useLoading";
 
 const router = useRouter();
 const authStore = useAuthStore();
@@ -125,8 +125,8 @@ const validateEmailAsync = async (email) => {
     const response = await checkEmailExists(email);
     console.log('Email validation response:', response); // Debug log
     
-    // Sửa lại: response đã là response.data từ authService
-    if (response.data.exists) {
+    // response đã được extract bởi extractResponseData utility
+    if (response.exists) {
       emailValidation.value = {
         isChecking: false,
         isValid: false,

@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import { getProducts, getProductsByCategory, searchProducts } from '@api/productService'
+import { getProducts, getProductsByCategory, searchProducts } from '@/api/productService'
 
 export function useProducts() {
   const products = ref([])
@@ -47,12 +47,16 @@ export function useProducts() {
       }
 
       console.log('API Response:', result)
+      console.log('Products data:', result?.data)
+      console.log('Total:', result?.total)
 
       if (result && result.data) {
         products.value = result.data
         totalProducts.value = result.total
         totalPages.value = result.totalPages || Math.ceil(result.total / itemsPerPage)
+        console.log('Products loaded successfully:', products.value.length, 'items')
       } else {
+        console.error('Invalid product data structure:', result)
         throw new Error('Dữ liệu sản phẩm không hợp lệ')
       }
     } catch (err) {

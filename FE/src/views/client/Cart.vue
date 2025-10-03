@@ -2,8 +2,8 @@
 import { useCartStore } from "@stores/cart";
 import { useAuthStore } from "@stores/auth";
 import { useRouter } from "vue-router";
-import { useNotification } from "@composables/useNotification";
-import { useGlobalLoading } from "@composables/useLoading";
+import { useNotification } from "@/composables/client/useNotification";
+import { useGlobalLoading } from "@/composables/client/useLoading";
 import { orderService } from "@api/orderService";
 import Header from "@components/client/Header.vue";
 import Footer from "@components/client/Footer.vue";

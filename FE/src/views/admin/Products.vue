@@ -1,349 +1,244 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
+import { useAdminProducts } from "@/composables/admin/useAdminProducts.js";
 import AdminLayout from "@/components/admin/AdminLayout.vue";
 import ModernStatsCard from "@/components/admin/ModernStatsCard.vue";
 
 const router = useRouter();
 const authStore = useAuthStore();
 
-const products = ref([]);
-const loading = ref(true);
-const searchQuery = ref("");
-const selectedCategory = ref("all");
-const sortBy = ref("name");
+// Composables
+const {
+  products,
+  categories,
+  totalProducts,
+  loading,
+  error,
+  pagination,
+  filters,
+  fetchProducts,
+  fetchCategories,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  toggleProductStatus,
+  goToPage,
+  nextPage,
+  prevPage,
+  applyFilters,
+  clearFilters,
+  search,
+  sortBy,
+  getStatusColor,
+  getStatusText,
+  formatCurrency,
+  formatNumber,
+  formatDate,
+  truncateText,
+} = useAdminProducts();
 
-// Modal state
-const showProductModal = ref(false);
-const isEditMode = ref(false);
-const currentProduct = ref(null);
+// Modal states
+const showCreateModal = ref(false);
+const showEditModal = ref(false);
+const showDeleteModal = ref(false);
+const productToDelete = ref(null);
 
 // Form data
 const productForm = ref({
   name: "",
+  description: "",
   category: "",
   price: 0,
+  salePrice: 0,
   stock: 0,
-  status: "active",
-  image: "",
-  sku: "",
-  description: "",
+  imageUrl: "",
+  status: "draft",
 });
 
-const stats = ref({
-  totalProducts: 0,
-  activeProducts: 0,
-  outOfStock: 0,
-  lowStock: 0,
+// Search
+const searchTerm = ref("");
+let searchTimeout = null;
+const debouncedSearch = () => {
+  clearTimeout(searchTimeout);
+  searchTimeout = setTimeout(() => {
+    search(searchTerm.value);
+  }, 500);
+};
+
+// Computed
+const activeProductsCount = computed(() => {
+  return products.value.filter((p) => p.status === "active").length;
 });
 
-const categories = ref([
-  { id: "all", name: "Tất cả" },
-  { id: "smartphone", name: "Điện thoại" },
-  { id: "laptop", name: "Laptop" },
-  { id: "tablet", name: "Tablet" },
-  { id: "accessories", name: "Phụ kiện" },
-]);
-
-onMounted(async () => {
-  if (!authStore.isAuthenticated || authStore.user?.role !== "admin") {
-    router.push("/login");
-    return;
-  }
-
-  await loadProducts();
+const outOfStockCount = computed(() => {
+  return products.value.filter((p) => (p.stock || 0) === 0).length;
 });
 
-const loadProducts = async () => {
-  try {
-    loading.value = true;
+const draftProductsCount = computed(() => {
+  return products.value.filter((p) => p.status === "draft").length;
+});
 
-    // Mock data - replace with real API calls
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+const visiblePages = computed(() => {
+  const pages = [];
+  const total = pagination.totalPages;
+  const current = pagination.page;
 
-    products.value = [
-      {
-        id: 1,
-        name: "iPhone 15 Pro Max",
-        category: "smartphone",
-        price: 32990000,
-        stock: 15,
-        status: "active",
-        image: "https://via.placeholder.com/100x100",
-        sku: "IP15PM-256",
-        createdAt: "2025-09-01",
-      },
-      {
-        id: 2,
-        name: "MacBook Pro M3",
-        category: "laptop",
-        price: 54990000,
-        stock: 8,
-        status: "active",
-        image: "https://via.placeholder.com/100x100",
-        sku: "MBP-M3-14",
-        createdAt: "2025-09-02",
-      },
-      {
-        id: 3,
-        name: "iPad Air",
-        category: "tablet",
-        price: 16990000,
-        stock: 0,
-        status: "out_of_stock",
-        image: "https://via.placeholder.com/100x100",
-        sku: "IPAD-AIR-64",
-        createdAt: "2025-09-03",
-      },
-      {
-        id: 4,
-        name: "AirPods Pro",
-        category: "accessories",
-        price: 6490000,
-        stock: 3,
-        status: "low_stock",
-        image: "https://via.placeholder.com/100x100",
-        sku: "AIRP-PRO-2",
-        createdAt: "2025-09-04",
-      },
-      {
-        id: 5,
-        name: "Samsung Galaxy S24",
-        category: "smartphone",
-        price: 25990000,
-        stock: 12,
-        status: "active",
-        image: "https://via.placeholder.com/100x100",
-        sku: "SGS24-256",
-        createdAt: "2025-09-05",
-      },
-    ];
-
-    stats.value = {
-      totalProducts: products.value.length,
-      activeProducts: products.value.filter((p) => p.status === "active")
-        .length,
-      outOfStock: products.value.filter((p) => p.stock === 0).length,
-      lowStock: products.value.filter((p) => p.stock > 0 && p.stock <= 5)
-        .length,
-    };
-  } catch (error) {
-    console.error("Error loading products:", error);
-  } finally {
-    loading.value = false;
-  }
-};
-
-const formatCurrency = (amount) => {
-  return new Intl.NumberFormat("vi-VN", {
-    style: "currency",
-    currency: "VND",
-  }).format(amount);
-};
-
-const getStatusColor = (status) => {
-  const colors = {
-    active:
-      "text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30",
-    out_of_stock:
-      "text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-900/30",
-    low_stock:
-      "text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30",
-    inactive:
-      "text-gray-700 bg-gray-100 dark:text-gray-400 dark:bg-gray-900/30",
-  };
-  return colors[status] || "text-gray-700 bg-gray-100";
-};
-
-const getStatusText = (status) => {
-  const statusText = {
-    active: "Còn hàng",
-    out_of_stock: "Hết hàng",
-    low_stock: "Sắp hết",
-    inactive: "Ngừng bán",
-  };
-  return statusText[status] || status;
-};
-
-const addProduct = () => {
-  isEditMode.value = false;
-  currentProduct.value = null;
-  productForm.value = {
-    name: "",
-    category: "",
-    price: 0,
-    stock: 0,
-    status: "active",
-    image: "",
-    sku: "",
-    description: "",
-  };
-  showProductModal.value = true;
-};
-
-const editProduct = (product) => {
-  isEditMode.value = true;
-  currentProduct.value = product;
-  productForm.value = {
-    name: product.name,
-    category: product.category,
-    price: product.price,
-    stock: product.stock,
-    status: product.status,
-    image: product.image,
-    sku: product.sku,
-    description: product.description || "",
-  };
-  showProductModal.value = true;
-};
-
-const deleteProduct = async (product) => {
-  if (
-    confirm(
-      `Bạn có chắc muốn xóa sản phẩm "${product.name}"?\nHành động này không thể hoàn tác!`
-    )
-  ) {
-    try {
-      loading.value = true;
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      // Remove from local array
-      const index = products.value.findIndex((p) => p.id === product.id);
-      if (index > -1) {
-        products.value.splice(index, 1);
-      }
-
-      // Update stats
-      stats.value = {
-        totalProducts: products.value.length,
-        activeProducts: products.value.filter((p) => p.status === "active")
-          .length,
-        outOfStock: products.value.filter((p) => p.stock === 0).length,
-        lowStock: products.value.filter((p) => p.stock > 0 && p.stock <= 5)
-          .length,
-      };
-
-      alert(`Đã xóa sản phẩm "${product.name}" thành công!`);
-    } catch (error) {
-      console.error("Error deleting product:", error);
-      alert("Có lỗi xảy ra khi xóa sản phẩm!");
-    } finally {
-      loading.value = false;
+  if (total <= 7) {
+    for (let i = 1; i <= total; i++) {
+      pages.push(i);
+    }
+  } else {
+    if (current <= 4) {
+      for (let i = 1; i <= 5; i++) pages.push(i);
+      pages.push("...");
+      pages.push(total);
+    } else if (current >= total - 3) {
+      pages.push(1);
+      pages.push("...");
+      for (let i = total - 4; i <= total; i++) pages.push(i);
+    } else {
+      pages.push(1);
+      pages.push("...");
+      for (let i = current - 1; i <= current + 1; i++) pages.push(i);
+      pages.push("...");
+      pages.push(total);
     }
   }
-};
 
-const viewProduct = (product) => {
-  console.log("View product details:", product);
-  // Navigate to product detail page or open modal
+  return pages;
+});
+
+// Methods
+const resetForm = () => {
+  productForm.value = {
+    name: "",
+    description: "",
+    category: "",
+    price: 0,
+    salePrice: 0,
+    stock: 0,
+    imageUrl: "",
+    status: "draft",
+  };
 };
 
 const closeModal = () => {
-  showProductModal.value = false;
-  isEditMode.value = false;
-  currentProduct.value = null;
+  showCreateModal.value = false;
+  showEditModal.value = false;
+  resetForm();
 };
 
-const saveProduct = async () => {
+const editProduct = (product) => {
+  productForm.value = {
+    id: product._id,
+    name: product.name,
+    description: product.description || "",
+    category: product.category?._id || "",
+    price: product.price,
+    salePrice: product.salePrice || 0,
+    stock: product.stock || 0,
+    imageUrl: product.imageUrl || "",
+    status: product.status,
+  };
+  showEditModal.value = true;
+};
+
+const submitProduct = async () => {
   try {
-    loading.value = true;
-
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    if (isEditMode.value) {
-      // Update existing product
-      const index = products.value.findIndex(
-        (p) => p.id === currentProduct.value.id
-      );
-      if (index > -1) {
-        products.value[index] = {
-          ...currentProduct.value,
-          ...productForm.value,
-        };
-      }
-      alert(`Đã cập nhật sản phẩm "${productForm.value.name}" thành công!`);
+    if (showCreateModal.value) {
+      await createProduct(productForm.value);
     } else {
-      // Add new product
-      const newProduct = {
-        id: Date.now(),
-        ...productForm.value,
-        createdAt: new Date().toISOString().split("T")[0],
-      };
-      products.value.push(newProduct);
-      alert(`Đã thêm sản phẩm "${productForm.value.name}" thành công!`);
+      await updateProduct(productForm.value.id, productForm.value);
     }
-
-    // Update stats
-    stats.value = {
-      totalProducts: products.value.length,
-      activeProducts: products.value.filter((p) => p.status === "active")
-        .length,
-      outOfStock: products.value.filter((p) => p.stock === 0).length,
-      lowStock: products.value.filter((p) => p.stock > 0 && p.stock <= 5)
-        .length,
-    };
-
     closeModal();
-  } catch (error) {
-    console.error("Error saving product:", error);
-    alert("Có lỗi xảy ra khi lưu sản phẩm!");
-  } finally {
-    loading.value = false;
+  } catch (err) {
+    console.error("Submit product error:", err);
   }
 };
 
-const duplicateProduct = (product) => {
-  if (confirm(`Bạn có muốn tạo bản sao của sản phẩm "${product.name}"?`)) {
-    const newProduct = {
-      ...product,
-      id: Date.now(), // Generate new ID
-      name: `${product.name} (Copy)`,
-      sku: `${product.sku}-COPY`,
-      createdAt: new Date().toISOString().split("T")[0],
-    };
+const confirmDelete = (product) => {
+  productToDelete.value = product;
+  showDeleteModal.value = true;
+};
 
-    products.value.unshift(newProduct);
-
-    // Update stats
-    stats.value = {
-      totalProducts: products.value.length,
-      activeProducts: products.value.filter((p) => p.status === "active")
-        .length,
-      outOfStock: products.value.filter((p) => p.stock === 0).length,
-      lowStock: products.value.filter((p) => p.stock > 0 && p.stock <= 5)
-        .length,
-    };
-
-    alert(`Đã tạo bản sao sản phẩm "${product.name}" thành công!`);
+const handleDelete = async () => {
+  try {
+    await deleteProduct(productToDelete.value._id);
+    showDeleteModal.value = false;
+    productToDelete.value = null;
+  } catch (err) {
+    console.error("Delete product error:", err);
   }
 };
+
+// Check auth
+if (!authStore.user || authStore.user.role !== "admin") {
+  router.push("/login");
+}
+
+// Initialize
+onMounted(async () => {
+  await Promise.all([fetchProducts(), fetchCategories()]);
+});
 </script>
 
 <template>
   <AdminLayout>
-    <div class="space-y-8">
+    <div class="p-6">
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-6">
+        <div>
+          <h1 class="text-2xl font-bold text-gray-900">Quản lý sản phẩm</h1>
+          <p class="text-gray-600">
+            Quản lý danh sách sản phẩm và thông tin chi tiết
+          </p>
+        </div>
+        <button
+          @click="showCreateModal = true"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
+        >
+          <svg
+            class="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 4v16m8-8H4"
+            />
+          </svg>
+          <span>Thêm sản phẩm</span>
+        </button>
+      </div>
+
       <!-- Stats Cards -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <ModernStatsCard
           title="Tổng sản phẩm"
-          :value="stats.totalProducts"
-          icon="fas fa-box"
-          gradient="from-blue-500 to-cyan-500"
-          :loading="loading"
+          :value="totalProducts"
+          :format="'number'"
+          icon="📦"
+          color="blue"
         />
-
         <ModernStatsCard
-          title="Còn hàng"
-          :value="stats.activeProducts"
-          icon="fas fa-check-circle"
-          gradient="from-green-500 to-emerald-500"
-          :loading="loading"
+          title="Hoạt động"
+          :value="activeProductsCount"
+          :format="'number'"
+          icon="✅"
+          color="green"
         />
-
+        <ModernStatsCard
+          title="Hết hàng"
+          :value="outOfStockCount"
+          :format="'number'"
+          icon="⚠️"
+          color="red"
+        />
         <ModernStatsCard
           title="Hết hàng"
           :value="stats.outOfStock"

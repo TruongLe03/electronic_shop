@@ -1,15 +1,15 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { useAuthStore } from "./auth";
+import { useAuthStore } from "./auth.js";
 import { useRouter } from "vue-router";
-import { useNotification } from "../composables/useNotification";
+import { useNotification } from "@/composables/client/useNotification.js";
 import {
   getCart,
   addToCart as addToCartApi,
   updateCartItem as updateCartItemApi,
   removeFromCart as removeFromCartApi,
 } from "../api/cartService";
-import { checkStock } from "../api/inventoryService";
+import { checkStock } from "../api/inventoryService.js";
 
 export const useCartStore = defineStore("cart", () => {
   const cartItems = ref([]);
@@ -81,9 +81,9 @@ export const useCartStore = defineStore("cart", () => {
       // Check stock availability first
       const stockCheck = await checkStock(product._id, quantity);
 
-      if (!stockCheck.data.available) {
+      if (!stockCheck.available) {
         showError(
-          `Sản phẩm "${product.name}" chỉ còn ${stockCheck.data.currentStock} sản phẩm trong kho!`
+          `Sản phẩm "${product.name}" chỉ còn ${stockCheck.currentStock} sản phẩm trong kho!`
         );
         return false;
       }
@@ -95,9 +95,9 @@ export const useCartStore = defineStore("cart", () => {
       const currentCartQuantity = existingItem ? existingItem.quantity : 0;
       const totalRequestedQuantity = currentCartQuantity + quantity;
 
-      if (totalRequestedQuantity > stockCheck.data.currentStock) {
+      if (totalRequestedQuantity > stockCheck.currentStock) {
         const availableToAdd =
-          stockCheck.data.currentStock - currentCartQuantity;
+          stockCheck.currentStock - currentCartQuantity;
         if (availableToAdd <= 0) {
           showError(
             `Bạn đã có tối đa số lượng sản phẩm "${product.name}" trong giỏ hàng!`
@@ -131,9 +131,9 @@ export const useCartStore = defineStore("cart", () => {
       // Check stock availability for the new quantity
       const stockCheck = await checkStock(productId, quantity);
 
-      if (!stockCheck.data.available) {
+      if (!stockCheck.available) {
         showError(
-          `Chỉ còn ${stockCheck.data.currentStock} sản phẩm trong kho!`
+          `Chỉ còn ${stockCheck.currentStock} sản phẩm trong kho!`
         );
         return false;
       }

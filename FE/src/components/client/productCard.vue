@@ -1,7 +1,7 @@
 <script setup>
 import { getFullImage, handleImageError } from "@utils/imageUtils";
 import { useCartStore } from "@stores/cart";
-import { useNotification } from "@composables/useNotification";
+import { useNotification } from "@/composables/client/useNotification";
 import { ref, computed } from "vue";
 
 const props = defineProps({

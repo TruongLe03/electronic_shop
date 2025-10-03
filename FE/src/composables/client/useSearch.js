@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { searchProducts } from '@api/productService'
+import { searchProducts } from '@/api/productService'
 
 export function useSearch() {
   const router = useRouter()

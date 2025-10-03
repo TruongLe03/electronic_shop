@@ -181,7 +181,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { orderService } from '@api/orderService'
-import { useNotification } from '@composables/useNotification'
+import { useNotification } from '@composables/client/useNotification'
 import { getFullImage } from '@utils/imageUtils'
 
 const route = useRoute()

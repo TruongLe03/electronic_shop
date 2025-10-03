@@ -1,190 +1,76 @@
-import Product from "../models/products.model.js";
-import Inventory from "../models/inventory.model.js";
-import mongoose from "mongoose";
+import { ProductService } from "../services/productService.js";
+import { ResponseUtil, asyncHandler } from "../utils/response.util.js";
+import { ValidationUtil } from "../utils/validation.util.js";
 
 // Lấy sản phẩm có discount lớn hơn 40%
-export const getDiscountedProducts = async (req, res) => {
-  try {
-    let page = parseInt(req.query.page) || 1;
-    let limit = parseInt(req.query.limit) || 20;
-    let skip = (page - 1) * limit;
-
-    const query = { discount_percent: { $gt: 40 } };
-
-    const [products, total] = await Promise.all([
-      Product.find(query)
-        .sort({ discount_percent: -1 }) // Sắp xếp giảm dần theo discount_percent
-        .skip(skip)
-        .limit(limit)
-        .populate("category_id"),
-      Product.countDocuments(query),
-    ]);
-
-    res.json({
-      products,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi server", error: err.message });
-  }
-};
+export const getDiscountedProducts = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  
+  const result = await ProductService.getDiscountedProducts(40, page, limit);
+  return ResponseUtil.success(res, result, 'Lấy sản phẩm khuyến mãi thành công');
+});
 
 // Lấy tất cả sản phẩm (có phân trang và filtering)
-export const getProducts = async (req, res) => {
-  try {
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 20;
-    const skip = (page - 1) * limit;
-    
-    // Filtering parameters
-    const categoryId = req.query.categoryId;
-    const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : null;
-    const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : null;
-    const inStock = req.query.inStock === 'true';
-    const onSale = req.query.onSale === 'true';
-    const search = req.query.search;
-    
-    // Sorting parameters
-    const sortBy = req.query.sortBy || 'createdAt'; // name, price, createdAt, sold, rating
-    const sortOrder = req.query.sortOrder === 'asc' ? 1 : -1;
+export const getProducts = asyncHandler(async (req, res) => {
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  
+  // Filtering parameters
+  const options = {
+    page,
+    limit,
+    categoryId: req.query.categoryId,
+    minPrice: req.query.minPrice ? parseFloat(req.query.minPrice) : null,
+    maxPrice: req.query.maxPrice ? parseFloat(req.query.maxPrice) : null,
+    inStock: req.query.inStock === 'true',
+    onSale: req.query.onSale === 'true',
+    search: req.query.search,
+    sortBy: req.query.sortBy || 'createdAt',
+    sortOrder: req.query.sortOrder || 'desc'
+  };
 
-    // Build query
-    let query = {};
-    
-    // Category filter
-    if (categoryId && mongoose.Types.ObjectId.isValid(categoryId)) {
-      query.category_id = new mongoose.Types.ObjectId(categoryId);
-    }
-    
-    // Price range filter
-    if (minPrice !== null || maxPrice !== null) {
-      query.price = {};
-      if (minPrice !== null) query.price.$gte = minPrice;
-      if (maxPrice !== null) query.price.$lte = maxPrice;
-    }
-    
-    // Stock filter
-    if (inStock) {
-      query.stock = { $gt: 0 };
-    }
-    
-    // On sale filter
-    if (onSale) {
-      query.discount_percent = { $gt: 0 };
-    }
-    
-    // Search filter
-    if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { tags: { $in: [new RegExp(search, "i")] } }
-      ];
-    }
-
-    // Build sort object
-    let sortObj = {};
-    sortObj[sortBy] = sortOrder;
-
-    const [products, total] = await Promise.all([
-      Product.find(query)
-        .sort(sortObj)
-        .skip(skip)
-        .limit(limit)
-        .populate("category_id", "name slug"),
-      Product.countDocuments(query),
-    ]);
-
-    res.json({
-      products,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-      filters: {
-        categoryId,
-        minPrice,
-        maxPrice,
-        inStock,
-        onSale,
-        search,
-        sortBy,
-        sortOrder: sortOrder === 1 ? 'asc' : 'desc'
-      }
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi server", error: err.message });
-  }
-};
+  const result = await ProductService.getProducts(options, { page: options.page, limit: options.limit });
+  return ResponseUtil.success(res, result, 'Lấy danh sách sản phẩm thành công');
+});
 
 // Lấy sản phẩm theo category (có phân trang)
-export const getProductsByCategory = async (req, res) => {
-  try {
-    const categoryId = req.params.categoryId;
-    let page = parseInt(req.query.page) || 1;
-    let limit = parseInt(req.query.limit) || 20;
-    let skip = (page - 1) * limit;
-    const excludeId = req.query.exclude; // ID sản phẩm cần loại trừ (cho related products)
+export const getProductsByCategory = asyncHandler(async (req, res) => {
+  const categoryId = req.params.categoryId;
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 20;
+  const excludeId = req.query.exclude; // ID sản phẩm cần loại trừ (cho related products)
 
-    console.log("Received categoryId:", categoryId);
-
-    if (!mongoose.Types.ObjectId.isValid(categoryId)) {
-      console.log("Invalid ObjectId format");
-      return res.status(400).json({
-        message: "Category ID không hợp lệ",
-        error: "Invalid ObjectId format",
-      });
-    }
-
-    const query = { category_id: new mongoose.Types.ObjectId(categoryId) };
-
-    // Loại trừ sản phẩm hiện tại nếu có excludeId
-    if (excludeId && mongoose.Types.ObjectId.isValid(excludeId)) {
-      query._id = { $ne: new mongoose.Types.ObjectId(excludeId) };
-    }
-
-    console.log("Query:", JSON.stringify(query));
-
-    const [products, total] = await Promise.all([
-      Product.find(query).skip(skip).limit(limit).populate("category_id"),
-      Product.countDocuments(query),
-    ]);
-
-    console.log(`Found ${products.length} products for category ${categoryId}`); // Debug log
-
-    res.json({
-      products,
-      total,
-      page,
-      totalPages: Math.ceil(total / limit),
-    });
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi server", error: err.message });
+  // Validate categoryId
+  if (!categoryId || !ValidationUtil.isValidObjectId(categoryId)) {
+    return ResponseUtil.validationError(res, ['Category ID không hợp lệ']);
   }
-};
+
+  // Prepare options for ProductService
+  const options = {
+    page,
+    limit,
+    categoryId,
+    excludeId
+  };
+
+  const result = await ProductService.getProductsByCategory(categoryId, options);
+  
+  return ResponseUtil.success(res, result, 'Lấy sản phẩm theo danh mục thành công');
+});
 
 // Lấy sản phẩm theo ID
-export const getProductById = async (req, res) => {
-  try {
-    const { id } = req.params;
+export const getProductById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
 
-    // Kiểm tra ID hợp lệ
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID sản phẩm không hợp lệ" });
-    }
-
-    const product = await Product.findById(id).populate("category_id");
-
-    if (!product) {
-      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-    }
-
-    res.json({ product });
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi server", error: err.message });
+  // Validate ID
+  if (!ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['ID sản phẩm không hợp lệ']);
   }
-};
+
+  const product = await ProductService.getProductById(id);
+  return ResponseUtil.success(res, product, 'Lấy thông tin sản phẩm thành công');
+});
 
 // Thêm sản phẩm
 export const createProduct = async (req, res) => {

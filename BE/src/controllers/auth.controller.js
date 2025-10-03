@@ -1,97 +1,59 @@
-import { login } from "../services/authService.js";
+import { AuthService } from "../services/authService.js";
+import User from "../models/user.model.js";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { ResponseUtil, asyncHandler } from "../utils/response.util.js";
+import { ValidationUtil } from "../utils/validation.util.js";
 
-export const handleLogin = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Vui lòng điền đầy đủ thông tin bắt buộc" });
-    }
-    const { user, token } = await login(email, password);
-    return res.json({
-      message: "Đăng nhập thành công",
-      token,
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    });
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Lỗi server", error: error.message });
-  }
-};
-
-export const register = async (req, res) => {
-  try {
-    const { email, password, phone_number, username } = req.body;
-
-    if (!email || !password || !phone_number || !username) {
-      return res.status(400).json({
-        message: "Vui lòng điền đầy đủ thông tin bắt buộc",
-      });
-    }
-
-    // Kiểm tra email đã tồn tại chưa
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "Email đã tồn tại" });
-    }
-
-    // Mã hoá mật khẩu
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    // Tạo user mới
-    const newUser = new User({
-      email,
-      password: hashedPassword,
-      phone_number,
-      username: username, // Set username field
-      name: username, // Map username to name field as well
-      role: "customer", // Mặc định là khách hàng
-    });
-
-    await newUser.save();
-
-    // Tạo token cho user mới
-    const token = jwt.sign(
-      { id: newUser._id, role: newUser.role },
-      process.env.JWT_SECRET_KEY,
-      { expiresIn: "1d" }
+export const handleLogin = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+  
+  // Validate input
+  if (!email || !password) {
+    return ResponseUtil.validationError(res, 
+      ['Email và mật khẩu là bắt buộc'], 
+      'Thiếu thông tin đăng nhập'
     );
-
-    return res.status(201).json({
-      message: "Đăng ký thành công",
-      token,
-      user: {
-        id: newUser._id,
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-      },
-    });
-  } catch (error) {
-    return res
-      .status(500)
-      .json({ message: "Lỗi server", error: error.message });
   }
-};
+
+  const { user, token } = await AuthService.login(email, password);
+  
+  return ResponseUtil.success(res, {
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    }
+  }, "Đăng nhập thành công");
+});
+
+export const register = asyncHandler(async (req, res) => {
+  const userData = req.body;
+  
+  // Validate registration data
+  const validation = ValidationUtil.validateUserRegistration(userData);
+  if (!validation.isValid) {
+    return ResponseUtil.validationError(res, validation.errors, 'Dữ liệu đăng ký không hợp lệ');
+  }
+
+  const { user, token } = await AuthService.register(userData);
+
+  return ResponseUtil.success(res, {
+    token,
+    user: {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+    }
+  }, "Đăng ký thành công", 201);
+});
 
 export const getProfile = async (req, res) => {
   try {
-    // Lấy user từ database (không lấy password)
-    const user = await User.findById(req.user.id).select("-password");
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "Không tìm thấy thông tin người dùng",
-      });
-    }
+    const user = await AuthService.getProfile(req.user.id);
 
     return res.json({
       success: true,

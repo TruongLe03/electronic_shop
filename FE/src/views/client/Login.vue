@@ -3,8 +3,8 @@ import { ref, onMounted, watch, nextTick } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@stores/auth";
 import { useCartStore } from "@stores/cart";
-import { useNotification } from "@composables/useNotification";
-import { useGlobalLoading } from "@composables/useLoading";
+import { useNotification } from "@/composables/client/useNotification";
+import { useGlobalLoading } from "@/composables/client/useLoading";
 import { checkEmailExists } from "@api/authService";
 
 const router = useRouter();
@@ -60,8 +60,8 @@ const validateEmailAsync = async (emailValue) => {
 
     await nextTick();
 
-    // Sửa lại: response đã là response.data từ authService
-    if (response.data.exists) {
+    // response đã được extract bởi extractResponseData utility
+    if (response.exists) {
       emailValidation.value = {
         isChecking: false,
         isValid: true,

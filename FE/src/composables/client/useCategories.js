@@ -1,5 +1,5 @@
 import { ref, computed } from 'vue'
-import { getCategories } from '@api/categoryService'
+import { getCategories } from '@/api/categoryService'
 
 export function useCategories() {
   const categories = ref([])

@@ -1,4 +1,5 @@
 import axios from '@utils/axiosConfig'
+import { extractResponseData } from '@utils/responseUtils'
 
 // Get all inventories with filters and pagination
 export const getInventories = async (params = {}) => {
@@ -61,7 +62,7 @@ export const checkStock = async (productId, quantity = 1) => {
     const response = await axios.get(`/inventory/check/${productId}`, {
       params: { quantity }
     })
-    return response.data
+    return extractResponseData(response)
   } catch (error) {
     console.error('Error checking stock:', error)
     throw error

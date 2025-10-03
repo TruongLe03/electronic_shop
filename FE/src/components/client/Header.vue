@@ -497,7 +497,7 @@ import { ref, computed, onMounted, watch, onUnmounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
 import { useCartStore } from "../../stores/cart";
-import { useSearch } from "../../composables/useSearch";
+import { useSearch } from "../../composables/client/useSearch";
 
 const router = useRouter();
 const route = useRoute();

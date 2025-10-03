@@ -34,7 +34,7 @@ const routes = [
   {
     path: "/order-detail/:orderId",
     name: "orderDetail",
-    component: () => import("@views/client/OrderDetail.vue"),
+    component: () => import("../views/client/OrderDetail.vue"),
     meta: { requiresAuth: true },
   },
   {

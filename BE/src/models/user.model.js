@@ -51,5 +51,31 @@ const userSchema = new mongoose.Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
+// Static methods
+userSchema.statics.findByEmail = function(email) {
+  return this.findOne({ email });
+};
+
+userSchema.statics.findActiveUsers = function() {
+  return this.find({ status: 'active' });
+};
+
+userSchema.statics.findByRole = function(role) {
+  return this.find({ role });
+};
+
+// Instance methods
+userSchema.methods.toSafeObject = function() {
+  const user = this.toObject();
+  delete user.password;
+  delete user.resetPasswordToken;
+  delete user.resetPasswordExpires;
+  return user;
+};
+
+userSchema.methods.hasRole = function(role) {
+  return this.role === role;
+};
+
 const User = mongoose.model("User", userSchema);
 export default User;

@@ -1,16 +1,20 @@
 import axiosInstance from "../utils/axiosConfig";
+import { extractResponseData } from "../utils/responseUtils";
 
 // Đăng ký
 export const register = async (registerData) => {
   try {
     const response = await axiosInstance.post("/auth/register", registerData);
-
-    if (response.data.token) {
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+    
+    // Extract data using responseUtils
+    const data = extractResponseData(response);
+    
+    if (data && data.token) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
     }
 
-    return response.data;
+    return data;
   } catch (error) {
     console.error("Register error:", error);
     throw error.response ? error.response.data : error.message;
@@ -25,12 +29,15 @@ export const login = async (email, password) => {
       password,
     });
 
-    if (response.data.token) {
-      localStorage.setItem("token", response.data.token);
-      localStorage.setItem("user", JSON.stringify(response.data.user));
+    // Extract data using responseUtils
+    const data = extractResponseData(response);
+    
+    if (data && data.token) {
+      localStorage.setItem("token", data.token);
+      localStorage.setItem("user", JSON.stringify(data.user));
     }
 
-    return response.data;
+    return data;
   } catch (error) {
     console.error("Login error:", error);
     throw error.response ? error.response.data : error.message;
@@ -66,7 +73,7 @@ export const checkEmailExists = async (email) => {
     const response = await axiosInstance.post("/otp/check-email", {
       email
     });
-    return response.data;
+    return extractResponseData(response);
   } catch (error) {
     console.error("Check email error:", error);
     throw error.response ? error.response.data : error;

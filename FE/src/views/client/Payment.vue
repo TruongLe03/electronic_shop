@@ -513,8 +513,8 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useCartStore } from "@stores/cart";
 import { useAuthStore } from "@stores/auth";
-import { useNotification } from "@composables/useNotification";
-import { useGlobalLoading } from "@composables/useLoading";
+import { useNotification } from "@/composables/client/useNotification";
+import { useGlobalLoading } from "@/composables/client/useLoading";
 import { orderService } from "@api/orderService";
 import { userService } from "@api/userService";
 import { addressService } from "@api/addressService";
@@ -933,9 +933,14 @@ const processCheckout = async () => {
       // Create new order from direct purchase
       const productInfo = orderItems.value[0]; // Single product
       orderResponse = await orderService.createDirectOrder({
-        ...productInfo,
-        shipping_info: shippingInfo,
-        payment_method: form.value.paymentMethod,
+        items: [{
+          productId: productInfo.id,
+          quantity: productInfo.quantity,
+          price: productInfo.price
+        }],
+        shippingAddress: shippingInfo,
+        paymentMethod: form.value.paymentMethod,
+        note: form.value.notes
       });
     } else if (orderType.value === "cart") {
       // Create new order from cart
@@ -956,9 +961,9 @@ const processCheckout = async () => {
       }));
 
       orderResponse = await orderService.createOrderFromCart({
-        shipping_info: shippingInfo,
-        payment_method: form.value.paymentMethod,
-        items: cartItems,
+        shippingAddress: shippingInfo,
+        paymentMethod: form.value.paymentMethod,
+        note: form.value.notes
       });
     }
 
