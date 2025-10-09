@@ -255,4 +255,22 @@ export class ProductService {
       totalPages: Math.ceil(total / limit),
     };
   }
+
+  // Lấy sản phẩm liên quan
+  static async getRelatedProducts(productId, limit = 4) {
+    const currentProduct = await Product.findById(productId);
+    if (!currentProduct) {
+      throw new Error("Không tìm thấy sản phẩm");
+    }
+
+    const relatedProducts = await Product.find({
+      category_id: currentProduct.category_id,
+      _id: { $ne: productId }
+    })
+    .sort({ sold: -1, createdAt: -1 })
+    .limit(limit)
+    .populate("category_id", "name slug");
+
+    return relatedProducts;
+  }
 }

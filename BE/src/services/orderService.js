@@ -13,54 +13,118 @@ export class OrderService {
       shipping_fee = 30000  // Default shipping fee 30k VND
     } = orderData;
 
+    console.log('OrderService.createOrder - Processing order:', {
+      userId,
+      itemsCount: items?.length,
+      items: items?.map(item => ({
+        productId: item.productId || item.product_id,
+        quantity: item.quantity,
+        price: item.price
+      })),
+      shipping_address
+    });
+
+    // Validate shipping address
+    if (!shipping_address || !shipping_address.name || !shipping_address.phone || !shipping_address.address) {
+      throw new Error('Thông tin địa chỉ giao hàng không đầy đủ');
+    }
+
     // Validate items và tính tổng
     let subtotal = 0;
     const orderItems = [];
 
     for (const item of items) {
-      const product = await ProductService.getProductById(item.product_id);
+      // Support both productId and product_id for compatibility
+      const productId = item.productId || item.product_id;
+      console.log('Processing item:', { item, productId });
+      
+      if (!productId) {
+        throw new Error('Product ID is required in order items');
+      }
+      
+      const product = await ProductService.getProductById(productId);
+      
+      // Validate product data
+      if (!product.price || isNaN(product.price) || product.price <= 0) {
+        throw new Error(`Giá sản phẩm ${product.name} không hợp lệ`);
+      }
       
       // Kiểm tra stock
-      const hasStock = await ProductService.checkProductStock(item.product_id, item.quantity);
+      const hasStock = await ProductService.checkProductStock(productId, item.quantity);
       if (!hasStock) {
         throw new Error(`Sản phẩm ${product.name} không đủ hàng trong kho`);
       }
 
-      const discountedPrice = product.price * (1 - product.discount_percent / 100);
+      const discountPercent = product.discount_percent || 0;
+      const discountedPrice = product.price * (1 - discountPercent / 100);
       const itemTotal = discountedPrice * item.quantity;
       
-      orderItems.push({
-        product_id: item.product_id,
+      console.log('Price calculation:', {
+        originalPrice: product.price,
+        discountPercent,
+        discountedPrice,
         quantity: item.quantity,
-        price: product.price,
-        discount_percent: product.discount_percent,
-        subtotal: itemTotal
+        itemTotal
+      });
+      
+      // Validate numeric values before pushing
+      if (isNaN(discountedPrice) || discountedPrice < 0) {
+        throw new Error(`Giá sản phẩm ${product.name} không hợp lệ`);
+      }
+      if (isNaN(item.quantity) || item.quantity <= 0) {
+        throw new Error(`Số lượng sản phẩm ${product.name} không hợp lệ`);
+      }
+
+      orderItems.push({
+        product_id: productId,
+        name: product.name,
+        price: Math.round(discountedPrice), // Round to avoid decimal issues
+        quantity: parseInt(item.quantity),
+        image: product.main_image || product.images?.[0] || null
       });
 
       subtotal += itemTotal;
     }
 
-    const total = subtotal - discount_amount + shipping_fee;
+    // Round values to avoid decimal issues
+    subtotal = Math.round(subtotal);
+    const total = Math.round(subtotal + shipping_fee); // Removed discount_amount since we're not using coupons
+    
+    console.log('Order totals:', {
+      subtotal,
+      shipping_fee,
+      total,
+      discount_amount
+    });
+
+    // Validate numeric values
+    if (isNaN(subtotal) || subtotal < 0) {
+      throw new Error('Subtotal không hợp lệ');
+    }
+    if (isNaN(total) || total < 0) {
+      throw new Error('Tổng tiền không hợp lệ');
+    }
 
     // Tạo đơn hàng
     const order = new Order({
       user_id: userId,
-      products: orderItems,  // Fixed: Order model expects 'products' not 'items'
+      products: orderItems,
       subtotal,
-      discount_amount,
       shipping_fee,
       total,
       shipping_address,
       payment_method,
       status: 'pending',
-      payment_status: 'pending'
+      payment_status: 'pending',
+      notes: orderData.note || ""
     });
 
     const savedOrder = await order.save();
 
     // Cập nhật stock cho các sản phẩm
     for (const item of items) {
-      await ProductService.updateProductStock(item.product_id, item.quantity, 'decrease');
+      const productId = item.productId || item.product_id;
+      await ProductService.updateProductStock(productId, item.quantity, 'decrease');
     }
 
     return await Order.findById(savedOrder._id)
@@ -173,8 +237,9 @@ export class OrderService {
 
     // Nếu hủy đơn hàng, hoàn trả stock
     if (status === 'cancelled' && order.status !== 'cancelled') {
-      for (const item of order.items) {
-        await ProductService.updateProductStock(item.product_id, item.quantity, 'increase');
+      for (const item of order.products) { // Fixed: Use 'products' not 'items'
+        const productId = item.product_id || item.productId;
+        await ProductService.updateProductStock(productId, item.quantity, 'increase');
       }
     }
 
@@ -330,6 +395,15 @@ export class OrderService {
   static async createOrderFromCart(orderData) {
     const { userId, shippingAddress, paymentMethod, note } = orderData;
 
+    console.log('OrderService.createOrderFromCart - Input:', {
+      userId, shippingAddress, paymentMethod, note
+    });
+
+    // Validate shipping address
+    if (!shippingAddress || !shippingAddress.name || !shippingAddress.phone || !shippingAddress.address) {
+      throw new Error('Thông tin địa chỉ giao hàng không đầy đủ');
+    }
+
     // Lấy cart và items từ user
     const cart = await CartService.getCartByUserId(userId);
     
@@ -369,7 +443,8 @@ export class OrderService {
 
     // Cập nhật stock cho các sản phẩm
     for (const item of products) {
-      await ProductService.updateProductStock(item.product_id, item.quantity, 'decrease');
+      const productId = item.product_id || item.productId;
+      await ProductService.updateProductStock(productId, item.quantity, 'decrease');
     }
 
     // Xóa giỏ hàng sau khi tạo đơn hàng thành công
@@ -383,6 +458,19 @@ export class OrderService {
   // Tạo đơn hàng trực tiếp (mua ngay)
   static async createDirectOrder(orderData) {
     const { userId, items, shippingAddress, paymentMethod, note } = orderData;
+
+    console.log('OrderService.createDirectOrder - Input data:', {
+      userId,
+      items,
+      shippingAddress,
+      paymentMethod,
+      note
+    });
+
+    // Validate items
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      throw new Error('Danh sách sản phẩm không hợp lệ');
+    }
 
     return await this.createOrder(userId, {
       items,

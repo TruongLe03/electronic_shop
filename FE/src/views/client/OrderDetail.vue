@@ -175,7 +175,76 @@
       </div>
     </div>
   </div>
+
+  <!-- Cancel Order Modal -->
+  <Teleport to="body">
+    <div v-if="showCancelModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" @click="showCancelModal = false">
+      <div class="bg-white rounded-lg shadow-xl w-full max-w-md" @click.stop>
+        <div class="p-6">
+          <h3 class="text-lg font-semibold text-gray-900 mb-4">Hủy đơn hàng</h3>
+          
+          <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Vui lòng chọn lý do hủy đơn hàng:
+            </label>
+            <select 
+              v-model="cancelReason" 
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="">-- Chọn lý do --</option>
+              <option value="Thay đổi ý định mua hàng">Thay đổi ý định mua hàng</option>
+              <option value="Tìm được sản phẩm rẻ hơn">Tìm được sản phẩm rẻ hơn</option>
+              <option value="Không cần thiết nữa">Không cần thiết nữa</option>
+              <option value="Sai thông tin đặt hàng">Sai thông tin đặt hàng</option>
+              <option value="Thời gian giao hàng quá lâu">Thời gian giao hàng quá lâu</option>
+              <option value="Khác">Khác</option>
+            </select>
+          </div>
+
+          <div v-if="cancelReason === 'Khác'" class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Lý do khác:
+            </label>
+            <textarea 
+              v-model="customCancelReason"
+              placeholder="Nhập lý do hủy..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              rows="3"
+            ></textarea>
+          </div>
+
+          <div class="flex space-x-3">
+            <button 
+              @click="showCancelModal = false"
+              class="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md font-medium transition-colors"
+            >
+              Hủy bỏ
+            </button>
+            <button 
+              @click="confirmCancelOrder"
+              :disabled="!cancelReason || cancelling"
+              class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-md font-medium transition-colors"
+            >
+              {{ cancelling ? 'Đang hủy...' : 'Xác nhận hủy' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
+
+<style scoped>
+/* Ensure modal appears above all other content */
+.modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 9999 !important;
+}
+</style>
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -194,6 +263,11 @@ const loading = ref(true)
 const error = ref('')
 const cancelling = ref(false)
 const orderId = route.params.orderId
+
+// Cancel modal state
+const showCancelModal = ref(false)
+const cancelReason = ref('')
+const customCancelReason = ref('')
 
 // Methods
 const fetchOrderDetail = async () => {
@@ -215,16 +289,28 @@ const fetchOrderDetail = async () => {
   }
 }
 
-const cancelOrder = async () => {
-  if (!confirm('Bạn có chắc chắn muốn hủy đơn hàng này?')) return
+const cancelOrder = () => {
+  showCancelModal.value = true
+  cancelReason.value = ''
+  customCancelReason.value = ''
+}
+
+const confirmCancelOrder = async () => {
+  const finalReason = cancelReason.value === 'Khác' ? customCancelReason.value : cancelReason.value
+  
+  if (!finalReason.trim()) {
+    showError('Vui lòng chọn hoặc nhập lý do hủy đơn hàng')
+    return
+  }
   
   try {
     cancelling.value = true
-    const response = await orderService.cancelOrder(orderId)
+    const response = await orderService.cancelOrder(orderId, finalReason)
     
     if (response.success) {
       showSuccess('Đơn hàng đã được hủy thành công')
       order.value.status = 'cancelled'
+      showCancelModal.value = false
     } else {
       showError(response.message || 'Không thể hủy đơn hàng')
     }

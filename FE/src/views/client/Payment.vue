@@ -487,10 +487,10 @@
             <button
               type="submit"
               form="checkout-form"
-              :disabled="!isFormValid"
+              :disabled="!isFormValid || isProcessingOrder"
               class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 px-6 rounded-lg font-semibold transition-colors"
             >
-              {{ buttonText }}
+              {{ isProcessingOrder ? 'Đang xử lý...' : buttonText }}
             </button>
 
             <p class="text-xs text-gray-500 mt-3 text-center">
@@ -526,7 +526,7 @@ const router = useRouter();
 const route = useRoute();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
-const { showSuccess, showError } = useNotification();
+const { showSuccess, showError, showWarning } = useNotification();
 const { showPageLoading, hideLoading } = useGlobalLoading();
 
 // State
@@ -535,6 +535,7 @@ const loading = ref(false);
 const orderItems = ref([]); // Items to be ordered
 const orderType = ref(""); // 'direct' or 'cart'
 const isEditingAddress = ref(false); // To control address display mode
+const isProcessingOrder = ref(false); // Prevent double submission
 
 // Address data
 const provinces = ref([]);
@@ -896,8 +897,17 @@ const processCheckout = async () => {
     return;
   }
 
+  // Prevent double submission
+  if (isProcessingOrder.value) {
+    showError("Đơn hàng đang được xử lý. Vui lòng đợi...");
+    return;
+  }
+
   let loader; // Declare loader outside try block
+  let orderCreated = false; // Track if order was created successfully
+  
   try {
+    isProcessingOrder.value = true;
     loader = showPageLoading("Đang xử lý thanh toán...");
 
     // Prepare address for shipping
@@ -918,30 +928,63 @@ const processCheckout = async () => {
       finalAddress = `${form.value.address}, ${wardName}, ${districtName}, ${provinceName}`;
     }
 
+    // Validate final address
+    if (!finalAddress || finalAddress.trim() === '') {
+      showError("Địa chỉ giao hàng không hợp lệ");
+      hideLoading(loader);
+      return;
+    }
+
     // Prepare shipping info
     const shippingInfo = {
-      name: form.value.fullName,
-      phone: form.value.phone,
-      email: form.value.email,
-      address: finalAddress,
-      note: form.value.notes,
+      name: form.value.fullName?.trim(),
+      phone: form.value.phone?.trim(),
+      address: finalAddress.trim()
     };
+
+    // Validate shipping info
+    if (!shippingInfo.name || !shippingInfo.phone || !shippingInfo.address) {
+      showError("Thông tin giao hàng không đầy đủ");
+      hideLoading(loader);
+      return;
+    }
+
+    if (!form.value.paymentMethod) {
+      showError("Vui lòng chọn phương thức thanh toán");
+      hideLoading(loader);
+      return;
+    }
+
+    console.log('Shipping info prepared:', shippingInfo);
+    console.log('Payment method:', form.value.paymentMethod);
 
     let orderResponse = null;
 
     if (orderType.value === "direct") {
       // Create new order from direct purchase
       const productInfo = orderItems.value[0]; // Single product
-      orderResponse = await orderService.createDirectOrder({
+      console.log('Direct order - productInfo:', productInfo);
+      
+      const productId = productInfo.productId || productInfo.id;
+      if (!productId) {
+        showError("Không tìm thấy thông tin sản phẩm");
+        hideLoading(loader);
+        return;
+      }
+      
+      const orderData = {
         items: [{
-          productId: productInfo.id,
+          productId: productId,
           quantity: productInfo.quantity,
-          price: productInfo.price
+          price: productInfo.discount_price || productInfo.price
         }],
         shippingAddress: shippingInfo,
         paymentMethod: form.value.paymentMethod,
         note: form.value.notes
-      });
+      };
+      
+      console.log('Direct order - sending data:', orderData);
+      orderResponse = await orderService.createDirectOrder(orderData);
     } else if (orderType.value === "cart") {
       // Create new order from cart
       if (cartStore.cartCount === 0) {
@@ -968,12 +1011,16 @@ const processCheckout = async () => {
     }
 
     if (!orderResponse || !orderResponse.success) {
-      showError(orderResponse?.message || "Không thể tạo đơn hàng");
+      const errorMessage = orderResponse?.message || "Không thể tạo đơn hàng";
+      console.error("Order creation failed:", orderResponse);
+      showError(errorMessage);
       hideLoading(loader);
       return;
     }
 
     const orderId = orderResponse.data._id;
+    orderCreated = true; // Mark order as created successfully
+    console.log("Order created successfully:", { orderId, orderResponse });
 
     // Note: User profile is automatically updated by backend when order is created
 
@@ -999,8 +1046,81 @@ const processCheckout = async () => {
     hideLoading(loader);
   } catch (error) {
     console.error("Checkout error:", error);
-    showError("Đã có lỗi xảy ra. Vui lòng thử lại.");
-    if (loader) hideLoading(loader); // Check if loader exists before hiding
+    
+    // Kiểm tra xem có order nào được tạo thành công hay không trong trường hợp lỗi network
+    if (!orderCreated && (error.request || error.code === 'ECONNABORTED')) {
+      try {
+        console.log("Checking for recent orders due to potential network error...");
+        const recentOrdersResponse = await orderService.getRecentOrdersByUser();
+        
+        if (recentOrdersResponse.success && recentOrdersResponse.data.length > 0) {
+          const recentOrder = recentOrdersResponse.data[0];
+          const orderTime = new Date(recentOrder.createdAt);
+          const now = new Date();
+          const timeDiff = now - orderTime;
+          
+          // Nếu có order được tạo trong vòng 2 phút qua, có thể đó là order vừa tạo
+          if (timeDiff < 2 * 60 * 1000) {
+            console.log("Found recent order, redirecting to success page:", recentOrder._id);
+            showSuccess("Đặt hàng thành công! Đang chuyển hướng...");
+            
+            // Clear cart if order from cart
+            if (orderType.value === "cart") {
+              cartStore.clearCart();
+            }
+            
+            router.push({
+              name: "orderSuccess",
+              query: { orderId: recentOrder._id }
+            });
+            
+            if (loader) hideLoading(loader);
+            return;
+          }
+        }
+      } catch (verifyError) {
+        console.error("Error verifying recent orders:", verifyError);
+      }
+    }
+    
+    // Xử lý chi tiết các loại lỗi
+    let errorMessage = "Đã có lỗi xảy ra. Vui lòng thử lại.";
+    
+    if (error.success === false) {
+      // Lỗi từ custom error handling
+      errorMessage = error.message;
+    } else if (error.response) {
+      // Lỗi HTTP response
+      const status = error.response.status;
+      const data = error.response.data;
+      
+      if (status === 400) {
+        errorMessage = data.message || "Thông tin đơn hàng không hợp lệ";
+      } else if (status === 401) {
+        errorMessage = "Vui lòng đăng nhập để tiếp tục";
+      } else if (status === 500) {
+        errorMessage = "Lỗi server. Vui lòng thử lại sau";
+      } else {
+        errorMessage = data.message || `Lỗi HTTP ${status}`;
+      }
+    } else if (error.request) {
+      // Network error
+      errorMessage = "Mất kết nối mạng trong quá trình đặt hàng.";
+      showError(errorMessage);
+      
+      // Thêm notification cho user kiểm tra account
+      setTimeout(() => {
+        showWarning("Vui lòng kiểm tra đơn hàng trong tài khoản để xác nhận đơn hàng đã được tạo hay chưa.", { duration: 8000 });
+      }, 3000);
+    } else if (error.message) {
+      errorMessage = error.message;
+      showError(errorMessage);
+    } else {
+      showError(errorMessage);
+    }
+    if (loader) hideLoading(loader);
+  } finally {
+    isProcessingOrder.value = false;
   }
 };
 

@@ -30,6 +30,11 @@ const isHovered = ref(false);
 
 // Computed properties
 const discountedPrice = computed(() => {
+  // Ưu tiên discount_price nếu có
+  if (props.product.discount_price && props.product.discount_price > 0) {
+    return props.product.discount_price;
+  }
+  // Nếu không có discount_price, dùng discount_percent
   if (props.product.discount_percent && props.product.discount_percent > 0) {
     return props.product.price * (1 - props.product.discount_percent / 100);
   }
@@ -37,7 +42,18 @@ const discountedPrice = computed(() => {
 });
 
 const hasDiscount = computed(() => {
-  return props.product.discount_percent && props.product.discount_percent > 0;
+  return (props.product.discount_price && props.product.discount_price > 0 && props.product.discount_price < props.product.price) ||
+         (props.product.discount_percent && props.product.discount_percent > 0);
+});
+
+const discountPercentage = computed(() => {
+  if (props.product.discount_percent && props.product.discount_percent > 0) {
+    return Math.round(props.product.discount_percent);
+  }
+  if (props.product.discount_price && props.product.discount_price > 0 && props.product.discount_price < props.product.price) {
+    return Math.round(((props.product.price - props.product.discount_price) / props.product.price) * 100);
+  }
+  return 0;
 });
 
 const stockStatus = computed(() => {
@@ -104,7 +120,7 @@ const handleCompare = () => {
         v-if="hasDiscount"
         class="absolute top-2 left-2 sm:top-3 sm:left-3 z-10 bg-red-500 text-white text-xs font-bold px-1 sm:px-2 py-1 rounded-full"
       >
-        -{{ Math.round(product.discount_percent) }}%
+        -{{ discountPercentage }}%
       </div>
 
       <!-- Stock Status Badge -->
@@ -208,16 +224,24 @@ const handleCompare = () => {
 
       <!-- Price -->
       <div class="flex items-center justify-between mb-2 sm:mb-4">
-        <div class="flex items-center space-x-1 sm:space-x-2">
-          <span class="text-sm sm:text-lg font-bold text-blue-600">
+        <div class="flex flex-col space-y-1">
+          <!-- Current Price -->
+          <span class="text-sm sm:text-lg font-bold text-red-600">
             {{ formatPrice(discountedPrice) }}
           </span>
+          
+          <!-- Original Price -->
           <span
             v-if="hasDiscount"
-            class="text-xs sm:text-sm text-gray-500 line-through"
+            class="text-xs sm:text-sm text-gray-500 line-through opacity-80"
           >
             {{ formatPrice(product.price) }}
           </span>
+          
+          <!-- Discount savings -->
+          <div v-if="hasDiscount" class="text-xs text-green-600 font-medium">
+            Tiết kiệm {{ formatPrice(product.price - discountedPrice) }}
+          </div>
         </div>
       </div>
 

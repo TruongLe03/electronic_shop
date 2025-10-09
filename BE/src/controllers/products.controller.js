@@ -1,6 +1,8 @@
 import { ProductService } from "../services/productService.js";
 import { ResponseUtil, asyncHandler } from "../utils/response.util.js";
 import { ValidationUtil } from "../utils/validation.util.js";
+import Product from "../models/products.model.js";
+import mongoose from "mongoose";
 
 // Lấy sản phẩm có discount lớn hơn 40%
 export const getDiscountedProducts = asyncHandler(async (req, res) => {
@@ -303,35 +305,17 @@ export const getBestSellingProducts = async (req, res) => {
 };
 
 // Lấy sản phẩm liên quan
-export const getRelatedProducts = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const limit = parseInt(req.query.limit) || 4;
+export const getRelatedProducts = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const limit = parseInt(req.query.limit) || 4;
 
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID sản phẩm không hợp lệ" });
-    }
-
-    // Get the current product to find related ones
-    const currentProduct = await Product.findById(id);
-    if (!currentProduct) {
-      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-    }
-
-    // Find related products by category, excluding current product
-    const relatedProducts = await Product.find({
-      category_id: currentProduct.category_id,
-      _id: { $ne: id }
-    })
-    .sort({ sold: -1, createdAt: -1 })
-    .limit(limit)
-    .populate("category_id", "name slug");
-
-    res.json({ products: relatedProducts });
-  } catch (err) {
-    res.status(500).json({ message: "Lỗi server", error: err.message });
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return ResponseUtil.error(res, "ID sản phẩm không hợp lệ", 400);
   }
-};
+
+  const relatedProducts = await ProductService.getRelatedProducts(id, limit);
+  return ResponseUtil.success(res, { products: relatedProducts }, "Lấy sản phẩm liên quan thành công");
+});
 
 // Lấy thống kê sản phẩm theo category
 export const getProductStats = async (req, res) => {

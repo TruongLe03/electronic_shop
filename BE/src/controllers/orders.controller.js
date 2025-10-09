@@ -131,9 +131,22 @@ export const createOrderFromCart = asyncHandler(async (req, res) => {
   });
 
   // Validate required fields
+  console.log('Validating order data:', { 
+    hasShippingAddress: !!shippingAddress,
+    shippingAddress,
+    hasPaymentMethod: !!paymentMethod,
+    paymentMethod 
+  });
+
   if (!shippingAddress || !paymentMethod) {
     console.log('Cart order validation failed:', { shippingAddress, paymentMethod });
     return ResponseUtil.validationError(res, ['Địa chỉ giao hàng và phương thức thanh toán là bắt buộc']);
+  }
+
+  // Validate shipping address fields
+  if (!shippingAddress.name || !shippingAddress.phone || !shippingAddress.address) {
+    console.log('Shipping address validation failed:', shippingAddress);
+    return ResponseUtil.validationError(res, ['Họ tên, số điện thoại và địa chỉ giao hàng là bắt buộc']);
   }
 
   const orderData = {

@@ -197,25 +197,32 @@
           <!-- Price Section -->
           <div class="bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-6 shadow-lg ring-1 ring-red-200">
             <div class="flex items-center justify-between">
-              <div class="flex items-center space-x-4">
+              <div class="flex flex-col space-y-2">
                 <!-- Current Price -->
-                <span
-                  v-if="product.discount_price"
-                  class="text-4xl font-bold text-red-600"
-                >
-                  {{ formatPrice(product.discount_price) }}
-                </span>
-                <span v-else class="text-4xl font-bold text-red-600">
-                  {{ formatPrice(product.price) }}
-                </span>
+                <div>
+                  <span
+                    v-if="product.discount_price"
+                    class="text-4xl font-bold text-red-600"
+                  >
+                    {{ formatPrice(product.discount_price) }}
+                  </span>
+                  <span v-else class="text-4xl font-bold text-red-600">
+                    {{ formatPrice(product.price) }}
+                  </span>
+                </div>
 
                 <!-- Original Price -->
-                <span
-                  v-if="product.discount_price && product.discount_price < product.price"
-                  class="text-xl text-gray-500 line-through"
-                >
-                  {{ formatPrice(product.price) }}
-                </span>
+                <div v-if="product.discount_price && product.discount_price < product.price">
+                  <span class="text-xl text-gray-500 line-through opacity-80">
+                    {{ formatPrice(product.price) }}
+                  </span>
+                </div>
+                
+                <!-- Discount savings -->
+                <div v-if="product.discount_price && product.discount_price < product.price" 
+                     class="text-lg text-green-600 font-medium">
+                  Tiết kiệm {{ formatPrice(product.price - product.discount_price) }}
+                </div>
               </div>
 
               <!-- Discount Badge -->
@@ -571,11 +578,18 @@ const fetchProduct = async (productId) => {
 
     // Fetch related products
     if (response.data.category_id?._id) {
-      const relatedResponse = await getRelatedProducts(
-        productId, // productId để tìm related products
-        4 // limit
-      );
-      relatedProducts.value = relatedResponse.data;
+      try {
+        const relatedResponse = await getRelatedProducts(
+          productId, // productId để tìm related products
+          4 // limit
+        );
+        console.log('Related products response:', relatedResponse);
+        relatedProducts.value = relatedResponse.data.products || [];
+        console.log('Related products set:', relatedProducts.value);
+      } catch (error) {
+        console.error('Error fetching related products:', error);
+        relatedProducts.value = [];
+      }
     }
   } catch (error) {
     console.error("Error fetching product:", error);

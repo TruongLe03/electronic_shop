@@ -61,9 +61,11 @@ export const orderService = {
   },
 
   // Hủy đơn hàng
-  async cancelOrder(orderId) {
+  async cancelOrder(orderId, reason = '') {
     try {
-      const response = await apiClient.patch(`/orders/${orderId}/cancel`);
+      const response = await apiClient.patch(`/orders/${orderId}/cancel`, {
+        reason: reason
+      });
       return response.data;
     } catch (error) {
       console.error("Cancel order error:", error);
@@ -78,7 +80,31 @@ export const orderService = {
       return response.data;
     } catch (error) {
       console.error("Create order from cart error:", error);
-      throw error;
+      // Cải thiện error handling - trả về thông tin chi tiết hơn
+      if (error.response) {
+        // Server responded with error status
+        const errorData = error.response.data;
+        throw {
+          success: false,
+          message: errorData.message || 'Có lỗi xảy ra khi tạo đơn hàng',
+          status: error.response.status,
+          data: errorData
+        };
+      } else if (error.request) {
+        // Request was made but no response received
+        throw {
+          success: false,
+          message: 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
+          status: 0
+        };
+      } else {
+        // Something else happened
+        throw {
+          success: false,
+          message: error.message || 'Có lỗi không xác định xảy ra',
+          status: 0
+        };
+      }
     }
   },
 
@@ -117,6 +143,39 @@ export const orderService = {
       console.error("Create direct order error:", error);
       console.error("Error response:", error.response?.data);
       console.error("Error status:", error.response?.status);
+      
+      // Cải thiện error handling
+      if (error.response) {
+        const errorData = error.response.data;
+        throw {
+          success: false,
+          message: errorData.message || 'Có lỗi xảy ra khi tạo đơn hàng',
+          status: error.response.status,
+          data: errorData
+        };
+      } else if (error.request) {
+        throw {
+          success: false,
+          message: 'Không thể kết nối đến server. Vui lòng kiểm tra kết nối mạng.',
+          status: 0
+        };
+      } else {
+        throw {
+          success: false,
+          message: error.message || 'Có lỗi không xác định xảy ra',
+          status: 0
+        };
+      }
+    }
+  },
+
+  // Kiểm tra trạng thái đơn hàng gần đây của user (để verify order creation)
+  async getRecentOrdersByUser() {
+    try {
+      const response = await apiClient.get("/orders/user?limit=5");
+      return response.data;
+    } catch (error) {
+      console.error("Get recent orders error:", error);
       throw error;
     }
   }
