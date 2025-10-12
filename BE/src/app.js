@@ -21,15 +21,18 @@ app.get("/", (req, res) => {
 // Global Error Handler Middleware
 app.use((err, req, res, next) => {
   // Log error for debugging
-  console.error('Global Error Handler:', err.message);
-  console.error('Stack:', err.stack);
+  console.error("Global Error Handler:", err.message);
+  console.error("Stack:", err.stack);
 
   // Handle specific error types
   if (err.message === "Tài khoản không tồn tại") {
     return ResponseUtil.notFound(res, err.message);
   }
-  
-  if (err.message === "Mật khẩu không đúng" || err.message === "Tài khoản đã bị khóa") {
+
+  if (
+    err.message === "Mật khẩu không đúng" ||
+    err.message === "Tài khoản đã bị khóa"
+  ) {
     return ResponseUtil.unauthorized(res, err.message);
   }
 

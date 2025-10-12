@@ -1,6 +1,7 @@
 import { createApp } from "vue";
 import { createPinia } from 'pinia';
 import "./style.css";
+import "./assets/css/auth-forms.css";
 import App from "./App.vue";
 import router from "@/routes/index.js";
 import axiosInstance from "@utils/axiosConfig.js";

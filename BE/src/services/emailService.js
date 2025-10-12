@@ -7,12 +7,7 @@ export const generateOTP = () => {
 
 // Hàm tạo transporter cho nodemailer
 const createTransporter = () => {
-  console.log('Creating email transporter with:', {
-    user: process.env.EMAIL_USER,
-    hasPassword: !!process.env.EMAIL_PASSWORD
-  });
-  
-  return nodemailer.createTransport({
+  return nodemailer.createTransporter({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
@@ -45,7 +40,6 @@ export const sendOTPEmail = async (email, otp) => {
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log("✅ Email sent:", result.messageId);
 
     return { success: true, messageId: result.messageId };
   } catch (error) {

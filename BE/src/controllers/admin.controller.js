@@ -133,19 +133,127 @@ export const getAllProductsAdmin = asyncHandler(async (req, res) => {
     sortOrder = "desc"
   } = req.query;
 
-  const options = {
-    page: parseInt(page),
-    limit: parseInt(limit),
-    search,
-    category,
-    status,
+  const filters = {
     sortBy,
-    sortOrder,
-    populate: 'categoryId'
+    sortOrder
   };
 
-  const result = await ProductService.getAllProducts(options);
+  // Chỉ thêm filter khi có giá trị
+  if (search && search.trim() !== '') {
+    filters.search = search;
+  }
+  
+  if (category && category.trim() !== '') {
+    filters.category_id = category;
+  }
+  
+  if (status && status.trim() !== '') {
+    filters.status = status;
+  }
+
+  const pagination = {
+    page: parseInt(page),
+    limit: parseInt(limit)
+  };
+
+  const result = await ProductService.getProducts(filters, pagination);
   return ResponseUtil.success(res, result, 'Lấy danh sách sản phẩm thành công');
+});
+
+// Lấy chi tiết sản phẩm
+export const getProductById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Product ID không hợp lệ']);
+  }
+
+  const product = await ProductService.getProductById(id);
+  if (!product) {
+    return ResponseUtil.notFound(res, 'Không tìm thấy sản phẩm');
+  }
+
+  return ResponseUtil.success(res, product, 'Lấy thông tin sản phẩm thành công');
+});
+
+// Tạo sản phẩm mới
+export const createProduct = asyncHandler(async (req, res) => {
+  const productData = req.body;
+  
+  // Validation basic
+  const requiredFields = ['name', 'price', 'category', 'stock'];
+  const missingFields = requiredFields.filter(field => !productData[field]);
+  
+  if (missingFields.length > 0) {
+    return ResponseUtil.validationError(res, [`Thiếu các trường bắt buộc: ${missingFields.join(', ')}`]);
+  }
+
+  // Thêm admin info
+  productData.createdBy = req.user.userId;
+  productData.updatedBy = req.user.userId;
+
+  const newProduct = await ProductService.createProduct(productData);
+  return ResponseUtil.success(res, newProduct, 'Tạo sản phẩm thành công', 201);
+});
+
+// Cập nhật sản phẩm
+export const updateProduct = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const updateData = req.body;
+  
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Product ID không hợp lệ']);
+  }
+
+  // Thêm admin info
+  updateData.updatedBy = req.user.userId;
+  updateData.updatedAt = new Date();
+
+  const updatedProduct = await ProductService.updateProduct(id, updateData);
+  if (!updatedProduct) {
+    return ResponseUtil.notFound(res, 'Không tìm thấy sản phẩm');
+  }
+
+  return ResponseUtil.success(res, updatedProduct, 'Cập nhật sản phẩm thành công');
+});
+
+// Xóa sản phẩm
+export const deleteProduct = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Product ID không hợp lệ']);
+  }
+
+  const deletedProduct = await ProductService.deleteProduct(id);
+  if (!deletedProduct) {
+    return ResponseUtil.notFound(res, 'Không tìm thấy sản phẩm');
+  }
+
+  return ResponseUtil.success(res, { deletedId: id }, 'Xóa sản phẩm thành công');
+});
+
+// Thay đổi trạng thái sản phẩm
+export const toggleProductStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Product ID không hợp lệ']);
+  }
+
+  const product = await ProductService.getProductById(id);
+  if (!product) {
+    return ResponseUtil.notFound(res, 'Không tìm thấy sản phẩm');
+  }
+
+  const newStatus = product.status === 'active' ? 'inactive' : 'active';
+  const updatedProduct = await ProductService.updateProduct(id, { 
+    status: newStatus,
+    updatedBy: req.user.userId,
+    updatedAt: new Date()
+  });
+
+  return ResponseUtil.success(res, updatedProduct, 'Thay đổi trạng thái sản phẩm thành công');
 });
 
 // ============= ORDER MANAGEMENT =============
@@ -174,7 +282,16 @@ export const getAllOrdersAdmin = asyncHandler(async (req, res) => {
     sortOrder
   };
 
-  const result = await OrderService.getAllOrders(options);
+  const filters = {
+    status,
+    dateFrom: startDate,
+    dateTo: endDate,
+    userId,
+    sortBy,
+    sortOrder
+  };
+
+  const result = await OrderService.getAllOrders(parseInt(page), parseInt(limit), filters);
   return ResponseUtil.success(res, result, 'Lấy danh sách đơn hàng thành công');
 });
 

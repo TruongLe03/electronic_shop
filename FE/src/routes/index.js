@@ -84,7 +84,7 @@ const routes = [
   {
     path: "/admin/products",
     name: "adminProducts",
-    component: () => import("@views/admin/Products.vue"),
+    component: () => import("../views/admin/Products.vue"),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
@@ -141,8 +141,15 @@ const router = createRouter({
 // Kiểm tra xác thực trước khi vào các route yêu cầu đăng nhập
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore();
+  
+  console.log('Router guard - navigating to:', to.path)
+  console.log('Router guard - isAuthenticated:', authStore.isAuthenticated)
+  console.log('Router guard - user role:', authStore.user?.role)
+  console.log('Router guard - requiresAuth:', to.meta.requiresAuth)
+  console.log('Router guard - requiresAdmin:', to.meta.requiresAdmin)
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+    console.log('Redirecting to login - no auth')
     // Lưu route muốn truy cập để redirect sau khi đăng nhập
     localStorage.setItem("intendedRoute", to.fullPath);
     next("/login");
@@ -150,9 +157,11 @@ router.beforeEach((to, from, next) => {
     to.meta.requiresAdmin &&
     (!authStore.isAuthenticated || authStore.user?.role !== "admin")
   ) {
+    console.log('Redirecting to home - no admin rights')
     // Kiểm tra quyền admin
     next("/"); // Redirect về trang chủ nếu không phải admin
   } else {
+    console.log('Navigation allowed')
     next();
   }
 });

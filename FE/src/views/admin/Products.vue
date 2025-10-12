@@ -6,89 +6,157 @@ import { useAdminProducts } from "@/composables/admin/useAdminProducts.js";
 import AdminLayout from "@/components/admin/AdminLayout.vue";
 import ModernStatsCard from "@/components/admin/ModernStatsCard.vue";
 
+console.log("Products.vue - Starting to load...");
+
 const router = useRouter();
 const authStore = useAuthStore();
 
-// Composables
-const {
-  products,
-  categories,
-  totalProducts,
-  loading,
-  error,
-  pagination,
-  filters,
-  fetchProducts,
-  fetchCategories,
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  toggleProductStatus,
-  goToPage,
-  nextPage,
-  prevPage,
-  applyFilters,
-  clearFilters,
-  search,
-  sortBy,
-  getStatusColor,
-  getStatusText,
-  formatCurrency,
-  formatNumber,
-  formatDate,
-  truncateText,
-} = useAdminProducts();
+// Placeholder image
+const placeholderImage = "https://via.placeholder.com/150";
 
-// Modal states
+// Try to use composable (with fallback safe defaults)
+let comp;
+try {
+  comp = useAdminProducts();
+} catch (err) {
+  console.error("Error loading useAdminProducts:", err);
+  comp = {
+    products: ref([]),
+    categories: ref([]),
+    totalProducts: ref(0),
+    loading: ref(false),
+    error: ref("Failed to load admin products composable"),
+    pagination: ref({ page: 1, limit: 10, totalPages: 1, total: 0 }),
+    filters: ref({}),
+    fetchProducts: async () => {},
+    fetchCategories: async () => {},
+    createProduct: async () => {},
+    updateProduct: async () => {},
+    deleteProduct: async () => {},
+    toggleProductStatus: async () => {},
+    goToPage: async () => {},
+    nextPage: async () => {},
+    prevPage: async () => {},
+    applyFilters: () => {},
+    clearFilters: () => {},
+    search: () => {},
+    sortBy: () => {},
+    getStatusColor: () => "bg-gray-200 text-gray-800",
+    getStatusText: () => "Unknown",
+    formatCurrency: (v) =>
+      typeof v === "number" ? v.toLocaleString("vi-VN") + "₫" : v,
+  };
+}
+
+// Destructure from composable (works whether comp returns refs or plain values)
+const products = comp.products ?? ref([]);
+const categories = comp.categories ?? ref([]);
+const totalProducts = comp.totalProducts ?? ref(0);
+const loading = comp.loading ?? ref(false);
+const error = comp.error ?? ref(null);
+const pagination =
+  comp.pagination ?? ref({ page: 1, limit: 10, totalPages: 1, total: 0 });
+
+const fetchProducts = comp.fetchProducts ?? (async () => {});
+const fetchCategories = comp.fetchCategories ?? (async () => {});
+const createProduct = comp.createProduct ?? (async () => {});
+const updateProduct = comp.updateProduct ?? (async () => {});
+const deleteProductApi = comp.deleteProduct ?? (async () => {});
+const goToPage =
+  comp.goToPage ??
+  ((page) => {
+    pagination.page = page;
+  });
+const nextPageApi =
+  comp.nextPage ??
+  (async () => {
+    if (pagination.page < pagination.totalPages) pagination.page++;
+  });
+const prevPageApi =
+  comp.prevPage ??
+  (async () => {
+    if (pagination.page > 1) pagination.page--;
+  });
+const searchApi = comp.search ?? ((q) => {});
+const applyFiltersApi = comp.applyFilters ?? (() => {});
+const getStatusColor =
+  comp.getStatusColor ?? ((s) => "bg-gray-200 text-gray-800");
+const getStatusText = comp.getStatusText ?? ((s) => s || "—");
+const formatCurrency =
+  comp.formatCurrency ??
+  ((v) => (typeof v === "number" ? v.toLocaleString("vi-VN") + "₫" : v));
+
+// Local UI state
 const showCreateModal = ref(false);
 const showEditModal = ref(false);
+const showProductModal = ref(false);
 const showDeleteModal = ref(false);
 const productToDelete = ref(null);
 
-// Form data
+const isEditMode = ref(false);
 const productForm = ref({
+  _id: null,
   name: "",
   description: "",
   category: "",
   price: 0,
-  salePrice: 0,
+  sku: "",
   stock: 0,
   imageUrl: "",
   status: "draft",
 });
 
-// Search
-const searchTerm = ref("");
+const searchQuery = ref("");
 let searchTimeout = null;
 const debouncedSearch = () => {
   clearTimeout(searchTimeout);
   searchTimeout = setTimeout(() => {
-    search(searchTerm.value);
+    if (typeof searchApi === "function") searchApi(searchQuery.value);
+    else fetchProducts();
   }, 500);
 };
 
-// Computed
-const activeProductsCount = computed(() => {
-  return products.value.filter((p) => p.status === "active").length;
+const selectedCategory = ref("");
+
+// computed stats from local products array
+const activeProductsCount = computed(() =>
+  Array.isArray(products.value)
+    ? products.value.filter((p) => p.status === "active").length
+    : 0
+);
+const outOfStockCount = computed(() =>
+  Array.isArray(products.value)
+    ? products.value.filter((p) => (p.stock ?? 0) === 0).length
+    : 0
+);
+const draftProductsCount = computed(() =>
+  Array.isArray(products.value)
+    ? products.value.filter((p) => p.status === "draft").length
+    : 0
+);
+
+// pagination helpers
+const showFrom = computed(() => {
+  const page = pagination.page ?? 1;
+  const limit = pagination.limit ?? (products.value.length || 10);
+  return (page - 1) * limit + (products.value.length ? 1 : 0);
+});
+const showTo = computed(() => {
+  const page = pagination.page ?? 1;
+  const limit = pagination.limit ?? (products.value.length || 10);
+  const total =
+    totalProducts?.value ?? pagination.total ?? products.value.length;
+  return Math.min(page * limit, total || products.value.length);
 });
 
-const outOfStockCount = computed(() => {
-  return products.value.filter((p) => (p.stock || 0) === 0).length;
-});
-
-const draftProductsCount = computed(() => {
-  return products.value.filter((p) => p.status === "draft").length;
-});
-
+// visible pages (array with numbers and '...')
 const visiblePages = computed(() => {
   const pages = [];
-  const total = pagination.totalPages;
-  const current = pagination.page;
+  const total = pagination.totalPages ?? 1;
+  const current = pagination.page ?? 1;
 
   if (total <= 7) {
-    for (let i = 1; i <= total; i++) {
-      pages.push(i);
-    }
+    for (let i = 1; i <= total; i++) pages.push(i);
   } else {
     if (current <= 4) {
       for (let i = 1; i <= 5; i++) pages.push(i);
@@ -106,18 +174,52 @@ const visiblePages = computed(() => {
       pages.push(total);
     }
   }
-
   return pages;
 });
 
-// Methods
+// helpers
+const pKey = (p) =>
+  p === "..." ? `dot-${Math.random().toString(36).substr(2, 6)}` : `p-${p}`;
+const currentPageClass = (p) => {
+  if (p === "...") return "px-3 py-1 text-sm text-gray-400";
+  return p === pagination.page
+    ? "px-3 py-1 text-sm bg-blue-500 text-white rounded-lg"
+    : "px-3 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors";
+};
+
+const goTo = (p) => {
+  if (p === "...") return;
+  if (typeof goToPage === "function") goToPage(p);
+  else pagination.page = p;
+  fetchProducts();
+};
+
+const nextPage = async () => {
+  if (typeof nextPageApi === "function") await nextPageApi();
+  else if (pagination.page < pagination.totalPages) pagination.page++;
+  fetchProducts();
+};
+
+const prevPage = async () => {
+  if (typeof prevPageApi === "function") await prevPageApi();
+  else if (pagination.page > 1) pagination.page--;
+  fetchProducts();
+};
+
+const addProduct = () => {
+  resetForm();
+  isEditMode.value = false;
+  showProductModal.value = true;
+};
+
 const resetForm = () => {
   productForm.value = {
+    _id: null,
     name: "",
     description: "",
     category: "",
     price: 0,
-    salePrice: 0,
+    sku: "",
     stock: 0,
     imageUrl: "",
     status: "draft",
@@ -125,34 +227,62 @@ const resetForm = () => {
 };
 
 const closeModal = () => {
-  showCreateModal.value = false;
-  showEditModal.value = false;
+  showProductModal.value = false;
   resetForm();
 };
 
-const editProduct = (product) => {
+const onEditProduct = (product) => {
   productForm.value = {
-    id: product._id,
-    name: product.name,
-    description: product.description || "",
-    category: product.category?._id || "",
-    price: product.price,
-    salePrice: product.salePrice || 0,
-    stock: product.stock || 0,
-    imageUrl: product.imageUrl || "",
-    status: product.status,
+    _id: product._id ?? product.id,
+    name: product.name ?? "",
+    description: product.description ?? "",
+    category: product.category ?? "",
+    price: product.price ?? 0,
+    sku: product.sku ?? "",
+    stock: product.stock ?? 0,
+    imageUrl: product.imageUrl ?? product.image ?? "",
+    status: product.status ?? "draft",
   };
-  showEditModal.value = true;
+  isEditMode.value = true;
+  showProductModal.value = true;
 };
 
-const submitProduct = async () => {
+// view product placeholder — replace with route if needed
+const viewProduct = (product) => {
+  // example: router.push({ name: 'ProductDetail', params: { id: product._id || product.id } });
+  console.log("View product", product);
+};
+
+const onDuplicateProduct = (product) => {
+  const copy = { ...product };
+  delete copy._id;
+  copy.name = (copy.name || "") + " (bản sao)";
+  productForm.value = {
+    _id: null,
+    name: copy.name,
+    description: copy.description ?? "",
+    category: copy.category ?? "",
+    price: copy.price ?? 0,
+    sku: copy.sku ? copy.sku + "-COPY" : "",
+    stock: copy.stock ?? 0,
+    imageUrl: copy.imageUrl ?? copy.image ?? "",
+    status: copy.status ?? "draft",
+  };
+  isEditMode.value = false;
+  showProductModal.value = true;
+};
+
+const saveProduct = async () => {
   try {
-    if (showCreateModal.value) {
-      await createProduct(productForm.value);
+    if (isEditMode.value && productForm.value._id) {
+      if (typeof updateProduct === "function")
+        await updateProduct(productForm.value._id, productForm.value);
     } else {
-      await updateProduct(productForm.value.id, productForm.value);
+      if (typeof createProduct === "function")
+        await createProduct(productForm.value);
     }
     closeModal();
+    await fetchProducts();
   } catch (err) {
     console.error("Submit product error:", err);
   }
@@ -163,29 +293,70 @@ const confirmDelete = (product) => {
   showDeleteModal.value = true;
 };
 
+const closeDeleteModal = () => {
+  showDeleteModal.value = false;
+  productToDelete.value = null;
+};
+
 const handleDelete = async () => {
   try {
-    await deleteProduct(productToDelete.value._id);
-    showDeleteModal.value = false;
-    productToDelete.value = null;
+    if (!productToDelete.value) return;
+    const id = productToDelete.value._id ?? productToDelete.value.id;
+    if (typeof deleteProductApi === "function") await deleteProductApi(id);
+    closeDeleteModal();
+    await fetchProducts();
   } catch (err) {
     console.error("Delete product error:", err);
   }
 };
 
-// Check auth
+const applyCategoryFilter = () => {
+  const f = {};
+  if (selectedCategory.value) f.category = selectedCategory.value;
+  applyFiltersApi(f);
+  fetchProducts();
+};
+
+const categoryName = (cat) => {
+  // cat could be id or object
+  if (!cat) return "—";
+  // if categories list contains object with _id matching
+  const found = (categories.value || []).find(
+    (c) => c._id === (cat._id ?? cat) || c.id === cat
+  );
+  return found ? found.name : typeof cat === "string" ? cat : cat.name ?? "—";
+};
+
+// Check auth: redirect non-admin
 if (!authStore.user || authStore.user.role !== "admin") {
   router.push("/login");
 }
 
-// Initialize
+// initial fetch
 onMounted(async () => {
-  await Promise.all([fetchProducts(), fetchCategories()]);
+  await Promise.all([fetchCategories(), fetchProducts()]);
 });
-</script>
 
+// watch pagination.page to refetch products (if composable expects that)
+watch(
+  () => pagination.page,
+  async () => {
+    await fetchProducts();
+  }
+);
+</script>
 <template>
   <AdminLayout>
+    <!-- Error debug -->
+    <div
+      v-if="error && error.includes('Failed to load')"
+      class="p-6 bg-red-50 border border-red-200 rounded-lg m-6"
+    >
+      <h2 class="text-lg font-semibold text-red-800">Component Error</h2>
+      <p class="text-red-600">{{ error }}</p>
+      <p class="text-sm text-red-500 mt-2">Check console for details</p>
+    </div>
+
     <div class="p-6">
       <!-- Header -->
       <div class="flex justify-between items-center mb-6">
@@ -196,7 +367,7 @@ onMounted(async () => {
           </p>
         </div>
         <button
-          @click="showCreateModal = true"
+          @click="addProduct"
           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
         >
           <svg
@@ -240,18 +411,11 @@ onMounted(async () => {
           color="red"
         />
         <ModernStatsCard
-          title="Hết hàng"
-          :value="stats.outOfStock"
-          icon="fas fa-times-circle"
-          gradient="from-red-500 to-pink-500"
-          :loading="loading"
-        />
-
-        <ModernStatsCard
-          title="Sắp hết"
-          :value="stats.lowStock"
-          icon="fas fa-exclamation-triangle"
-          gradient="from-yellow-500 to-orange-500"
+          title="Bản nháp"
+          :value="draftProductsCount"
+          :format="'number'"
+          icon="📝"
+          color="gray"
           :loading="loading"
         />
       </div>
@@ -260,7 +424,7 @@ onMounted(async () => {
       <div
         class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50"
       >
-        <!-- Header -->
+        <!-- Header controls -->
         <div class="p-6 border-b border-gray-200 dark:border-gray-700">
           <div
             class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0"
@@ -297,6 +461,7 @@ onMounted(async () => {
               <div class="relative">
                 <input
                   v-model="searchQuery"
+                  @input="debouncedSearch"
                   type="text"
                   placeholder="Tìm kiếm sản phẩm..."
                   class="w-full sm:w-64 pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
@@ -319,23 +484,25 @@ onMounted(async () => {
               <!-- Category Filter -->
               <select
                 v-model="selectedCategory"
+                @change="applyCategoryFilter"
                 class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
+                <option value="">Tất cả danh mục</option>
                 <option
-                  v-for="category in categories"
-                  :key="category.id"
-                  :value="category.id"
+                  v-for="cat in categories"
+                  :key="cat._id || cat.id"
+                  :value="cat._id || cat.id"
                 >
-                  {{ category.name }}
+                  {{ cat.name }}
                 </option>
               </select>
             </div>
           </div>
         </div>
 
-        <!-- Table Content -->
+        <!-- Table -->
         <div class="overflow-x-auto">
-          <!-- Loading State -->
+          <!-- Loading skeleton -->
           <div v-if="loading" class="p-8">
             <div class="animate-pulse space-y-4">
               <div v-for="i in 5" :key="i" class="flex items-center space-x-4">
@@ -360,7 +527,7 @@ onMounted(async () => {
             </div>
           </div>
 
-          <!-- Products Table -->
+          <!-- Products table -->
           <table v-else class="w-full">
             <thead class="bg-gray-50 dark:bg-gray-700/50">
               <tr>
@@ -399,14 +566,14 @@ onMounted(async () => {
             <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
               <tr
                 v-for="product in products"
-                :key="product.id"
+                :key="product._id || product.id"
                 class="hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors duration-150"
               >
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="flex items-center space-x-4">
                     <img
                       class="w-16 h-16 rounded-lg object-cover ring-2 ring-gray-200 dark:ring-gray-700"
-                      :src="product.image"
+                      :src="product.images[0]"
                       :alt="product.name"
                     />
                     <div>
@@ -416,7 +583,7 @@ onMounted(async () => {
                         {{ product.name }}
                       </div>
                       <div class="text-xs text-gray-500 dark:text-gray-400">
-                        SKU: {{ product.sku }}
+                        SKU: {{ product.sku || "—" }}
                       </div>
                     </div>
                   </div>
@@ -424,27 +591,22 @@ onMounted(async () => {
 
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class="text-sm text-gray-600 dark:text-gray-300">
-                    {{
-                      categories.find((c) => c.id === product.category)?.name ||
-                      product.category
-                    }}
+                    {{ categoryName(product.category) }}
                   </span>
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span
                     class="text-sm font-semibold text-gray-900 dark:text-white"
+                    >{{ formatCurrency(product.price) }}</span
                   >
-                    {{ formatCurrency(product.price) }}
-                  </span>
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span
                     class="text-sm font-semibold text-gray-700 dark:text-gray-300"
+                    >{{ product.stock ?? 0 }}</span
                   >
-                    {{ product.stock }}
-                  </span>
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -452,9 +614,8 @@ onMounted(async () => {
                     :class="`inline-flex px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
                       product.status
                     )}`"
+                    >{{ getStatusText(product.status) }}</span
                   >
-                    {{ getStatusText(product.status) }}
-                  </span>
                 </td>
 
                 <td class="px-6 py-4 whitespace-nowrap text-right">
@@ -468,7 +629,7 @@ onMounted(async () => {
                     </button>
 
                     <button
-                      @click="editProduct(product)"
+                      @click="onEditProduct(product)"
                       class="p-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg transition-colors"
                       title="Chỉnh sửa"
                     >
@@ -476,7 +637,7 @@ onMounted(async () => {
                     </button>
 
                     <button
-                      @click="duplicateProduct(product)"
+                      @click="onDuplicateProduct(product)"
                       class="p-2 text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-lg transition-colors"
                       title="Sao chép"
                     >
@@ -484,13 +645,19 @@ onMounted(async () => {
                     </button>
 
                     <button
-                      @click="deleteProduct(product)"
+                      @click="confirmDelete(product)"
                       class="p-2 text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg transition-colors"
                       title="Xóa"
                     >
                       <i class="fas fa-trash w-4 h-4"></i>
                     </button>
                   </div>
+                </td>
+              </tr>
+
+              <tr v-if="!products.length && !loading">
+                <td colspan="6" class="text-center py-8 text-gray-500">
+                  Không có sản phẩm nào.
                 </td>
               </tr>
             </tbody>
@@ -502,22 +669,32 @@ onMounted(async () => {
           <div class="flex items-center justify-between">
             <div class="text-sm text-gray-600 dark:text-gray-400">
               Hiển thị
-              <span class="font-semibold">1-{{ products.length }}</span> của
-              <span class="font-semibold">{{ products.length }}</span> sản phẩm
+              <span class="font-semibold">{{ showFrom }}-{{ showTo }}</span> của
+              <span class="font-semibold">{{ totalProducts }}</span> sản phẩm
             </div>
 
             <div class="flex items-center space-x-2">
               <button
+                @click="prevPage"
+                :disabled="pagination.page <= 1"
                 class="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
               >
                 Trước
               </button>
+
               <button
-                class="px-3 py-1 text-sm bg-blue-500 text-white rounded-lg"
+                v-for="p in visiblePages"
+                :key="pKey(p)"
+                @click="goTo(p)"
+                :class="['px-3 py-1 text-sm rounded-lg', currentPageClass(p)]"
+                :disabled="p === '...'"
               >
-                1
+                {{ p }}
               </button>
+
               <button
+                @click="nextPage"
+                :disabled="pagination.page >= pagination.totalPages"
                 class="px-3 py-1 text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-300 transition-colors"
               >
                 Sau
@@ -577,9 +754,9 @@ onMounted(async () => {
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <!-- Product Name -->
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Tên sản phẩm *
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Tên sản phẩm *</label
+              >
               <input
                 v-model="productForm.name"
                 type="text"
@@ -591,27 +768,30 @@ onMounted(async () => {
 
             <!-- Category -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Danh mục *
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Danh mục *</label
+              >
               <select
                 v-model="productForm.category"
                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors"
                 required
               >
                 <option value="">Chọn danh mục</option>
-                <option value="smartphone">Điện thoại</option>
-                <option value="laptop">Laptop</option>
-                <option value="tablet">Tablet</option>
-                <option value="accessories">Phụ kiện</option>
+                <option
+                  v-for="cat in categories"
+                  :key="cat._id || cat.id"
+                  :value="cat._id || cat.id"
+                >
+                  {{ cat.name }}
+                </option>
               </select>
             </div>
 
             <!-- SKU -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Mã sản phẩm (SKU) *
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Mã sản phẩm (SKU) *</label
+              >
               <input
                 v-model="productForm.sku"
                 type="text"
@@ -623,9 +803,9 @@ onMounted(async () => {
 
             <!-- Price -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Giá bán (VNĐ) *
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Giá bán (VNĐ) *</label
+              >
               <input
                 v-model.number="productForm.price"
                 type="number"
@@ -638,9 +818,9 @@ onMounted(async () => {
 
             <!-- Stock -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Số lượng tồn kho *
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Số lượng tồn kho *</label
+              >
               <input
                 v-model.number="productForm.stock"
                 type="number"
@@ -653,9 +833,9 @@ onMounted(async () => {
 
             <!-- Status -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Trạng thái
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Trạng thái</label
+              >
               <select
                 v-model="productForm.status"
                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors"
@@ -669,11 +849,11 @@ onMounted(async () => {
 
             <!-- Image URL -->
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                URL hình ảnh
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >URL hình ảnh</label
+              >
               <input
-                v-model="productForm.image"
+                v-model="productForm.imageUrl"
                 type="url"
                 placeholder="https://example.com/image.jpg"
                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors"
@@ -682,9 +862,9 @@ onMounted(async () => {
 
             <!-- Description -->
             <div class="md:col-span-2">
-              <label class="block text-sm font-medium text-gray-700 mb-2">
-                Mô tả sản phẩm
-              </label>
+              <label class="block text-sm font-medium text-gray-700 mb-2"
+                >Mô tả sản phẩm</label
+              >
               <textarea
                 v-model="productForm.description"
                 rows="4"
@@ -725,5 +905,37 @@ onMounted(async () => {
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div
+      v-if="showDeleteModal"
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      @click="closeDeleteModal"
+    >
+      <div class="bg-white rounded-lg p-6 w-full max-w-md" @click.stop>
+        <h3 class="text-lg font-semibold mb-4">Xác nhận xóa</h3>
+        <p class="text-sm text-gray-600 mb-6">
+          Bạn có chắc muốn xóa sản phẩm
+          <span class="font-medium">{{ productToDelete?.name }}</span> không?
+          Hành động này không thể hoàn tác.
+        </p>
+        <div class="flex justify-end space-x-3">
+          <button @click="closeDeleteModal" class="px-4 py-2 rounded-md border">
+            Hủy
+          </button>
+          <button
+            @click="handleDelete"
+            :disabled="loading"
+            class="px-4 py-2 bg-red-600 text-white rounded-md"
+          >
+            Xóa
+          </button>
+        </div>
+      </div>
+    </div>
   </AdminLayout>
 </template>
+
+<style scoped>
+/* Nếu muốn, thêm style tùy chỉnh ở đây */
+</style>

@@ -12,6 +12,11 @@ import {
   
   // Product Management
   getAllProductsAdmin,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  toggleProductStatus,
   
   // Order Management
   getAllOrdersAdmin,
@@ -61,6 +66,11 @@ adminRouter.get("/users/vip/customers", getVIPCustomers);
 adminRouter.get("/products", getAllProductsAdmin);
 adminRouter.get("/products/category-stats", getProductCategoryStats);
 adminRouter.get("/products/low-stock", getLowStockAlert);
+adminRouter.get("/products/:id", getProductById);
+adminRouter.post("/products", createProduct);
+adminRouter.put("/products/:id", updateProduct);
+adminRouter.delete("/products/:id", deleteProduct);
+adminRouter.patch("/products/:id/toggle-status", toggleProductStatus);
 
 // ============= ORDER MANAGEMENT ROUTES =============
 adminRouter.get("/orders", getAllOrdersAdmin);

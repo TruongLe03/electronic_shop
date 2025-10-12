@@ -1,14 +1,14 @@
-import axiosInstance from '../utils/axiosConfig';
+import axiosInstance from "../utils/axiosConfig";
 
 // ============= DASHBOARD ANALYTICS =============
 
 // Lấy thống kê tổng quan dashboard
 export const getDashboardStats = async () => {
   try {
-    const response = await axiosInstance.get('/admin/dashboard/stats');
+    const response = await axiosInstance.get("/admin/dashboard/stats");
     return response.data;
   } catch (error) {
-    console.error('Get dashboard stats error:', error);
+    console.error("Get dashboard stats error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -16,10 +16,10 @@ export const getDashboardStats = async () => {
 // Lấy thống kê tăng trưởng
 export const getGrowthAnalytics = async () => {
   try {
-    const response = await axiosInstance.get('/admin/dashboard/growth');
+    const response = await axiosInstance.get("/admin/dashboard/growth");
     return response.data;
   } catch (error) {
-    console.error('Get growth analytics error:', error);
+    console.error("Get growth analytics error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -32,14 +32,14 @@ export const getAllUsers = async (params = {}) => {
     const {
       page = 1,
       limit = 10,
-      search = '',
-      role = '',
-      status = '',
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
+      search = "",
+      role = "",
+      status = "",
+      sortBy = "createdAt",
+      sortOrder = "desc",
     } = params;
 
-    const response = await axiosInstance.get('/admin/users', {
+    const response = await axiosInstance.get("/admin/users", {
       params: {
         page,
         limit,
@@ -47,12 +47,12 @@ export const getAllUsers = async (params = {}) => {
         role,
         status,
         sortBy,
-        sortOrder
-      }
+        sortOrder,
+      },
     });
     return response.data;
   } catch (error) {
-    console.error('Get all users error:', error);
+    console.error("Get all users error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -63,7 +63,7 @@ export const getUserById = async (userId) => {
     const response = await axiosInstance.get(`/admin/users/${userId}`);
     return response.data;
   } catch (error) {
-    console.error('Get user by id error:', error);
+    console.error("Get user by id error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -71,10 +71,13 @@ export const getUserById = async (userId) => {
 // Cập nhật thông tin người dùng
 export const updateUser = async (userId, userData) => {
   try {
-    const response = await axiosInstance.put(`/admin/users/${userId}`, userData);
+    const response = await axiosInstance.put(
+      `/admin/users/${userId}`,
+      userData
+    );
     return response.data;
   } catch (error) {
-    console.error('Update user error:', error);
+    console.error("Update user error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -82,10 +85,12 @@ export const updateUser = async (userId, userData) => {
 // Thay đổi trạng thái người dùng
 export const toggleUserStatus = async (userId) => {
   try {
-    const response = await axiosInstance.patch(`/admin/users/${userId}/toggle-status`);
+    const response = await axiosInstance.patch(
+      `/admin/users/${userId}/toggle-status`
+    );
     return response.data;
   } catch (error) {
-    console.error('Toggle user status error:', error);
+    console.error("Toggle user status error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -96,7 +101,7 @@ export const deleteUser = async (userId) => {
     const response = await axiosInstance.delete(`/admin/users/${userId}`);
     return response.data;
   } catch (error) {
-    console.error('Delete user error:', error);
+    console.error("Delete user error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -104,12 +109,12 @@ export const deleteUser = async (userId) => {
 // Lấy danh sách khách hàng VIP
 export const getVIPCustomers = async (limit = 10) => {
   try {
-    const response = await axiosInstance.get('/admin/users/vip/customers', {
-      params: { limit }
+    const response = await axiosInstance.get("/admin/users/vip/customers", {
+      params: { limit },
     });
     return response.data;
   } catch (error) {
-    console.error('Get VIP customers error:', error);
+    console.error("Get VIP customers error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -119,17 +124,19 @@ export const getVIPCustomers = async (limit = 10) => {
 // Lấy danh sách sản phẩm cho admin
 export const getAllProductsAdmin = async (params = {}) => {
   try {
+    console.log("getAllProductsAdmin - params:", params);
     const {
       page = 1,
       limit = 10,
-      search = '',
-      category = '',
-      status = '',
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
+      search = "",
+      category = "",
+      status = "",
+      sortBy = "createdAt",
+      sortOrder = "desc",
     } = params;
 
-    const response = await axiosInstance.get('/admin/products', {
+    console.log("getAllProductsAdmin - making request to /admin/products");
+    const response = await axiosInstance.get("/admin/products", {
       params: {
         page,
         limit,
@@ -137,12 +144,13 @@ export const getAllProductsAdmin = async (params = {}) => {
         category,
         status,
         sortBy,
-        sortOrder
-      }
+        sortOrder,
+      },
     });
+    console.log("getAllProductsAdmin - response:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Get all products admin error:', error);
+    console.error("Get all products admin error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -150,10 +158,10 @@ export const getAllProductsAdmin = async (params = {}) => {
 // Lấy thống kê sản phẩm theo danh mục
 export const getProductCategoryStats = async () => {
   try {
-    const response = await axiosInstance.get('/admin/products/category-stats');
+    const response = await axiosInstance.get("/admin/products/category-stats");
     return response.data;
   } catch (error) {
-    console.error('Get product category stats error:', error);
+    console.error("Get product category stats error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -161,12 +169,88 @@ export const getProductCategoryStats = async () => {
 // Lấy sản phẩm sắp hết hàng
 export const getLowStockAlert = async (threshold = 10) => {
   try {
-    const response = await axiosInstance.get('/admin/products/low-stock', {
-      params: { threshold }
+    const response = await axiosInstance.get("/admin/products/low-stock", {
+      params: { threshold },
     });
     return response.data;
   } catch (error) {
-    console.error('Get low stock alert error:', error);
+    console.error("Get low stock alert error:", error);
+    throw error.response ? error.response.data : error;
+  }
+};
+
+// Lấy danh sách sản phẩm (alias cho getAllProductsAdmin)
+export const getProducts = async (params = {}) => {
+  return getAllProductsAdmin(params);
+};
+
+// Lấy chi tiết sản phẩm
+export const getProduct = async (productId) => {
+  try {
+    const response = await axiosInstance.get(`/admin/products/${productId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Get product error:", error);
+    throw error.response ? error.response.data : error;
+  }
+};
+
+// Tạo sản phẩm mới
+export const createProduct = async (productData) => {
+  try {
+    const response = await axiosInstance.post("/admin/products", productData);
+    return response.data;
+  } catch (error) {
+    console.error("Create product error:", error);
+    throw error.response ? error.response.data : error;
+  }
+};
+
+// Cập nhật sản phẩm
+export const updateProduct = async (productId, productData) => {
+  try {
+    const response = await axiosInstance.put(
+      `/admin/products/${productId}`,
+      productData
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Update product error:", error);
+    throw error.response ? error.response.data : error;
+  }
+};
+
+// Xóa sản phẩm
+export const deleteProduct = async (productId) => {
+  try {
+    const response = await axiosInstance.delete(`/admin/products/${productId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete product error:", error);
+    throw error.response ? error.response.data : error;
+  }
+};
+
+// Thay đổi trạng thái sản phẩm
+export const toggleProductStatus = async (productId) => {
+  try {
+    const response = await axiosInstance.patch(
+      `/admin/products/${productId}/toggle-status`
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Toggle product status error:", error);
+    throw error.response ? error.response.data : error;
+  }
+};
+
+// Lấy danh sách danh mục
+export const getCategories = async () => {
+  try {
+    const response = await axiosInstance.get("/categories");
+    return response.data;
+  } catch (error) {
+    console.error("Get categories error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -179,15 +263,15 @@ export const getAllOrdersAdmin = async (params = {}) => {
     const {
       page = 1,
       limit = 10,
-      status = '',
-      startDate = '',
-      endDate = '',
-      userId = '',
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
+      status = "",
+      startDate = "",
+      endDate = "",
+      userId = "",
+      sortBy = "createdAt",
+      sortOrder = "desc",
     } = params;
 
-    const response = await axiosInstance.get('/admin/orders', {
+    const response = await axiosInstance.get("/admin/orders", {
       params: {
         page,
         limit,
@@ -196,12 +280,12 @@ export const getAllOrdersAdmin = async (params = {}) => {
         endDate,
         userId,
         sortBy,
-        sortOrder
-      }
+        sortOrder,
+      },
     });
     return response.data;
   } catch (error) {
-    console.error('Get all orders admin error:', error);
+    console.error("Get all orders admin error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -209,10 +293,13 @@ export const getAllOrdersAdmin = async (params = {}) => {
 // Cập nhật trạng thái đơn hàng
 export const updateOrderStatus = async (orderId, statusData) => {
   try {
-    const response = await axiosInstance.patch(`/admin/orders/${orderId}/status`, statusData);
+    const response = await axiosInstance.patch(
+      `/admin/orders/${orderId}/status`,
+      statusData
+    );
     return response.data;
   } catch (error) {
-    console.error('Update order status error:', error);
+    console.error("Update order status error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -220,10 +307,10 @@ export const updateOrderStatus = async (orderId, statusData) => {
 // Lấy thống kê đơn hàng theo ngày trong tuần
 export const getOrdersByDayStats = async () => {
   try {
-    const response = await axiosInstance.get('/admin/orders/day-stats');
+    const response = await axiosInstance.get("/admin/orders/day-stats");
     return response.data;
   } catch (error) {
-    console.error('Get orders by day stats error:', error);
+    console.error("Get orders by day stats error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -236,25 +323,25 @@ export const getInventoryList = async (params = {}) => {
     const {
       page = 1,
       limit = 10,
-      search = '',
+      search = "",
       lowStock = false,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
+      sortBy = "createdAt",
+      sortOrder = "desc",
     } = params;
 
-    const response = await axiosInstance.get('/admin/inventory', {
+    const response = await axiosInstance.get("/admin/inventory", {
       params: {
         page,
         limit,
         search,
         lowStock,
         sortBy,
-        sortOrder
-      }
+        sortOrder,
+      },
     });
     return response.data;
   } catch (error) {
-    console.error('Get inventory list error:', error);
+    console.error("Get inventory list error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -262,10 +349,13 @@ export const getInventoryList = async (params = {}) => {
 // Cập nhật tồn kho
 export const updateInventory = async (productId, inventoryData) => {
   try {
-    const response = await axiosInstance.put(`/admin/inventory/${productId}`, inventoryData);
+    const response = await axiosInstance.put(
+      `/admin/inventory/${productId}`,
+      inventoryData
+    );
     return response.data;
   } catch (error) {
-    console.error('Update inventory error:', error);
+    console.error("Update inventory error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -275,12 +365,12 @@ export const updateInventory = async (productId, inventoryData) => {
 // Tạo báo cáo doanh thu
 export const generateRevenueReport = async (startDate, endDate) => {
   try {
-    const response = await axiosInstance.get('/admin/reports/revenue', {
-      params: { startDate, endDate }
+    const response = await axiosInstance.get("/admin/reports/revenue", {
+      params: { startDate, endDate },
     });
     return response.data;
   } catch (error) {
-    console.error('Generate revenue report error:', error);
+    console.error("Generate revenue report error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -288,12 +378,12 @@ export const generateRevenueReport = async (startDate, endDate) => {
 // Tạo báo cáo sản phẩm bán chạy
 export const generateProductReport = async (limit = 20) => {
   try {
-    const response = await axiosInstance.get('/admin/reports/products', {
-      params: { limit }
+    const response = await axiosInstance.get("/admin/reports/products", {
+      params: { limit },
     });
     return response.data;
   } catch (error) {
-    console.error('Generate product report error:', error);
+    console.error("Generate product report error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -303,10 +393,10 @@ export const generateProductReport = async (limit = 20) => {
 // Lấy thông tin hệ thống
 export const getSystemInfo = async () => {
   try {
-    const response = await axiosInstance.get('/admin/system/info');
+    const response = await axiosInstance.get("/admin/system/info");
     return response.data;
   } catch (error) {
-    console.error('Get system info error:', error);
+    console.error("Get system info error:", error);
     throw error.response ? error.response.data : error;
   }
 };

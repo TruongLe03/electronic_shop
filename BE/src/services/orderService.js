@@ -13,18 +13,7 @@ export class OrderService {
       shipping_fee = 30000  // Default shipping fee 30k VND
     } = orderData;
 
-    console.log('OrderService.createOrder - Processing order:', {
-      userId,
-      itemsCount: items?.length,
-      items: items?.map(item => ({
-        productId: item.productId || item.product_id,
-        quantity: item.quantity,
-        price: item.price
-      })),
-      shipping_address
-    });
-
-    // Validate shipping address
+    // Validate required fields
     if (!shipping_address || !shipping_address.name || !shipping_address.phone || !shipping_address.address) {
       throw new Error('Thông tin địa chỉ giao hàng không đầy đủ');
     }
@@ -36,7 +25,6 @@ export class OrderService {
     for (const item of items) {
       // Support both productId and product_id for compatibility
       const productId = item.productId || item.product_id;
-      console.log('Processing item:', { item, productId });
       
       if (!productId) {
         throw new Error('Product ID is required in order items');
@@ -58,14 +46,6 @@ export class OrderService {
       const discountPercent = product.discount_percent || 0;
       const discountedPrice = product.price * (1 - discountPercent / 100);
       const itemTotal = discountedPrice * item.quantity;
-      
-      console.log('Price calculation:', {
-        originalPrice: product.price,
-        discountPercent,
-        discountedPrice,
-        quantity: item.quantity,
-        itemTotal
-      });
       
       // Validate numeric values before pushing
       if (isNaN(discountedPrice) || discountedPrice < 0) {
@@ -90,13 +70,6 @@ export class OrderService {
     subtotal = Math.round(subtotal);
     const total = Math.round(subtotal + shipping_fee); // Removed discount_amount since we're not using coupons
     
-    console.log('Order totals:', {
-      subtotal,
-      shipping_fee,
-      total,
-      discount_amount
-    });
-
     // Validate numeric values
     if (isNaN(subtotal) || subtotal < 0) {
       throw new Error('Subtotal không hợp lệ');
@@ -189,12 +162,22 @@ export class OrderService {
         $lte: new Date(filters.dateTo)
       };
     }
+    
+    if (filters.userId) {
+      query.user_id = filters.userId;
+    }
+
+    // Build sort
+    let sort = {};
+    const sortBy = filters.sortBy || 'createdAt';
+    const sortOrder = filters.sortOrder === 'asc' ? 1 : -1;
+    sort[sortBy] = sortOrder;
 
     const [orders, total] = await Promise.all([
       Order.find(query)
         .populate('products.product_id')  // Fixed: Order model has 'products' not 'items'
         .populate('user_id', 'name email phone_number')
-        .sort({ createdAt: -1 })
+        .sort(sort)
         .skip(skip)
         .limit(limit),
       Order.countDocuments(query)
@@ -395,10 +378,6 @@ export class OrderService {
   static async createOrderFromCart(orderData) {
     const { userId, shippingAddress, paymentMethod, note } = orderData;
 
-    console.log('OrderService.createOrderFromCart - Input:', {
-      userId, shippingAddress, paymentMethod, note
-    });
-
     // Validate shipping address
     if (!shippingAddress || !shippingAddress.name || !shippingAddress.phone || !shippingAddress.address) {
       throw new Error('Thông tin địa chỉ giao hàng không đầy đủ');
@@ -456,16 +435,7 @@ export class OrderService {
   }
 
   // Tạo đơn hàng trực tiếp (mua ngay)
-  static async createDirectOrder(orderData) {
-    const { userId, items, shippingAddress, paymentMethod, note } = orderData;
-
-    console.log('OrderService.createDirectOrder - Input data:', {
-      userId,
-      items,
-      shippingAddress,
-      paymentMethod,
-      note
-    });
+  static async createDirectOrder(userId, { items, shippingAddress, paymentMethod, note }) {
 
     // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {

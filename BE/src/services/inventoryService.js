@@ -4,10 +4,8 @@ import { ProductService } from "./productService.js";
 export class InventoryService {
   // Lấy thông tin inventory theo product ID
   static async getInventoryByProduct(productId) {
-    console.log('Searching inventory for productId:', productId); // Debug log
     const inventory = await Inventory.findOne({ productId: productId })
       .populate('productId');
-    console.log('Found inventory:', inventory); // Debug log
     
     if (!inventory) {
       // Trả về object mặc định với format mà frontend expect

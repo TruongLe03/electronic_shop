@@ -29,11 +29,13 @@ export class ProductService {
   static async getProducts(filters = {}, pagination = {}) {
     const {
       categoryId,
+      category_id,
       minPrice,
       maxPrice,
       inStock,
       onSale,
       search,
+      status,
       sortBy = 'createdAt',
       sortOrder = 'desc'
     } = filters;
@@ -48,14 +50,14 @@ export class ProductService {
     // Build query
     let query = {};
 
-    if (categoryId) {
-      query.category_id = categoryId;
+    if (categoryId || category_id) {
+      query.category_id = categoryId || category_id;
     }
 
-    if (minPrice !== null || maxPrice !== null) {
+    if ((minPrice !== null && minPrice !== undefined) || (maxPrice !== null && maxPrice !== undefined)) {
       query.price = {};
-      if (minPrice !== null) query.price.$gte = minPrice;
-      if (maxPrice !== null) query.price.$lte = maxPrice;
+      if (minPrice !== null && minPrice !== undefined) query.price.$gte = minPrice;
+      if (maxPrice !== null && maxPrice !== undefined) query.price.$lte = maxPrice;
     }
 
     if (inStock) {
@@ -66,7 +68,11 @@ export class ProductService {
       query.discount_percent = { $gt: 0 };
     }
 
-    if (search) {
+    if (status && status.trim() !== '') {
+      query.status = status;
+    }
+
+    if (search && search.trim() !== '') {
       query.$or = [
         { name: { $regex: search, $options: 'i' } },
         { description: { $regex: search, $options: 'i' } }

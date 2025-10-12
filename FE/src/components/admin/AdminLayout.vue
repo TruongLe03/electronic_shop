@@ -75,7 +75,48 @@ const logout = () => {
 }
 
 const isActiveRoute = (path) => {
-  return route.path === path
+  // Exact match for dashboard
+  if (path === '/admin' && route.path === '/admin') {
+    return true
+  }
+  
+  // For other routes, check if current path starts with the menu path
+  // but avoid matching dashboard with other admin routes
+  if (path !== '/admin' && route.path.startsWith(path)) {
+    return true
+  }
+  
+  return false
+}
+
+const navigateTo = async (path) => {
+  try {
+    console.log('Navigating to:', path)
+    console.log('Current route:', route.path)
+    
+    // Check if we're already on this route
+    if (route.path === path) {
+      console.log('Already on target route')
+      return
+    }
+    
+    console.log('Attempting router.push...')
+    const result = await router.push(path)
+    console.log('Navigation successful:', result)
+  } catch (err) {
+    console.error('Navigation error details:', {
+      message: err.message,
+      name: err.name,
+      stack: err.stack,
+      type: err.type
+    })
+    
+    // Fallback: try window.location if router fails
+    if (path.startsWith('/admin')) {
+      console.log('Fallback: using window.location')
+      window.location.href = path
+    }
+  }
 }
 </script>
 
@@ -135,12 +176,12 @@ const isActiveRoute = (path) => {
 
         <!-- Navigation Menu -->
         <nav class="px-4 space-y-2">
-          <router-link
+          <button
             v-for="item in menuItems"
             :key="item.path"
-            :to="item.path"
+            @click="navigateTo(item.path)"
             :class="[
-              'group flex items-center px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden',
+              'group flex items-center px-4 py-3 rounded-xl transition-all duration-300 relative overflow-hidden w-full text-left',
               isActiveRoute(item.path) 
                 ? `bg-gradient-to-r ${item.gradient} text-white shadow-lg transform scale-105`
                 : darkMode
@@ -163,7 +204,7 @@ const isActiveRoute = (path) => {
               'absolute inset-0 bg-gradient-to-r opacity-0 group-hover:opacity-10 transition-opacity duration-300',
               item.gradient
             ]"></div>
-          </router-link>
+          </button>
         </nav>
 
         <!-- User Profile Section -->

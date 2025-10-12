@@ -41,8 +41,6 @@ export const getUserOrders = asyncHandler(async (req, res) => {
 export const getOrderById = asyncHandler(async (req, res) => {
   const { orderId } = req.params;
   
-  console.log('Get order by ID request:', { orderId });
-  
   // Validate orderId
   if (!ValidationUtil.isValidObjectId(orderId)) {
     return ResponseUtil.validationError(res, ['Order ID không hợp lệ']);
@@ -123,29 +121,13 @@ export const createOrderFromCart = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { shippingAddress, paymentMethod, note } = req.body;
 
-  console.log('Create order from cart request:', {
-    userId,
-    body: req.body,
-    shippingAddress,
-    paymentMethod
-  });
-
   // Validate required fields
-  console.log('Validating order data:', { 
-    hasShippingAddress: !!shippingAddress,
-    shippingAddress,
-    hasPaymentMethod: !!paymentMethod,
-    paymentMethod 
-  });
-
   if (!shippingAddress || !paymentMethod) {
-    console.log('Cart order validation failed:', { shippingAddress, paymentMethod });
     return ResponseUtil.validationError(res, ['Địa chỉ giao hàng và phương thức thanh toán là bắt buộc']);
   }
 
   // Validate shipping address fields
   if (!shippingAddress.name || !shippingAddress.phone || !shippingAddress.address) {
-    console.log('Shipping address validation failed:', shippingAddress);
     return ResponseUtil.validationError(res, ['Họ tên, số điện thoại và địa chỉ giao hàng là bắt buộc']);
   }
 
@@ -165,22 +147,12 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
   const userId = req.user.id;
   const { items, shippingAddress, paymentMethod, note } = req.body;
 
-  console.log('Create direct order request:', {
-    userId,
-    body: req.body,
-    items: items,
-    shippingAddress: shippingAddress,
-    paymentMethod: paymentMethod
-  });
-
   // Validate required fields
   if (!items || !Array.isArray(items) || items.length === 0) {
-    console.log('Validation failed: items invalid', items);
     return ResponseUtil.validationError(res, ['Danh sách sản phẩm không được trống']);
   }
 
   if (!shippingAddress || !paymentMethod) {
-    console.log('Validation failed: missing required fields', { shippingAddress, paymentMethod });
     return ResponseUtil.validationError(res, ['Địa chỉ giao hàng và phương thức thanh toán là bắt buộc']);
   }
 

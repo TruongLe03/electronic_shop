@@ -45,7 +45,9 @@ export function useAdminProducts() {
         ...params,
       };
 
+      console.log('fetchProducts - queryParams:', queryParams);
       const response = await adminService.getProducts(queryParams);
+      console.log('fetchProducts - response:', response);
       products.value = response.data.products;
       totalProducts.value = response.data.total;
       pagination.totalPages = Math.ceil(response.data.total / pagination.limit);

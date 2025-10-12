@@ -126,7 +126,6 @@ export const updateProduct = async (req, res) => {
           });
           
           await inventory.save();
-          console.log(`📦 Synced inventory for product ${updatedProduct.name}: ${oldQuantity} → ${updateData.stock}`);
         } else {
           // Create new inventory if doesn't exist
           inventory = new Inventory({
@@ -154,7 +153,6 @@ export const updateProduct = async (req, res) => {
           });
           
           await inventory.save();
-          console.log(`🆕 Created inventory for product ${updatedProduct.name}: ${updateData.stock} units`);
         }
       } catch (inventoryError) {
         console.error('⚠️  Failed to sync inventory:', inventoryError);

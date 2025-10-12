@@ -1,23 +1,21 @@
-import { ref, reactive, computed } from "vue";
-import * as adminService from "@/api/adminService";
+import { ref, reactive } from "vue";
+import * as adminService from "@/api/adminService.js";
 
 export function useAdminOrders() {
+  // State
   const orders = ref([]);
-  const currentOrder = ref(null);
-  const orderStats = ref(null);
   const loading = ref(false);
   const error = ref(null);
 
-  // Pagination state
+  // Pagination
   const pagination = reactive({
     currentPage: 1,
     totalPages: 1,
-    totalOrders: 0,
-    hasNextPage: false,
-    hasPrevPage: false,
+    total: 0,
+    limit: 10,
   });
 
-  // Filter state
+  // Filters
   const filters = reactive({
     status: "",
     startDate: "",
@@ -27,198 +25,168 @@ export function useAdminOrders() {
     sortOrder: "desc",
   });
 
+  // Order statuses based on actual BE model
   const orderStatuses = [
-    { value: "", label: "Tất cả trạng thái" },
-    { value: "pending", label: "Chờ xác nhận", color: "orange" },
-    { value: "confirmed", label: "Đã xác nhận", color: "blue" },
-    { value: "processing", label: "Đang xử lý", color: "purple" },
-    { value: "shipped", label: "Đã gửi hàng", color: "indigo" },
-    { value: "delivered", label: "Đã giao hàng", color: "green" },
-    { value: "cancelled", label: "Đã hủy", color: "red" },
+    { value: "Chờ xác nhận", label: "Chờ xác nhận" },
+    { value: "Đã xác nhận", label: "Đã xác nhận" },
+    { value: "Đang xử lý", label: "Đang xử lý" },
+    { value: "Đang giao", label: "Đang giao" },
+    { value: "Đã giao", label: "Đã giao" },
+    { value: "Đã hủy", label: "Đã hủy" },
   ];
 
-  // Lấy danh sách đơn hàng
-  const fetchOrders = async (params = {}) => {
+  // Methods
+  const fetchOrders = async () => {
     try {
       loading.value = true;
       error.value = null;
 
-      const queryParams = {
+      const params = {
         page: pagination.currentPage,
-        limit: 10,
+        limit: pagination.limit,
         ...filters,
-        ...params,
       };
 
-      const response = await adminService.getAllOrdersAdmin(queryParams);
-      orders.value = response.data.orders;
+      const response = await adminService.getAllOrdersAdmin(params);
 
-      // Update pagination
-      Object.assign(pagination, response.data.pagination);
+      if (response.success) {
+        orders.value = response.data.orders || [];
+        pagination.total = response.data.total || 0;
+        pagination.totalPages = response.data.totalPages || 1;
+      } else {
+        throw new Error(response.message || "Lỗi khi tải đơn hàng");
+      }
     } catch (err) {
-      error.value = err.message || "Lỗi khi lấy danh sách đơn hàng";
-      console.error("Fetch orders error:", err);
+      error.value = err.message || "Lỗi khi tải đơn hàng";
+      console.error("Error fetching orders:", err);
     } finally {
       loading.value = false;
     }
   };
 
-  // Cập nhật trạng thái đơn hàng
-  const updateOrderStatus = async (orderId, statusData) => {
+  const updateOrderStatus = async (orderId, status, note = "") => {
     try {
       loading.value = true;
       error.value = null;
-      const response = await adminService.updateOrderStatus(
-        orderId,
-        statusData
-      );
 
-      // Update order in list
-      const index = orders.value.findIndex((order) => order._id === orderId);
-      if (index !== -1) {
-        orders.value[index] = response.data;
+      const response = await adminService.updateOrderStatus(orderId, {
+        status,
+        note,
+      });
+
+      if (response.success) {
+        // Update local data
+        const orderIndex = orders.value.findIndex(
+          (order) => order._id === orderId
+        );
+        if (orderIndex !== -1) {
+          orders.value[orderIndex] = { ...orders.value[orderIndex], status };
+        }
+        return response.data;
+      } else {
+        throw new Error(response.message || "Lỗi khi cập nhật trạng thái");
       }
-
-      return response;
     } catch (err) {
-      error.value = err.message || "Lỗi khi cập nhật trạng thái đơn hàng";
-      console.error("Update order status error:", err);
+      error.value = err.message || "Lỗi khi cập nhật trạng thái";
+      console.error("Error updating order status:", err);
       throw err;
     } finally {
       loading.value = false;
     }
   };
 
-  // Lấy thống kê đơn hàng theo ngày
-  const fetchOrdersByDayStats = async () => {
-    try {
-      loading.value = true;
-      error.value = null;
-      const response = await adminService.getOrdersByDayStats();
-      orderStats.value = response.data;
-    } catch (err) {
-      error.value = err.message || "Lỗi khi lấy thống kê đơn hàng";
-      console.error("Fetch orders by day stats error:", err);
-    } finally {
-      loading.value = false;
-    }
-  };
-
-  // Filter orders by status
-  const filterByStatus = (status) => {
-    filters.status = status;
-    pagination.currentPage = 1;
-    fetchOrders();
-  };
-
-  // Filter orders by date range
-  const filterByDateRange = (startDate, endDate) => {
-    filters.startDate = startDate;
-    filters.endDate = endDate;
-    pagination.currentPage = 1;
-    fetchOrders();
-  };
-
-  // Change page
-  const changePage = (page) => {
+  // Pagination methods
+  const goToPage = (page) => {
     pagination.currentPage = page;
     fetchOrders();
   };
 
-  // Reset filters
-  const resetFilters = () => {
-    Object.assign(filters, {
-      status: "",
-      startDate: "",
-      endDate: "",
-      userId: "",
-      sortBy: "createdAt",
-      sortOrder: "desc",
-    });
+  const nextPage = () => {
+    if (pagination.currentPage < pagination.totalPages) {
+      pagination.currentPage++;
+      fetchOrders();
+    }
+  };
+
+  const prevPage = () => {
+    if (pagination.currentPage > 1) {
+      pagination.currentPage--;
+      fetchOrders();
+    }
+  };
+
+  // Filter methods
+  const applyFilters = () => {
     pagination.currentPage = 1;
     fetchOrders();
   };
 
-  // Get status color
+  const clearFilters = () => {
+    filters.status = "";
+    filters.startDate = "";
+    filters.endDate = "";
+    filters.userId = "";
+    filters.sortBy = "createdAt";
+    filters.sortOrder = "desc";
+    pagination.currentPage = 1;
+    fetchOrders();
+  };
+
+  // Utility methods
   const getStatusColor = (status) => {
-    const statusConfig = orderStatuses.find((s) => s.value === status);
-    return statusConfig?.color || "gray";
+    const colors = {
+      "Chờ xác nhận": "bg-yellow-100 text-yellow-800",
+      "Đã xác nhận": "bg-blue-100 text-blue-800",
+      "Đang xử lý": "bg-purple-100 text-purple-800",
+      "Đang giao": "bg-indigo-100 text-indigo-800",
+      "Đã giao": "bg-green-100 text-green-800",
+      "Đã hủy": "bg-red-100 text-red-800",
+    };
+    return colors[status] || "bg-gray-100 text-gray-800";
   };
 
-  // Get status label
-  const getStatusLabel = (status) => {
-    const statusConfig = orderStatuses.find((s) => s.value === status);
-    return statusConfig?.label || status;
+  const getStatusText = (status) => {
+    return status || "Không xác định";
   };
 
-  // Format currency
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(amount);
+    }).format(amount || 0);
   };
 
-  // Format date
   const formatDate = (date) => {
+    if (!date) return "";
     return new Date(date).toLocaleDateString("vi-VN", {
       year: "numeric",
-      month: "short",
-      day: "numeric",
+      month: "2-digit",
+      day: "2-digit",
       hour: "2-digit",
       minute: "2-digit",
     });
   };
 
-  // Computed properties
-  const pendingOrders = computed(() => {
-    return orders.value.filter((order) => order.status === "pending");
-  });
-
-  const processingOrders = computed(() => {
-    return orders.value.filter((order) =>
-      ["confirmed", "processing", "shipped"].includes(order.status)
-    );
-  });
-
-  const completedOrders = computed(() => {
-    return orders.value.filter((order) => order.status === "delivered");
-  });
-
-  const cancelledOrders = computed(() => {
-    return orders.value.filter((order) => order.status === "cancelled");
-  });
-
-  const totalRevenue = computed(() => {
-    return orders.value
-      .filter((order) => order.status === "delivered")
-      .reduce((sum, order) => sum + order.totalAmount, 0);
-  });
-
   return {
+    // State
     orders,
-    currentOrder,
-    orderStats,
     loading,
     error,
     pagination,
     filters,
     orderStatuses,
+
+    // Methods
     fetchOrders,
     updateOrderStatus,
-    fetchOrdersByDayStats,
-    filterByStatus,
-    filterByDateRange,
-    changePage,
-    resetFilters,
+    goToPage,
+    nextPage,
+    prevPage,
+    applyFilters,
+    clearFilters,
     getStatusColor,
-    getStatusLabel,
+    getStatusText,
     formatCurrency,
     formatDate,
-    pendingOrders,
-    processingOrders,
-    completedOrders,
-    cancelledOrders,
-    totalRevenue,
   };
 }

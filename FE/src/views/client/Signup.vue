@@ -22,6 +22,22 @@ onMounted(() => {
   }
 });
 
+const formData = ref({
+  email: "",
+  username: "",
+  phone_number: "",
+  password: "",
+  confirmPassword: "",
+});
+
+const errors = ref({});
+const loading = ref(false);
+const emailValidation = ref({
+  isChecking: false,
+  isValid: null,
+  message: ""
+});
+
 // Watch email changes with debounce
 let emailTimeout;
 watch(
@@ -42,22 +58,6 @@ watch(
     }, 500); // Debounce 500ms
   }
 );
-
-const formData = ref({
-  email: "",
-  username: "",
-  phone_number: "",
-  password: "",
-  confirmPassword: "",
-});
-
-const errors = ref({});
-const loading = ref(false);
-const emailValidation = ref({
-  isChecking: false,
-  isValid: null,
-  message: ""
-});
 
 const validateForm = () => {
   const newErrors = {};
@@ -205,17 +205,29 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-100">
-    <div class="max-w-md mx-auto p-6">
-      <div class="mt-8 bg-white rounded-lg shadow-md p-8">
+  <div class="min-h-screen bg-gradient-to-br from-purple-50 via-white to-blue-50 flex items-center justify-center p-4">
+    <div class="w-full max-w-lg">
+      <!-- Logo/Brand Section -->
+      <div class="text-center mb-8">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full mb-4">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-gray-900">Electronic Shop</h1>
+        <p class="text-gray-600">Tạo tài khoản mới</p>
+      </div>
+
+      <!-- Main Form Card -->
+      <div class="bg-white backdrop-blur-sm bg-opacity-90 rounded-2xl shadow-xl border border-gray-100 p-8">
         <!-- Header -->
         <div class="text-center mb-8">
-          <h2 class="text-3xl font-bold text-gray-900">Đăng ký tài khoản</h2>
+          <h2 class="text-2xl font-bold text-gray-900">Đăng ký tài khoản</h2>
           <p class="mt-2 text-gray-600">
             Đã có tài khoản?
             <router-link
               to="/login"
-              class="text-blue-600 hover:text-blue-800 font-medium"
+              class="text-blue-600 hover:text-blue-700 font-semibold transition-colors"
             >
               Đăng nhập
             </router-link>
@@ -225,138 +237,204 @@ const handleSubmit = async () => {
         <!-- Error Message -->
         <div
           v-if="errors.general"
-          class="mb-4 p-3 bg-red-100 text-red-700 rounded-lg text-sm"
+          class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 rounded-xl text-sm flex items-center"
         >
+          <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
           {{ errors.general }}
         </div>
 
         <!-- Form -->
-        <form @submit.prevent="handleSubmit" class="space-y-6">
+        <form @submit.prevent="handleSubmit" class="space-y-5">
           <!-- Username -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-gray-700">
               Họ tên
             </label>
-            <input
-              v-model="formData.username"
-              type="text"
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              :class="{ 'border-red-500': errors.username }"
-              :disabled="loading"
-            />
-            <p v-if="errors.username" class="mt-1 text-sm text-red-600">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
+              <input
+                v-model="formData.username"
+                type="text"
+                class="w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 placeholder-gray-400"
+                :class="errors.username ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'"
+                :disabled="loading"
+                placeholder="Nhập họ tên của bạn"
+              />
+            </div>
+            <p v-if="errors.username" class="text-sm text-red-600 flex items-center">
+              <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
               {{ errors.username }}
             </p>
           </div>
 
           <!-- Phone -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-gray-700">
               Số điện thoại
             </label>
-            <input
-              v-model="formData.phone_number"
-              type="tel"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              :class="{ 'border-red-500': errors.phone_number }"
-              :disabled="loading"
-            />
-            <p v-if="errors.phone_number" class="mt-1 text-sm text-red-600">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <input
+                v-model="formData.phone_number"
+                type="tel"
+                required
+                class="w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 placeholder-gray-400"
+                :class="errors.phone_number ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'"
+                :disabled="loading"
+                placeholder="Nhập số điện thoại"
+              />
+            </div>
+            <p v-if="errors.phone_number" class="text-sm text-red-600 flex items-center">
+              <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
               {{ errors.phone_number }}
             </p>
           </div>
 
           <!-- Email -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-gray-700">
               Email
             </label>
-            <div class="relative">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                </svg>
+              </div>
               <input
                 v-model="formData.email"
                 type="email"
                 required
-                class="w-full px-4 py-2 border rounded-lg focus:ring-blue-500 focus:border-blue-500 pr-10"
+                class="w-full pl-12 pr-12 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 placeholder-gray-400"
                 :class="{
-                  'border-red-500': errors.email || emailValidation.isValid === false,
-                  'border-green-500': emailValidation.isValid === true,
-                  'border-gray-300': emailValidation.isValid === null
+                  'border-red-300 focus:border-red-500 focus:ring-red-200': errors.email || emailValidation.isValid === false,
+                  'border-green-300 focus:border-green-500 focus:ring-green-200': emailValidation.isValid === true,
+                  'border-gray-200 focus:border-purple-500 focus:ring-purple-200': emailValidation.isValid === null && !errors.email
                 }"
                 :disabled="loading"
                 placeholder="Nhập email của bạn"
               />
               
-              <!-- Loading spinner -->
-              <div v-if="emailValidation.isChecking" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <svg class="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-              </div>
-              
-              <!-- Success icon -->
-              <div v-else-if="emailValidation.isValid === true" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <svg class="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
-                </svg>
-              </div>
-              
-              <!-- Error icon -->
-              <div v-else-if="emailValidation.isValid === false" class="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
-                </svg>
+              <!-- Validation Icons -->
+              <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                <!-- Loading spinner -->
+                <div v-if="emailValidation.isChecking" class="flex items-center">
+                  <svg class="w-5 h-5 text-purple-500 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                </div>
+                
+                <!-- Success icon -->
+                <div v-else-if="emailValidation.isValid === true" class="flex items-center">
+                  <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                    <svg class="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
+                
+                <!-- Error icon -->
+                <div v-else-if="emailValidation.isValid === false" class="flex items-center">
+                  <div class="w-6 h-6 bg-red-100 rounded-full flex items-center justify-center">
+                    <svg class="w-4 h-4 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                  </div>
+                </div>
               </div>
             </div>
             
             <!-- Error message -->
-            <p v-if="errors.email" class="mt-1 text-sm text-red-600">
+            <p v-if="errors.email" class="text-sm text-red-600 flex items-center mt-2">
+              <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
               {{ errors.email }}
             </p>
             
             <!-- Email validation message -->
             <p v-else-if="emailValidation.message" 
                :class="[
-                 'mt-1 text-sm',
+                 'mt-2 text-sm font-medium flex items-center',
                  emailValidation.isValid === true ? 'text-green-600' : 'text-red-600'
                ]">
+              <svg v-if="!emailValidation.isChecking" class="w-4 h-4 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path v-if="emailValidation.isValid === true" fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                <path v-else fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
               {{ emailValidation.message }}
             </p>
           </div>
 
           <!-- Password -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-gray-700">
               Mật khẩu
             </label>
-            <input
-              v-model="formData.password"
-              type="password"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              :class="{ 'border-red-500': errors.password }"
-              :disabled="loading"
-            />
-            <p v-if="errors.password" class="mt-1 text-sm text-red-600">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
+              <input
+                v-model="formData.password"
+                type="password"
+                required
+                class="w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 placeholder-gray-400"
+                :class="errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'"
+                :disabled="loading"
+                placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
+              />
+            </div>
+            <p v-if="errors.password" class="text-sm text-red-600 flex items-center">
+              <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
               {{ errors.password }}
             </p>
           </div>
 
           <!-- Confirm Password -->
-          <div>
-            <label class="block text-sm font-medium text-gray-700 mb-1">
+          <div class="space-y-2">
+            <label class="block text-sm font-semibold text-gray-700">
               Xác nhận mật khẩu
             </label>
-            <input
-              v-model="formData.confirmPassword"
-              type="password"
-              required
-              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
-              :class="{ 'border-red-500': errors.confirmPassword }"
-              :disabled="loading"
-            />
-            <p v-if="errors.confirmPassword" class="mt-1 text-sm text-red-600">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <svg class="w-5 h-5 text-gray-400 group-focus-within:text-purple-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <input
+                v-model="formData.confirmPassword"
+                type="password"
+                required
+                class="w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 placeholder-gray-400"
+                :class="errors.confirmPassword ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'"
+                :disabled="loading"
+                placeholder="Nhập lại mật khẩu"
+              />
+            </div>
+            <p v-if="errors.confirmPassword" class="text-sm text-red-600 flex items-center">
+              <svg class="w-4 h-4 mr-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+              </svg>
               {{ errors.confirmPassword }}
             </p>
           </div>
@@ -364,13 +442,34 @@ const handleSubmit = async () => {
           <!-- Submit Button -->
           <button
             type="submit"
-            :disabled="loading"
-            class="w-full bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            :disabled="loading || emailValidation.isValid === false"
+            class="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 transform hover:scale-[1.02] focus:ring-4 focus:ring-purple-200 focus:ring-offset-2 focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none shadow-lg mt-6"
           >
-            <span v-if="loading">Đang xử lý...</span>
-            <span v-else>Đăng ký</span>
+            <span v-if="loading" class="flex items-center justify-center">
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Đang xử lý...
+            </span>
+            <span v-else class="flex items-center justify-center">
+              <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+              </svg>
+              Tạo tài khoản
+            </span>
           </button>
         </form>
+
+        <!-- Divider -->
+        <div class="mt-8 pt-6 border-t border-gray-200">
+          <p class="text-center text-sm text-gray-500">
+            Bằng việc đăng ký, bạn đồng ý với 
+            <a href="#" class="text-purple-600 hover:text-purple-700 font-medium">Điều khoản sử dụng</a> 
+            và 
+            <a href="#" class="text-purple-600 hover:text-purple-700 font-medium">Chính sách bảo mật</a>
+          </p>
+        </div>
       </div>
     </div>
   </div>
