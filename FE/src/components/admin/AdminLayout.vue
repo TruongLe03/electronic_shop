@@ -74,12 +74,6 @@ const menuItems = [
     path: "/admin/statistics",
     gradient: "from-purple-500 to-pink-500",
   },
-  {
-    name: "Phân tích",
-    icon: "fas fa-chart-line",
-    path: "/admin/analytics",
-    gradient: "from-teal-500 to-green-500",
-  },
 ];
 
 const currentPageTitle = computed(() => {
