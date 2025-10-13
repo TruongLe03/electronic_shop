@@ -1,5 +1,14 @@
 import { ref, reactive, computed } from "vue";
-import * as adminService from "@/api/adminService";
+import { 
+  getAllProductsAdmin,
+  getProductById,
+  createProduct as createProductAPI,
+  updateProduct as updateProductAPI,
+  deleteProduct as deleteProductAPI,
+  toggleProductStatus as toggleProductStatusAPI
+} from "@/api/admin/productService";
+import { getCategoriesAdmin } from "@/api/admin/categoryService";
+import { useNotification } from "@/composables/admin/useNotification";
 
 export function useAdminProducts() {
   const products = ref([]);
@@ -7,6 +16,16 @@ export function useAdminProducts() {
   const totalProducts = ref(0);
   const loading = ref(false);
   const error = ref(null);
+
+  // Notification
+  const { 
+    notifyProductCreated,
+    notifyProductUpdated,
+    notifyProductDeleted,
+    notifyOperationFailed,
+    showSuccess,
+    showError
+  } = useNotification();
 
   // Pagination
   const pagination = reactive({
@@ -46,7 +65,7 @@ export function useAdminProducts() {
       };
 
       console.log('fetchProducts - queryParams:', queryParams);
-      const response = await adminService.getProducts(queryParams);
+      const response = await getAllProductsAdmin(queryParams);
       console.log('fetchProducts - response:', response);
       products.value = response.data.products;
       totalProducts.value = response.data.total;
@@ -65,7 +84,7 @@ export function useAdminProducts() {
       loading.value = true;
       error.value = null;
 
-      const response = await adminService.getProduct(productId);
+      const response = await getProductById(productId);
       return response.data;
     } catch (err) {
       error.value = err.message || "Lỗi khi lấy chi tiết sản phẩm";
@@ -82,16 +101,23 @@ export function useAdminProducts() {
       loading.value = true;
       error.value = null;
 
-      const response = await adminService.createProduct(productData);
+      const response = await createProductAPI(productData);
 
       // Thêm sản phẩm mới vào đầu danh sách
       products.value.unshift(response.data);
       totalProducts.value++;
 
+      // Thông báo thành công
+      notifyProductCreated(productData.name || 'Sản phẩm mới');
+
       return response.data;
     } catch (err) {
       error.value = err.message || "Lỗi khi tạo sản phẩm";
       console.error("Create product error:", err);
+      
+      // Thông báo lỗi
+      notifyOperationFailed('tạo sản phẩm');
+      
       throw err;
     } finally {
       loading.value = false;
@@ -104,7 +130,7 @@ export function useAdminProducts() {
       loading.value = true;
       error.value = null;
 
-      const response = await adminService.updateProduct(productId, productData);
+      const response = await updateProductAPI(productId, productData);
 
       // Cập nhật sản phẩm trong danh sách
       const index = products.value.findIndex((p) => p._id === productId);
@@ -112,10 +138,17 @@ export function useAdminProducts() {
         products.value[index] = response.data;
       }
 
+      // Thông báo thành công
+      notifyProductUpdated(productData.name || 'Sản phẩm');
+
       return response.data;
     } catch (err) {
       error.value = err.message || "Lỗi khi cập nhật sản phẩm";
       console.error("Update product error:", err);
+      
+      // Thông báo lỗi
+      notifyOperationFailed('cập nhật sản phẩm');
+      
       throw err;
     } finally {
       loading.value = false;
@@ -128,7 +161,11 @@ export function useAdminProducts() {
       loading.value = true;
       error.value = null;
 
-      await adminService.deleteProduct(productId);
+      // Lấy thông tin sản phẩm trước khi xóa để hiển thị tên trong thông báo
+      const productToDelete = products.value.find(p => p._id === productId);
+      const productName = productToDelete?.name || 'Sản phẩm';
+
+      await deleteProductAPI(productId);
 
       // Xóa sản phẩm khỏi danh sách
       const index = products.value.findIndex((p) => p._id === productId);
@@ -137,10 +174,17 @@ export function useAdminProducts() {
         totalProducts.value--;
       }
 
+      // Thông báo thành công
+      notifyProductDeleted(productName);
+
       return true;
     } catch (err) {
       error.value = err.message || "Lỗi khi xóa sản phẩm";
       console.error("Delete product error:", err);
+      
+      // Thông báo lỗi
+      notifyOperationFailed('xóa sản phẩm');
+      
       throw err;
     } finally {
       loading.value = false;
@@ -153,7 +197,10 @@ export function useAdminProducts() {
       loading.value = true;
       error.value = null;
 
-      const response = await adminService.toggleProductStatus(productId);
+      const product = products.value.find(p => p._id === productId);
+      const productName = product?.name || 'Sản phẩm';
+
+      const response = await toggleProductStatusAPI(productId);
 
       // Cập nhật trạng thái trong danh sách
       const index = products.value.findIndex((p) => p._id === productId);
@@ -161,10 +208,18 @@ export function useAdminProducts() {
         products.value[index].status = response.data.status;
       }
 
+      // Thông báo thành công
+      const statusText = response.data.status === 'active' ? 'kích hoạt' : 'vô hiệu hóa';
+      showSuccess(`Đã ${statusText} sản phẩm "${productName}" thành công!`);
+
       return response.data;
     } catch (err) {
       error.value = err.message || "Lỗi khi thay đổi trạng thái sản phẩm";
       console.error("Toggle product status error:", err);
+      
+      // Thông báo lỗi
+      notifyOperationFailed('thay đổi trạng thái sản phẩm');
+      
       throw err;
     } finally {
       loading.value = false;
@@ -174,10 +229,36 @@ export function useAdminProducts() {
   // Lấy danh sách danh mục
   const fetchCategories = async () => {
     try {
-      const response = await adminService.getCategories();
-      categories.value = response.data;
+      console.log("🔍 Fetching categories...");
+      const response = await getCategoriesAdmin();
+      console.log("📦 Categories response:", response);
+      
+      // Xử lý nhiều format response khác nhau
+      let categoriesData = [];
+      if (response?.data?.categories) {
+        categoriesData = response.data.categories;
+      } else if (response?.categories) {
+        categoriesData = response.categories;
+      } else if (response?.data) {
+        categoriesData = response.data;
+      } else if (Array.isArray(response)) {
+        categoriesData = response;
+      }
+      
+      categories.value = categoriesData;
+      console.log("✅ Categories loaded:", categories.value.length, "items");
+      console.log("Categories data:", categories.value);
     } catch (err) {
-      console.error("Fetch categories error:", err);
+      console.error("❌ Fetch categories error:", err);
+      categories.value = [];
+      
+      // Tạo mock data tạm thời để test UI
+      categories.value = [
+        { _id: '1', name: 'Điện tử', slug: 'dien-tu' },
+        { _id: '2', name: 'Máy tính', slug: 'may-tinh' },
+        { _id: '3', name: 'Điện thoại', slug: 'dien-thoai' }
+      ];
+      console.log("🔧 Using mock categories for testing");
     }
   };
 

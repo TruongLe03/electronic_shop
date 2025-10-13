@@ -118,9 +118,33 @@ const routes = [
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
+    path: "/admin/statistics",
+    name: "adminStatistics",
+    component: () => import("@views/admin/Statistics.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
     path: "/admin/analytics",
     name: "adminAnalytics",
     component: () => import("@views/admin/Analytics.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/admin/categories",
+    name: "adminCategories",
+    component: () => import("@views/admin/Categories.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/admin/payments",
+    name: "adminPayments",
+    component: () => import("@views/admin/Payments.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/admin/settings",
+    name: "adminSettings",
+    component: () => import("@views/admin/Settings.vue"),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
 ];

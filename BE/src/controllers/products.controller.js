@@ -75,112 +75,102 @@ export const getProductById = asyncHandler(async (req, res) => {
 });
 
 // Thêm sản phẩm
-export const createProduct = async (req, res) => {
-  try {
-    const newProduct = new Product(req.body);
-    const savedProduct = await newProduct.save();
-    res.status(201).json(savedProduct);
-  } catch (err) {
-    res
-      .status(400)
-      .json({ message: "Không thêm được sản phẩm", error: err.message });
+export const createProduct = asyncHandler(async (req, res) => {
+  // Validate required fields
+  const requiredFields = ['name', 'sku', 'category_id', 'price'];
+  const errors = [];
+  
+  for (const field of requiredFields) {
+    if (!req.body[field]) {
+      errors.push(`${field} là bắt buộc`);
+    }
   }
-};
+
+  // Validate category_id
+  if (req.body.category_id && !ValidationUtil.isValidObjectId(req.body.category_id)) {
+    errors.push('Category ID không hợp lệ');
+  }
+
+  // Validate price
+  if (req.body.price && (isNaN(req.body.price) || req.body.price < 0)) {
+    errors.push('Giá sản phẩm phải là số dương');
+  }
+
+  // Validate stock
+  if (req.body.stock && (isNaN(req.body.stock) || req.body.stock < 0)) {
+    errors.push('Số lượng tồn kho phải là số không âm');
+  }
+
+  if (errors.length > 0) {
+    return ResponseUtil.validationError(res, errors);
+  }
+
+  const newProduct = new Product(req.body);
+  const savedProduct = await newProduct.save();
+  
+  return ResponseUtil.success(res, savedProduct, 'Tạo sản phẩm thành công', 201);
+});
 
 // Cập nhật sản phẩm
-export const updateProduct = async (req, res) => {
-  try {
-    const productId = req.params.id;
-    const updateData = req.body;
-    
-    // Get current product to check if stock is being updated
-    const currentProduct = await Product.findById(productId);
-    if (!currentProduct) {
-      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-    }
-    
-    const updatedProduct = await Product.findByIdAndUpdate(
-      productId,
-      updateData,
-      { new: true }
-    );
-    
-    // If stock is being updated, sync with inventory
-    if (updateData.stock !== undefined && updateData.stock !== currentProduct.stock) {
-      try {
-        let inventory = await Inventory.findOne({ productId: productId });
-        
-        if (inventory) {
-          // Update existing inventory
-          const oldQuantity = inventory.quantity;
-          inventory.quantity = updateData.stock;
-          
-          // Add stock movement to track this change
-          inventory.stockMovements.push({
-            type: 'ADJUSTMENT',
-            quantity: updateData.stock,
-            reason: `Stock updated from Product admin panel (was ${oldQuantity})`,
-            reference: `PRODUCT_UPDATE_${Date.now()}`,
-            createdBy: req.user?.id || null,
-            createdAt: new Date()
-          });
-          
-          await inventory.save();
-        } else {
-          // Create new inventory if doesn't exist
-          inventory = new Inventory({
-            productId: productId,
-            quantity: updateData.stock || 0,
-            reservedQuantity: 0,
-            minStockLevel: 10,
-            maxStockLevel: 1000,
-            reorderPoint: 20,
-            cost: updatedProduct.price * 0.7, // Assume 70% of selling price
-            location: {
-              warehouse: 'Main Warehouse',
-              zone: 'A',
-              shelf: '001'
-            },
-            stockMovements: [{
-              type: 'IN',
-              quantity: updateData.stock || 0,
-              reason: 'Initial inventory created from Product update',
-              reference: `PRODUCT_CREATE_${Date.now()}`,
-              createdBy: req.user?.id || null,
-              createdAt: new Date()
-            }],
-            isActive: true
-          });
-          
-          await inventory.save();
-        }
-      } catch (inventoryError) {
-        console.error('⚠️  Failed to sync inventory:', inventoryError);
-        // Don't fail the product update if inventory sync fails
-      }
-    }
-    
-    res.json(updatedProduct);
-  } catch (err) {
-    res
-      .status(400)
-      .json({ message: "Không cập nhật được sản phẩm", error: err.message });
+export const updateProduct = asyncHandler(async (req, res) => {
+  const productId = req.params.id;
+  const updateData = req.body;
+  
+  // Validate ID
+  if (!ValidationUtil.isValidObjectId(productId)) {
+    return ResponseUtil.validationError(res, ['ID sản phẩm không hợp lệ']);
   }
-};
+
+  // Validate data
+  const errors = [];
+  
+  if (updateData.category_id && !ValidationUtil.isValidObjectId(updateData.category_id)) {
+    errors.push('Category ID không hợp lệ');
+  }
+
+  if (updateData.price && (isNaN(updateData.price) || updateData.price < 0)) {
+    errors.push('Giá sản phẩm phải là số dương');
+  }
+
+  if (updateData.stock && (isNaN(updateData.stock) || updateData.stock < 0)) {
+    errors.push('Số lượng tồn kho phải là số không âm');
+  }
+
+  if (errors.length > 0) {
+    return ResponseUtil.validationError(res, errors);
+  }
+  
+  // Get current product to check if stock is being updated
+  const currentProduct = await Product.findById(productId);
+  if (!currentProduct) {
+    return ResponseUtil.notFound(res, 'Không tìm thấy sản phẩm');
+  }
+    
+  const updatedProduct = await Product.findByIdAndUpdate(
+    productId,
+    updateData,
+    { new: true, runValidators: true }
+  );
+  
+  return ResponseUtil.success(res, updatedProduct, 'Cập nhật sản phẩm thành công');
+});
 
 // Xóa sản phẩm
-export const deleteProduct = async (req, res) => {
-  try {
-    const deletedProduct = await Product.findByIdAndDelete(req.params.id);
-    if (!deletedProduct)
-      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
-    res.json({ message: "Xóa sản phẩm thành công" });
-  } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Không xóa được sản phẩm", error: err.message });
+export const deleteProduct = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  // Validate ID
+  if (!ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['ID sản phẩm không hợp lệ']);
   }
-};
+
+  const deletedProduct = await Product.findByIdAndDelete(id);
+  if (!deletedProduct) {
+    return ResponseUtil.notFound(res, 'Không tìm thấy sản phẩm');
+  }
+  
+  return ResponseUtil.success(res, { id }, 'Xóa sản phẩm thành công');
+});
 
 // Tìm kiếm sản phẩm theo tên với filters nâng cao
 export const searchProducts = async (req, res) => {

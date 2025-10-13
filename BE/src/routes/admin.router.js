@@ -26,6 +26,18 @@ import {
   getInventoryList,
   updateInventory,
   
+  // Category Management
+  getAllCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  
+  // Payment Management
+  getAllPayments,
+  getPaymentById,
+  updatePaymentStatus,
+  getPaymentStats,
+  
   // Advanced Analytics
   getGrowthAnalytics,
   getProductCategoryStats,
@@ -38,7 +50,9 @@ import {
   generateProductReport,
   
   // System Management
-  getSystemInfo
+  getSystemInfo,
+  getSystemSettings,
+  updateSystemSettings
 } from "../controllers/admin.controller.js";
 
 import authMiddleware from "../middleware/authMiddleware.js";
@@ -81,11 +95,25 @@ adminRouter.get("/orders/day-stats", getOrdersByDayStats);
 adminRouter.get("/inventory", getInventoryList);
 adminRouter.put("/inventory/:productId", updateInventory);
 
+// ============= CATEGORY MANAGEMENT ROUTES =============
+adminRouter.get("/categories", getAllCategories);
+adminRouter.post("/categories", createCategory);
+adminRouter.put("/categories/:id", updateCategory);
+adminRouter.delete("/categories/:id", deleteCategory);
+
+// ============= PAYMENT MANAGEMENT ROUTES =============
+adminRouter.get("/payments", getAllPayments);
+adminRouter.get("/payments/stats", getPaymentStats);
+adminRouter.get("/payments/:id", getPaymentById);
+adminRouter.patch("/payments/:id/status", updatePaymentStatus);
+
 // ============= ANALYTICS & REPORTS ROUTES =============
 adminRouter.get("/reports/revenue", generateRevenueReport);
 adminRouter.get("/reports/products", generateProductReport);
 
 // ============= SYSTEM MANAGEMENT ROUTES =============
 adminRouter.get("/system/info", getSystemInfo);
+adminRouter.get("/system/settings", getSystemSettings);
+adminRouter.put("/system/settings", updateSystemSettings);
 
 export default adminRouter;

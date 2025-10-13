@@ -20,10 +20,12 @@ const authStore = useAuthStore();
 const {
   dashboardStats,
   growthStats,
+  categoryStats,
   loading: dashboardLoading,
   error: dashboardError,
   fetchDashboardStats,
   fetchGrowthStats,
+  fetchCategoryStats,
   totalRevenue,
   totalOrders,
   totalUsers,
@@ -120,7 +122,11 @@ onMounted(async () => {
 const loadDashboardData = async () => {
   try {
     // Load dashboard stats and growth data
-    await Promise.all([fetchDashboardStats(), fetchGrowthStats()]);
+    await Promise.all([
+      fetchDashboardStats(), 
+      fetchGrowthStats(), 
+      fetchCategoryStats()
+    ]);
 
     // Load recent orders (limit 5)
     await fetchOrders({ limit: 5 });

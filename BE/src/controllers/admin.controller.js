@@ -3,6 +3,8 @@ import { UserService } from "../services/userService.js";
 import { ProductService } from "../services/productService.js";
 import { OrderService } from "../services/orderService.js";
 import { InventoryService } from "../services/inventoryService.js";
+import { CategoryService } from "../services/categoryService.js";
+import { PaymentService } from "../services/paymentService.js";
 import { ResponseUtil, asyncHandler } from "../utils/response.util.js";
 import { ValidationUtil } from "../utils/validation.util.js";
 
@@ -181,16 +183,26 @@ export const createProduct = asyncHandler(async (req, res) => {
   const productData = req.body;
   
   // Validation basic
-  const requiredFields = ['name', 'price', 'category', 'stock'];
+  const requiredFields = ['name', 'price', 'category_id', 'sku'];
   const missingFields = requiredFields.filter(field => !productData[field]);
   
   if (missingFields.length > 0) {
     return ResponseUtil.validationError(res, [`Thiếu các trường bắt buộc: ${missingFields.join(', ')}`]);
   }
 
+  // Validate ObjectId cho category_id
+  if (!ValidationUtil.isValidObjectId(productData.category_id)) {
+    return ResponseUtil.validationError(res, ['Category ID không hợp lệ']);
+  }
+
+  // Validate price
+  if (isNaN(productData.price) || productData.price < 0) {
+    return ResponseUtil.validationError(res, ['Giá sản phẩm phải là số dương']);
+  }
+
   // Thêm admin info
-  productData.createdBy = req.user.userId;
-  productData.updatedBy = req.user.userId;
+  productData.createdBy = req.user?.userId;
+  productData.updatedBy = req.user?.userId;
 
   const newProduct = await ProductService.createProduct(productData);
   return ResponseUtil.success(res, newProduct, 'Tạo sản phẩm thành công', 201);
@@ -439,10 +451,243 @@ export const generateProductReport = asyncHandler(async (req, res) => {
   return ResponseUtil.success(res, report, 'Tạo báo cáo sản phẩm thành công');
 });
 
+// ============= CATEGORY MANAGEMENT =============
+
+// Lấy danh sách danh mục
+export const getAllCategories = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 10,
+    search = "",
+    parent_id = "",
+    sortBy = "createdAt",
+    sortOrder = "desc"
+  } = req.query;
+
+  const options = {
+    page: parseInt(page),
+    limit: parseInt(limit),
+    search,
+    parent_id,
+    sortBy,
+    sortOrder
+  };
+
+  const result = await CategoryService.getAllCategories(options);
+  return ResponseUtil.success(res, result, 'Lấy danh sách danh mục thành công');
+});
+
+// Tạo danh mục mới
+export const createCategory = asyncHandler(async (req, res) => {
+  const categoryData = req.body;
+  
+  const requiredFields = ['name', 'slug'];
+  const missingFields = requiredFields.filter(field => !categoryData[field]);
+  
+  if (missingFields.length > 0) {
+    return ResponseUtil.validationError(res, [`Thiếu các trường bắt buộc: ${missingFields.join(', ')}`]);
+  }
+
+  const newCategory = await CategoryService.createCategory(categoryData);
+  return ResponseUtil.success(res, newCategory, 'Tạo danh mục thành công', 201);
+});
+
+// Cập nhật danh mục
+export const updateCategory = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const updateData = req.body;
+  
+  console.log('🔄 Update category request:', { id, updateData });
+  
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Category ID không hợp lệ']);
+  }
+
+  try {
+    const updatedCategory = await CategoryService.updateCategory(id, updateData);
+    if (!updatedCategory) {
+      return ResponseUtil.notFound(res, 'Không tìm thấy danh mục');
+    }
+
+    return ResponseUtil.success(res, updatedCategory, 'Cập nhật danh mục thành công');
+  } catch (error) {
+    console.error('❌ Controller update error:', error);
+    
+    // Handle specific validation errors
+    if (error.message.includes('đã tồn tại')) {
+      return ResponseUtil.error(res, error.message, 400);
+    }
+    
+    // Handle mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map(err => err.message);
+      return ResponseUtil.validationError(res, messages);
+    }
+    
+    throw error; // Let asyncHandler catch other errors
+  }
+});
+
+// Xóa danh mục
+export const deleteCategory = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Category ID không hợp lệ']);
+  }
+
+  const result = await CategoryService.deleteCategory(id);
+  
+  if (!result.success) {
+    if (result.reason === 'NOT_FOUND') {
+      return ResponseUtil.notFound(res, 'Không tìm thấy danh mục');
+    } else if (result.reason === 'HAS_PRODUCTS') {
+      return ResponseUtil.error(res, 'Không thể xóa danh mục đang có sản phẩm', 400);
+    } else if (result.reason === 'HAS_CHILDREN') {
+      const message = result.childNames 
+        ? `Không thể xóa danh mục cha đang có ${result.childCount} danh mục con: ${result.childNames}`
+        : 'Không thể xóa danh mục cha đang có danh mục con';
+      return ResponseUtil.error(res, message, 400);
+    }
+  }
+
+  return ResponseUtil.success(res, null, 'Xóa danh mục thành công');
+});
+
+// ============= PAYMENT MANAGEMENT =============
+
+// Lấy danh sách thanh toán
+export const getAllPayments = asyncHandler(async (req, res) => {
+  const {
+    page = 1,
+    limit = 10,
+    status = "",
+    method = "",
+    startDate = "",
+    endDate = "",
+    sortBy = "createdAt",
+    sortOrder = "desc"
+  } = req.query;
+
+  const options = {
+    page: parseInt(page),
+    limit: parseInt(limit),
+    status,
+    method,
+    startDate,
+    endDate,
+    sortBy,
+    sortOrder
+  };
+
+  const result = await PaymentService.getAllPayments(options);
+  return ResponseUtil.success(res, result, 'Lấy danh sách thanh toán thành công');
+});
+
+// Lấy chi tiết thanh toán
+export const getPaymentById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Payment ID không hợp lệ']);
+  }
+
+  const payment = await PaymentService.getPaymentById(id);
+  if (!payment) {
+    return ResponseUtil.notFound(res, 'Không tìm thấy thanh toán');
+  }
+
+  return ResponseUtil.success(res, payment, 'Lấy thông tin thanh toán thành công');
+});
+
+// Cập nhật trạng thái thanh toán (cho COD, bank transfer)
+export const updatePaymentStatus = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+  const { status, note } = req.body;
+
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Payment ID không hợp lệ']);
+  }
+
+  const validStatuses = ["pending", "processing", "success", "failed", "cancelled", "refunded"];
+  
+  if (!status || !validStatuses.includes(status)) {
+    return ResponseUtil.validationError(res, ['Trạng thái thanh toán không hợp lệ']);
+  }
+
+  const updateData = { status };
+  if (note) {
+    updateData.adminNote = note.trim();
+  }
+
+  const updatedPayment = await PaymentService.updatePaymentStatus(id, updateData);
+  
+  if (!updatedPayment) {
+    return ResponseUtil.notFound(res, 'Không tìm thấy thanh toán');
+  }
+
+  return ResponseUtil.success(res, updatedPayment, 'Cập nhật trạng thái thanh toán thành công');
+});
+
+// Thống kê thanh toán
+export const getPaymentStats = asyncHandler(async (req, res) => {
+  const { startDate, endDate } = req.query;
+  
+  const stats = await PaymentService.getPaymentStats(startDate, endDate);
+  return ResponseUtil.success(res, stats, 'Lấy thống kê thanh toán thành công');
+});
+
 // ============= SYSTEM MANAGEMENT =============
 
 // Lấy thông tin hệ thống
 export const getSystemInfo = asyncHandler(async (req, res) => {
   const systemInfo = await AdminAnalyticsService.getSystemInfo();
   return ResponseUtil.success(res, systemInfo, 'Lấy thông tin hệ thống thành công');
+});
+
+// Lấy cài đặt hệ thống
+export const getSystemSettings = asyncHandler(async (req, res) => {
+  // Mock data - trong thực tế sẽ lưu trong database
+  const settings = {
+    siteName: "Electronic Shop",
+    siteDescription: "Cửa hàng điện tử trực tuyến",
+    siteKeywords: "điện tử, laptop, điện thoại, phụ kiện",
+    currency: "VND",
+    timezone: "Asia/Ho_Chi_Minh",
+    language: "vi",
+    maintenanceMode: false,
+    registrationEnabled: true,
+    emailVerificationRequired: false,
+    maxOrderAmount: 100000000, // 100 triệu VND
+    minOrderAmount: 50000, // 50k VND
+    shippingFee: 30000, // 30k VND
+    freeShippingThreshold: 500000, // 500k VND
+    taxRate: 0.1, // 10%
+    contactInfo: {
+      email: "admin@electronicshop.com",
+      phone: "0123456789",
+      address: "123 ABC Street, District 1, Ho Chi Minh City"
+    }
+  };
+
+  return ResponseUtil.success(res, settings, 'Lấy cài đặt hệ thống thành công');
+});
+
+// Cập nhật cài đặt hệ thống
+export const updateSystemSettings = asyncHandler(async (req, res) => {
+  const settings = req.body;
+  
+  // Validation cơ bản
+  if (settings.maxOrderAmount && settings.maxOrderAmount < 0) {
+    return ResponseUtil.validationError(res, ['Số tiền tối đa đơn hàng phải lớn hơn 0']);
+  }
+  
+  if (settings.minOrderAmount && settings.minOrderAmount < 0) {
+    return ResponseUtil.validationError(res, ['Số tiền tối thiểu đơn hàng phải lớn hơn 0']);
+  }
+
+  // Trong thực tế sẽ lưu vào database
+  // const updatedSettings = await SettingsService.updateSettings(settings);
+  
+  return ResponseUtil.success(res, settings, 'Cập nhật cài đặt hệ thống thành công');
 });

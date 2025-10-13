@@ -1,9 +1,16 @@
 import { ref, reactive, computed } from "vue";
-import * as adminService from "@/api/adminService";
+import { 
+  getDashboardStats,
+  getRecentActivities,
+  getRevenueChartData,
+  getDashboardTopProducts,
+  getProductCategoryStats
+} from "@/api/adminService";
 
 export function useAdminDashboard() {
   const dashboardStats = ref(null);
   const growthStats = ref(null);
+  const categoryStats = ref(null);
   const loading = ref(false);
   const error = ref(null);
 
@@ -12,7 +19,7 @@ export function useAdminDashboard() {
     try {
       loading.value = true;
       error.value = null;
-      const response = await adminService.getDashboardStats();
+      const response = await getDashboardStats();
       dashboardStats.value = response.data;
     } catch (err) {
       error.value = err.message || "Lỗi khi lấy thống kê dashboard";
@@ -22,16 +29,38 @@ export function useAdminDashboard() {
     }
   };
 
-  // Lấy thống kê tăng trưởng
+  // Lấy thống kê tăng trưởng (tạm thời disabled - chưa có API)
   const fetchGrowthStats = async () => {
     try {
       loading.value = true;
       error.value = null;
-      const response = await adminService.getGrowthAnalytics();
-      growthStats.value = response.data;
+      // TODO: Implement getGrowthAnalytics API
+      growthStats.value = {
+        data: {
+          userGrowth: 15.2,
+          orderGrowth: 23.5,
+          revenueGrowth: 18.7,
+          productGrowth: 12.3
+        }
+      };
     } catch (err) {
       error.value = err.message || "Lỗi khi lấy thống kê tăng trưởng";
       console.error("Growth stats error:", err);
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  // Lấy thống kê sản phẩm theo danh mục
+  const fetchCategoryStats = async () => {
+    try {
+      loading.value = true;
+      error.value = null;
+      const response = await getProductCategoryStats();
+      categoryStats.value = response.data;
+    } catch (err) {
+      error.value = err.message || "Lỗi khi lấy thống kê danh mục";
+      console.error("Category stats error:", err);
     } finally {
       loading.value = false;
     }
@@ -57,10 +86,12 @@ export function useAdminDashboard() {
   return {
     dashboardStats,
     growthStats,
+    categoryStats,
     loading,
     error,
     fetchDashboardStats,
     fetchGrowthStats,
+    fetchCategoryStats,
     totalRevenue,
     totalOrders,
     totalUsers,

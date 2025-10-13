@@ -1,5 +1,9 @@
 import { ref, reactive } from "vue";
-import * as adminService from "@/api/adminService.js";
+import { 
+  getAllOrdersAdmin,
+  updateOrderStatus,
+  getOrdersByDayStats
+} from "@/api/adminService.js";
 
 export function useAdminOrders() {
   // State
@@ -47,7 +51,7 @@ export function useAdminOrders() {
         ...filters,
       };
 
-      const response = await adminService.getAllOrdersAdmin(params);
+      const response = await getAllOrdersAdmin(params);
 
       if (response.success) {
         orders.value = response.data.orders || [];
@@ -69,7 +73,7 @@ export function useAdminOrders() {
       loading.value = true;
       error.value = null;
 
-      const response = await adminService.updateOrderStatus(orderId, {
+      const response = await updateOrderStatus(orderId, {
         status,
         note,
       });
@@ -149,6 +153,9 @@ export function useAdminOrders() {
     return status || "Không xác định";
   };
 
+  // Alias function để compatible với Dashboard
+  const getStatusLabel = getStatusText;
+
   const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
@@ -186,6 +193,7 @@ export function useAdminOrders() {
     clearFilters,
     getStatusColor,
     getStatusText,
+    getStatusLabel,
     formatCurrency,
     formatDate,
   };

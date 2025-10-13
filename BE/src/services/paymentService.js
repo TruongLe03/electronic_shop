@@ -337,4 +337,226 @@ export class PaymentService {
 
     return await payment.save();
   }
+
+  // ============= ADMIN METHODS =============
+
+  // Lấy tất cả payments với filter cho admin
+  static async getAllPayments(options = {}) {
+    const {
+      page = 1,
+      limit = 10,
+      status = "",
+      method = "",
+      startDate = "",
+      endDate = "",
+      sortBy = "createdAt",
+      sortOrder = "desc"
+    } = options;
+
+    // Xây dựng query
+    const query = {};
+    
+    if (status && status.trim() !== "") {
+      query.status = status;
+    }
+    
+    if (method && method.trim() !== "") {
+      query.method = method;
+    }
+
+    if (startDate && endDate) {
+      query.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    } else if (startDate) {
+      query.createdAt = { $gte: new Date(startDate) };
+    } else if (endDate) {
+      query.createdAt = { $lte: new Date(endDate) };
+    }
+
+    // Sắp xếp
+    const sort = {};
+    sort[sortBy] = sortOrder === "desc" ? -1 : 1;
+
+    const skip = (page - 1) * limit;
+
+    const [payments, total] = await Promise.all([
+      Payment.find(query)
+        .populate({
+          path: 'orderId',
+          select: 'orderNumber totalAmount userId',
+          populate: {
+            path: 'userId',
+            select: 'name email phone_number'
+          }
+        })
+        .sort(sort)
+        .skip(skip)
+        .limit(limit),
+      Payment.countDocuments(query)
+    ]);
+
+    return {
+      payments,
+      pagination: {
+        total,
+        page: parseInt(page),
+        limit: parseInt(limit),
+        totalPages: Math.ceil(total / limit),
+        hasNext: page * limit < total,
+        hasPrev: page > 1
+      }
+    };
+  }
+
+  // Lấy payment theo ID
+  static async getPaymentById(paymentId) {
+    const payment = await Payment.findById(paymentId)
+      .populate({
+        path: 'orderId',
+        select: 'orderNumber totalAmount userId items shippingAddress',
+        populate: {
+          path: 'userId',
+          select: 'name email phone_number'
+        }
+      });
+    
+    if (!payment) {
+      throw new Error('Không tìm thấy payment');
+    }
+    
+    return payment;
+  }
+
+  // Cập nhật trạng thái payment (cho COD, bank transfer manual)
+  static async updatePaymentStatus(paymentId, updateData) {
+    const payment = await Payment.findById(paymentId);
+    if (!payment) {
+      throw new Error('Không tìm thấy payment');
+    }
+
+    // Không cho phép thay đổi trạng thái của payment gateway tự động
+    if (['vnpay', 'momo', 'zalopay'].includes(payment.method) && 
+        payment.status === 'success') {
+      throw new Error('Không thể thay đổi trạng thái payment đã được xử lý tự động');
+    }
+
+    const updatedPayment = await Payment.findByIdAndUpdate(
+      paymentId,
+      {
+        status: updateData.status,
+        adminNote: updateData.adminNote,
+        updatedAt: new Date()
+      },
+      { new: true, runValidators: true }
+    ).populate({
+      path: 'orderId',
+      select: 'orderNumber totalAmount userId',
+      populate: {
+        path: 'userId',
+        select: 'name email'
+      }
+    });
+
+    // Cập nhật trạng thái order tương ứng nếu cần
+    if (updateData.status === 'success') {
+      await Order.findByIdAndUpdate(payment.orderId, {
+        payment_status: 'completed',
+        payment_method: payment.method
+      });
+    } else if (updateData.status === 'failed' || updateData.status === 'cancelled') {
+      await Order.findByIdAndUpdate(payment.orderId, {
+        payment_status: 'failed'
+      });
+    }
+
+    return updatedPayment;
+  }
+
+  // Thống kê payment
+  static async getPaymentStats(startDate, endDate) {
+    const matchCondition = {};
+    
+    if (startDate && endDate) {
+      matchCondition.createdAt = {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      };
+    }
+
+    const [
+      totalStats,
+      methodStats,
+      statusStats,
+      dailyStats
+    ] = await Promise.all([
+      // Tổng quan
+      Payment.aggregate([
+        { $match: matchCondition },
+        {
+          $group: {
+            _id: null,
+            totalAmount: { $sum: "$amount" },
+            totalPayments: { $sum: 1 },
+            avgAmount: { $avg: "$amount" }
+          }
+        }
+      ]),
+
+      // Thống kê theo phương thức
+      Payment.aggregate([
+        { $match: matchCondition },
+        {
+          $group: {
+            _id: "$method",
+            count: { $sum: 1 },
+            totalAmount: { $sum: "$amount" }
+          }
+        },
+        { $sort: { count: -1 } }
+      ]),
+
+      // Thống kê theo trạng thái
+      Payment.aggregate([
+        { $match: matchCondition },
+        {
+          $group: {
+            _id: "$status",
+            count: { $sum: 1 },
+            totalAmount: { $sum: "$amount" }
+          }
+        }
+      ]),
+
+      // Thống kê theo ngày
+      Payment.aggregate([
+        { $match: matchCondition },
+        {
+          $group: {
+            _id: {
+              year: { $year: "$createdAt" },
+              month: { $month: "$createdAt" },
+              day: { $dayOfMonth: "$createdAt" }
+            },
+            count: { $sum: 1 },
+            totalAmount: { $sum: "$amount" },
+            successCount: {
+              $sum: {
+                $cond: [{ $eq: ["$status", "success"] }, 1, 0]
+              }
+            }
+          }
+        },
+        { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
+      ])
+    ]);
+
+    return {
+      total: totalStats[0] || { totalAmount: 0, totalPayments: 0, avgAmount: 0 },
+      byMethod: methodStats,
+      byStatus: statusStats,
+      daily: dailyStats
+    };
+  }
 }

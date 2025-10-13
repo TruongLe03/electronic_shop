@@ -1,5 +1,12 @@
 import { ref, reactive, computed } from "vue";
-import * as adminService from "@/api/adminService";
+import { 
+  getAllUsersAdmin,
+  getUserById,
+  updateUser,
+  updateUserStatus,
+  deleteUser,
+  getUserActivityHistory
+} from "@/api/adminService";
 
 export function useAdminUsers() {
   const users = ref([]);
@@ -39,7 +46,7 @@ export function useAdminUsers() {
         ...params,
       };
 
-      const response = await adminService.getAllUsers(queryParams);
+      const response = await getAllUsersAdmin(queryParams);
       users.value = response.data.users;
 
       // Update pagination
@@ -57,7 +64,7 @@ export function useAdminUsers() {
     try {
       loading.value = true;
       error.value = null;
-      const response = await adminService.getUserById(userId);
+      const response = await getUserById(userId);
       currentUser.value = response.data;
     } catch (err) {
       error.value = err.message || "Lỗi khi lấy thông tin người dùng";
@@ -72,7 +79,7 @@ export function useAdminUsers() {
     try {
       loading.value = true;
       error.value = null;
-      const response = await adminService.updateUser(userId, userData);
+      const response = await updateUser(userId, userData);
 
       // Update user in list
       const index = users.value.findIndex((user) => user._id === userId);
@@ -95,7 +102,7 @@ export function useAdminUsers() {
     try {
       loading.value = true;
       error.value = null;
-      const response = await adminService.toggleUserStatus(userId);
+      const response = await updateUserStatus(userId);
 
       // Update user status in list
       const user = users.value.find((user) => user._id === userId);
@@ -118,7 +125,7 @@ export function useAdminUsers() {
     try {
       loading.value = true;
       error.value = null;
-      await adminService.deleteUser(userId);
+      await deleteUser(userId);
 
       // Remove user from list
       users.value = users.value.filter((user) => user._id !== userId);
@@ -138,7 +145,12 @@ export function useAdminUsers() {
     try {
       loading.value = true;
       error.value = null;
-      const response = await adminService.getVIPCustomers(limit);
+      // TODO: Implement getVIPCustomers API
+      const response = { 
+        data: {
+          customers: []
+        }
+      };
       vipCustomers.value = response.data;
     } catch (err) {
       error.value = err.message || "Lỗi khi lấy danh sách khách hàng VIP";

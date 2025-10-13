@@ -98,12 +98,12 @@ const productForm = ref({
   _id: null,
   name: "",
   description: "",
-  category: "",
+  category_id: "",
   price: 0,
   sku: "",
   stock: 0,
   imageUrl: "",
-  status: "draft",
+  status: "active",
 });
 
 const searchQuery = ref("");
@@ -217,12 +217,12 @@ const resetForm = () => {
     _id: null,
     name: "",
     description: "",
-    category: "",
+    category_id: "",
     price: 0,
     sku: "",
     stock: 0,
     imageUrl: "",
-    status: "draft",
+    status: "active",
   };
 };
 
@@ -236,12 +236,12 @@ const onEditProduct = (product) => {
     _id: product._id ?? product.id,
     name: product.name ?? "",
     description: product.description ?? "",
-    category: product.category ?? "",
+    category_id: product.category_id ?? product.category ?? "",
     price: product.price ?? 0,
     sku: product.sku ?? "",
     stock: product.stock ?? 0,
     imageUrl: product.imageUrl ?? product.image ?? "",
-    status: product.status ?? "draft",
+    status: product.status ?? "active",
   };
   isEditMode.value = true;
   showProductModal.value = true;
@@ -261,12 +261,12 @@ const onDuplicateProduct = (product) => {
     _id: null,
     name: copy.name,
     description: copy.description ?? "",
-    category: copy.category ?? "",
+    category_id: copy.category_id ?? copy.category ?? "",
     price: copy.price ?? 0,
     sku: copy.sku ? copy.sku + "-COPY" : "",
     stock: copy.stock ?? 0,
     imageUrl: copy.imageUrl ?? copy.image ?? "",
-    status: copy.status ?? "draft",
+    status: copy.status ?? "active",
   };
   isEditMode.value = false;
   showProductModal.value = true;
@@ -285,6 +285,7 @@ const saveProduct = async () => {
     await fetchProducts();
   } catch (err) {
     console.error("Submit product error:", err);
+    // Không cần thêm thông báo lỗi ở đây vì composable đã xử lý
   }
 };
 
@@ -302,11 +303,12 @@ const handleDelete = async () => {
   try {
     if (!productToDelete.value) return;
     const id = productToDelete.value._id ?? productToDelete.value.id;
-    if (typeof deleteProductApi === "function") await deleteProductApi(id);
+    if (typeof deleteProduct === "function") await deleteProduct(id);
     closeDeleteModal();
     await fetchProducts();
   } catch (err) {
     console.error("Delete product error:", err);
+    // Không cần thêm thông báo lỗi ở đây vì composable đã xử lý
   }
 };
 
@@ -708,7 +710,7 @@ watch(
     <!-- Product Modal -->
     <div
       v-if="showProductModal"
-      class="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+      class="fixed inset-0 bg-white bg-opacity-50 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
       @click="closeModal"
     >
       <div
@@ -772,7 +774,7 @@ watch(
                 >Danh mục *</label
               >
               <select
-                v-model="productForm.category"
+                v-model="productForm.category_id"
                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white transition-colors"
                 required
               >
@@ -909,7 +911,7 @@ watch(
     <!-- Delete Confirmation Modal -->
     <div
       v-if="showDeleteModal"
-      class="fixed inset-0 bg-black/40 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black/40 flex items-center justify-center z-[9999]"
       @click="closeDeleteModal"
     >
       <div class="bg-white rounded-lg p-6 w-full max-w-md" @click.stop>
