@@ -368,25 +368,6 @@ watch(
             Quản lý danh sách sản phẩm và thông tin chi tiết
           </p>
         </div>
-        <button
-          @click="addProduct"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2"
-        >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 4v16m8-8H4"
-            />
-          </svg>
-          <span>Thêm sản phẩm</span>
-        </button>
       </div>
 
       <!-- Stats Cards -->
@@ -468,19 +449,9 @@ watch(
                   placeholder="Tìm kiếm sản phẩm..."
                   class="w-full sm:w-64 pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 />
-                <svg
-                  class="absolute left-3 top-2.5 h-5 w-5 text-gray-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
+                <i
+                  class="fas fa-search absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                ></i>
               </div>
 
               <!-- Category Filter -->

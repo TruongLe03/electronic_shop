@@ -13,19 +13,7 @@
           @click="openCreateModal"
           class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
         >
-          <svg
-            class="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              stroke-width="2"
-              d="M12 6v6m0 0v6m0-6h6m-6 0H6"
-            />
-          </svg>
+          <i class="fas fa-plus"></i>
           Thêm danh mục
         </button>
       </div>
@@ -212,14 +200,18 @@
                   <div class="flex items-center space-x-3">
                     <button
                       @click="editCategory(category)"
-                      class="text-blue-600 hover:text-blue-900"
+                      class="text-blue-600 hover:text-blue-900 flex items-center gap-1"
+                      title="Chỉnh sửa"
                     >
+                      <i class="fas fa-edit"></i>
                       Sửa
                     </button>
                     <button
                       @click="confirmDelete(category)"
-                      class="text-red-600 hover:text-red-900"
+                      class="text-red-600 hover:text-red-900 flex items-center gap-1"
+                      title="Xóa"
                     >
+                      <i class="fas fa-trash"></i>
                       Xóa
                     </button>
                   </div>
@@ -279,19 +271,7 @@
             {{ showCreateModal ? "Thêm danh mục mới" : "Chỉnh sửa danh mục" }}
           </h3>
           <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <i class="fas fa-times"></i>
           </button>
         </div>
 
@@ -406,19 +386,7 @@
             @click="closeDeleteModal"
             class="text-gray-400 hover:text-gray-600"
           >
-            <svg
-              class="w-5 h-5"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
+            <i class="fas fa-times"></i>
           </button>
         </div>
 
@@ -427,19 +395,7 @@
             <div
               class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4"
             >
-              <svg
-                class="w-6 h-6 text-red-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.268 16.5c-.77.833.192 2.5 1.732 2.5z"
-                />
-              </svg>
+              <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
             </div>
             <div>
               <h4 class="font-medium text-gray-900">Xóa danh mục</h4>
