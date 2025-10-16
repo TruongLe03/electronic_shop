@@ -38,7 +38,7 @@ const getActivityBorderColor = (type) => {
     <!-- Header -->
     <div class="flex items-center space-x-3 mb-6">
       <div class="w-12 h-12 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl">
-        🔔
+        <i class="fas fa-bell"></i>
       </div>
       <div>
         <h3 class="text-xl font-bold text-gray-800 dark:text-white">Hoạt động gần đây</h3>
@@ -77,7 +77,8 @@ const getActivityBorderColor = (type) => {
         <div :class="`flex items-start space-x-4 p-4 rounded-xl border transition-all duration-200 hover:shadow-md ${getActivityBorderColor(activity.type)} bg-gradient-to-r from-white/50 to-transparent dark:from-gray-800/50 group-hover:scale-[1.02]`">
           <!-- Icon -->
           <div :class="`w-10 h-10 bg-gradient-to-r ${getActivityColor(activity.type)} rounded-full flex items-center justify-center text-white text-lg shadow-lg group-hover:scale-110 transition-transform duration-200`">
-            {{ activity.icon }}
+            <i v-if="activity.icon && activity.icon.startsWith('fas')" :class="activity.icon"></i>
+            <span v-else>{{ activity.icon }}</span>
           </div>
           
           <!-- Content -->

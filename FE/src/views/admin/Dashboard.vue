@@ -105,7 +105,7 @@ const recentActivities = computed(() => {
     title: `Bán ${item.totalSold} ${item.product.name}`,
     description: `Doanh thu: ${formatCurrency(item.revenue)}`,
     time: "Hôm nay",
-    icon: "📦",
+    icon: "fas fa-box",
   }));
 });
 
@@ -223,7 +223,7 @@ const refreshData = async () => {
                 <div
                   class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl"
                 >
-                  🛒
+                  <i class="fas fa-shopping-cart"></i>
                 </div>
                 <div>
                   <h3 class="text-xl font-bold text-gray-800 dark:text-white">

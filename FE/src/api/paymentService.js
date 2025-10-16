@@ -4,7 +4,7 @@ export const paymentService = {
   // Create order
   createOrder: async (orderData) => {
     try {
-      const response = await apiClient.post('/orders', orderData)
+      const response = await apiClient.post('/orders/create', orderData)
       return response.data
     } catch (error) {
       console.error('Create order error:', error)
@@ -15,7 +15,7 @@ export const paymentService = {
   // Process payment
   processPayment: async (paymentData) => {
     try {
-      const response = await apiClient.post('/payments/process', paymentData)
+      const response = await apiClient.post('/payment/process', paymentData)
       return response.data
     } catch (error) {
       console.error('Process payment error:', error)
@@ -26,7 +26,7 @@ export const paymentService = {
   // Get payment methods
   getPaymentMethods: async () => {
     try {
-      const response = await apiClient.get('/payments/methods')
+      const response = await apiClient.get('/payment/methods')
       return response.data
     } catch (error) {
       console.error('Get payment methods error:', error)
@@ -37,7 +37,7 @@ export const paymentService = {
   // Verify payment
   verifyPayment: async (transactionId) => {
     try {
-      const response = await apiClient.get(`/payments/verify/${transactionId}`)
+      const response = await apiClient.get(`/payment/${transactionId}/status`)
       return response.data
     } catch (error) {
       console.error('Verify payment error:', error)

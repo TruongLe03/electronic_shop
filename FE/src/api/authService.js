@@ -70,7 +70,7 @@ export const validateEmailFormat = (email) => {
 
 export const checkEmailExists = async (email) => {
   try {
-    const response = await axiosInstance.post("/otp/check-email", {
+    const response = await axiosInstance.post("/auth/email/check", {
       email
     });
     return extractResponseData(response);

@@ -17,7 +17,7 @@ export const getAllProductsAdmin = async (params = {}) => {
     } = params;
 
     console.log("getAllProductsAdmin - making request to /admin/products");
-    const response = await axiosInstance.get("/admin/products", {
+    const response = await axiosInstance.get("/admin/products/all", {
       params: {
         page,
         limit,

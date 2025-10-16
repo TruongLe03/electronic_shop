@@ -15,7 +15,7 @@ export const getAllUsers = async (params = {}) => {
       sortOrder = "desc",
     } = params;
 
-    const response = await axiosInstance.get("/admin/users", {
+    const response = await axiosInstance.get("/admin/users/all", {
       params: {
         page,
         limit,
@@ -85,7 +85,7 @@ export const deleteUser = async (userId) => {
 // Lấy danh sách khách hàng VIP
 export const getVIPCustomers = async (limit = 10) => {
   try {
-    const response = await axiosInstance.get("/admin/users/vip/customers", {
+    const response = await axiosInstance.get("/admin/users/vip-customers", {
       params: { limit },
     });
     return response.data;

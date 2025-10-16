@@ -5,7 +5,7 @@ import axiosInstance from "../../utils/axiosConfig";
 // Lấy thống kê tổng quan cho dashboard
 export const getDashboardStats = async () => {
   try {
-    const response = await axiosInstance.get("/admin/dashboard/stats");
+    const response = await axiosInstance.get("/admin/dashboard/overview");
     return response.data;
   } catch (error) {
     console.error("Get dashboard stats error:", error);

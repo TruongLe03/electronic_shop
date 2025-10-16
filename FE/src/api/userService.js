@@ -27,7 +27,7 @@ export const userService = {
       console.log('Sending change password request with data:', passwordData);
       console.log('Token from localStorage:', localStorage.getItem('token') ? 'exists' : 'missing');
       
-      const response = await axiosInstance.put("/users/change-password", passwordData);
+      const response = await axiosInstance.put("/users/password/change", passwordData);
       return response.data;
     } catch (error) {
       console.error('Change password API error:', error.response?.data || error.message);
@@ -86,7 +86,7 @@ export const userService = {
   // Lấy danh sách địa chỉ
   getAddresses: async () => {
     try {
-      const response = await axiosInstance.get("/users/addresses");
+      const response = await axiosInstance.get("/users/addresses/all");
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;
@@ -126,7 +126,7 @@ export const userService = {
   // Đặt địa chỉ làm mặc định
   setDefaultAddress: async (addressId) => {
     try {
-      const response = await axiosInstance.put(`/users/addresses/${addressId}/default`);
+      const response = await axiosInstance.patch(`/users/addresses/${addressId}/default`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

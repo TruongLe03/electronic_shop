@@ -34,7 +34,7 @@ const routes = [
   {
     path: "/order-detail/:orderId",
     name: "orderDetail",
-    component: () => import("../views/client/OrderDetail.vue"),
+    component: () => import("@views/client/OrderDetail.vue"),
     meta: { requiresAuth: true },
   },
   {
@@ -65,6 +65,11 @@ const routes = [
     component: () => import("@views/client/Brands.vue"),
   },
   {
+    path: "/news",
+    name: "news",
+    component: () => import("@views/client/News.vue"),
+  },
+  {
     path: "/support",
     name: "support",
     component: () => import("@views/client/Support.vue"),
@@ -84,7 +89,7 @@ const routes = [
   {
     path: "/admin/products",
     name: "adminProducts",
-    component: () => import("../views/admin/Products.vue"),
+    component: () => import("@views/admin/Products.vue"),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
   {
@@ -133,6 +138,12 @@ const routes = [
     path: "/admin/payments",
     name: "adminPayments",
     component: () => import("@views/admin/Payments.vue"),
+    meta: { requiresAuth: true, requiresAdmin: true },
+  },
+  {
+    path: "/admin/settings",
+    name: "adminSettings",
+    component: () => import("@views/admin/Settings.vue"),
     meta: { requiresAuth: true, requiresAdmin: true },
   },
 ];

@@ -316,24 +316,38 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     return ResponseUtil.validationError(res, ['Order ID không hợp lệ']);
   }
 
-  const validStatuses = ["pending", "confirmed", "processing", "shipped", "delivered", "cancelled"];
+  const validStatuses = ["pending", "confirmed", "processing", "shipping", "delivered", "cancelled"];
   
   if (!status || !validStatuses.includes(status)) {
     return ResponseUtil.validationError(res, ['Trạng thái đơn hàng không hợp lệ']);
   }
 
-  const updateData = { status };
-  if (note) {
-    updateData.adminNote = note.trim();
-  }
-
-  const updatedOrder = await OrderService.updateOrderStatus(id, updateData);
+  // Gọi OrderService với đúng parameters
+  const updatedOrder = await OrderService.updateOrderStatus(id, status, null); // null vì admin không cần userId
   
   if (!updatedOrder) {
     return ResponseUtil.notFound(res, 'Không tìm thấy đơn hàng');
   }
 
+  // Cập nhật note nếu có
+  if (note) {
+    updatedOrder.adminNote = note.trim();
+    await updatedOrder.save();
+  }
+
   return ResponseUtil.success(res, updatedOrder, 'Cập nhật trạng thái đơn hàng thành công');
+});
+
+// Xóa đơn hàng (Admin only)
+export const deleteOrder = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Order ID không hợp lệ']);
+  }
+
+  const result = await OrderService.deleteOrder(id);
+  return ResponseUtil.success(res, result, result.message);
 });
 
 // ============= INVENTORY MANAGEMENT =============

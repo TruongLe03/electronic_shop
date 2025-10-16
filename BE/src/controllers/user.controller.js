@@ -1,6 +1,8 @@
 import { UserService } from "../services/userService.js";
 import { ResponseUtil, asyncHandler } from "../utils/response.util.js";
 import { ValidationUtil } from "../utils/validation.util.js";
+import bcrypt from "bcryptjs";
+import User from "../models/user.model.js";
 
 // Lấy thông tin profile
 export const getProfile = asyncHandler(async (req, res) => {
@@ -29,58 +31,55 @@ export const updateProfile = asyncHandler(async (req, res) => {
 });
 
 // Đổi mật khẩu
-export const changePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-    const userId = req.user.id;
+export const changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const userId = req.user.id;
 
-    // Validate input
-    if (!currentPassword || !newPassword) {
-      return res
-        .status(400)
-        .json({ message: "Vui lòng nhập đầy đủ thông tin" });
-    }
+  // Validate input
+  if (!currentPassword || !newPassword) {
+    return ResponseUtil.validationError(res, ["Vui lòng nhập đầy đủ thông tin"]);
+  }
 
-    if (newPassword.length < 6) {
-      return res
-        .status(400)
-        .json({ message: "Mật khẩu mới phải có ít nhất 6 ký tự" });
-    }
+  if (newPassword.length < 6) {
+    return ResponseUtil.validationError(res, ["Mật khẩu mới phải có ít nhất 6 ký tự"]);
+  }
 
-    // Lấy user với password
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "Không tìm thấy người dùng" });
-    }
+  if (currentPassword === newPassword) {
+    return ResponseUtil.validationError(res, ["Mật khẩu mới phải khác mật khẩu hiện tại"]);
+  }
 
-    // Kiểm tra mật khẩu hiện tại
-    const isCurrentPasswordValid = await bcrypt.compare(
-      currentPassword,
-      user.password
-    );
-    if (!isCurrentPasswordValid) {
-      return res.status(400).json({ message: "Mật khẩu hiện tại không đúng" });
-    }
+  // Lấy user với password
+  const user = await User.findById(userId).select('+password');
+  if (!user) {
+    return ResponseUtil.notFound(res, "Không tìm thấy người dùng");
+  }
 
-    // Mã hóa mật khẩu mới
-    const saltRounds = 10;
-    const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+  // Kiểm tra mật khẩu hiện tại
+  const isCurrentPasswordValid = await bcrypt.compare(
+    currentPassword,
+    user.password
+  );
+  
+  if (!isCurrentPasswordValid) {
+    return ResponseUtil.validationError(res, ["Mật khẩu hiện tại không đúng"]);
+  }
 
-    // Cập nhật mật khẩu
-    await User.findByIdAndUpdate(userId, {
+  // Mã hóa mật khẩu mới
+  const saltRounds = 12;
+  const hashedNewPassword = await bcrypt.hash(newPassword, saltRounds);
+
+  // Cập nhật mật khẩu
+  await User.findByIdAndUpdate(
+    userId, 
+    {
       password: hashedNewPassword,
       updatedAt: new Date(),
-    });
+    },
+    { new: true }
+  );
 
-    res.json({
-      success: true,
-      message: "Đổi mật khẩu thành công",
-    });
-  } catch (error) {
-    console.error("Change password error:", error);
-    res.status(500).json({ message: "Lỗi server" });
-  }
-};
+  return ResponseUtil.success(res, null, "Đổi mật khẩu thành công");
+});
 
 // Upload avatar (placeholder - cần multer để xử lý file upload)
 export const uploadAvatar = async (req, res) => {

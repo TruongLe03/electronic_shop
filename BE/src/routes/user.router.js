@@ -17,17 +17,19 @@ const userRouter = express.Router();
 // Tất cả routes đều cần authentication
 userRouter.use(authMiddleware);
 
-// Profile routes
+// ==== USER PROFILE ====
 userRouter.get("/profile", getProfile);
 userRouter.put("/profile", updateProfile);
-userRouter.put("/change-password", changePassword);
-userRouter.post("/upload-avatar", uploadAvatar);
+userRouter.post("/profile/avatar", uploadAvatar);
 
-// Address routes
+// ==== PASSWORD ====
+userRouter.put("/password/change", changePassword);
+
+// ==== ADDRESSES ====
 userRouter.get("/addresses", getAddresses);
 userRouter.post("/addresses", addAddress);
 userRouter.put("/addresses/:addressId", updateAddress);
 userRouter.delete("/addresses/:addressId", deleteAddress);
-userRouter.put("/addresses/:addressId/default", setDefaultAddress);
+userRouter.put("/addresses/:addressId/set-default", setDefaultAddress);
 
 export default userRouter;

@@ -1,8 +1,9 @@
 import { ref, reactive } from "vue";
-import { 
+import {
   getAllOrdersAdmin,
   updateOrderStatus,
-  getOrdersByDayStats
+  deleteOrderAdmin,
+  getOrdersByDayStats,
 } from "@/api/adminService.js";
 
 export function useAdminOrders() {
@@ -31,12 +32,12 @@ export function useAdminOrders() {
 
   // Order statuses based on actual BE model
   const orderStatuses = [
-    { value: "Chờ xác nhận", label: "Chờ xác nhận" },
-    { value: "Đã xác nhận", label: "Đã xác nhận" },
-    { value: "Đang xử lý", label: "Đang xử lý" },
-    { value: "Đang giao", label: "Đang giao" },
-    { value: "Đã giao", label: "Đã giao" },
-    { value: "Đã hủy", label: "Đã hủy" },
+    { value: "pending", label: "Chờ xác nhận" },
+    { value: "confirmed", label: "Đã xác nhận" },
+    { value: "processing", label: "Đang xử lý" },
+    { value: "shipping", label: "Đang giao" },
+    { value: "delivered", label: "Đã giao" },
+    { value: "cancelled", label: "Đã hủy" },
   ];
 
   // Methods
@@ -68,7 +69,7 @@ export function useAdminOrders() {
     }
   };
 
-  const updateOrderStatus = async (orderId, status, note = "") => {
+  const updateOrderStatusLocal = async (orderId, status, note = "") => {
     try {
       loading.value = true;
       error.value = null;
@@ -93,6 +94,38 @@ export function useAdminOrders() {
     } catch (err) {
       error.value = err.message || "Lỗi khi cập nhật trạng thái";
       console.error("Error updating order status:", err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const deleteOrder = async (orderId) => {
+    try {
+      loading.value = true;
+      error.value = null;
+
+      const response = await deleteOrderAdmin(orderId);
+
+      if (response.success) {
+        // Remove from local data
+        const orderIndex = orders.value.findIndex(
+          (order) => order._id === orderId
+        );
+        if (orderIndex !== -1) {
+          orders.value.splice(orderIndex, 1);
+        }
+
+        // Update pagination
+        pagination.total = Math.max(0, pagination.total - 1);
+
+        return response;
+      } else {
+        throw new Error(response.message || "Lỗi khi xóa đơn hàng");
+      }
+    } catch (err) {
+      error.value = err.message || "Lỗi khi xóa đơn hàng";
+      console.error("Error deleting order:", err);
       throw err;
     } finally {
       loading.value = false;
@@ -139,18 +172,26 @@ export function useAdminOrders() {
   // Utility methods
   const getStatusColor = (status) => {
     const colors = {
-      "Chờ xác nhận": "bg-yellow-100 text-yellow-800",
-      "Đã xác nhận": "bg-blue-100 text-blue-800",
-      "Đang xử lý": "bg-purple-100 text-purple-800",
-      "Đang giao": "bg-indigo-100 text-indigo-800",
-      "Đã giao": "bg-green-100 text-green-800",
-      "Đã hủy": "bg-red-100 text-red-800",
+      pending: "bg-yellow-100 text-yellow-800",
+      confirmed: "bg-blue-100 text-blue-800",
+      processing: "bg-purple-100 text-purple-800",
+      shipping: "bg-indigo-100 text-indigo-800",
+      delivered: "bg-green-100 text-green-800",
+      cancelled: "bg-red-100 text-red-800",
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
   const getStatusText = (status) => {
-    return status || "Không xác định";
+    const statusLabels = {
+      pending: "Chờ xác nhận",
+      confirmed: "Đã xác nhận",
+      processing: "Đang xử lý",
+      shipping: "Đang giao",
+      delivered: "Đã giao",
+      cancelled: "Đã hủy",
+    };
+    return statusLabels[status] || "Không xác định";
   };
 
   // Alias function để compatible với Dashboard
@@ -185,7 +226,8 @@ export function useAdminOrders() {
 
     // Methods
     fetchOrders,
-    updateOrderStatus,
+    updateOrderStatus: updateOrderStatusLocal,
+    deleteOrder,
     goToPage,
     nextPage,
     prevPage,

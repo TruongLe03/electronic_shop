@@ -5,34 +5,35 @@ import { extractResponseData } from "../utils/responseUtils";
 export const getProducts = async (options = {}) => {
   try {
     const params = new URLSearchParams();
-    
-    // Pagination
-    if (options.page) params.append('page', options.page);
-    if (options.limit) params.append('limit', options.limit);
-    
-    // Filters
-    if (options.categoryId) params.append('categoryId', options.categoryId);
-    if (options.minPrice) params.append('minPrice', options.minPrice);
-    if (options.maxPrice) params.append('maxPrice', options.maxPrice);
-    if (options.inStock) params.append('inStock', 'true');
-    if (options.onSale) params.append('onSale', 'true');
-    if (options.search) params.append('search', options.search);
-    
-    // Sorting
-    if (options.sortBy) params.append('sortBy', options.sortBy);
-    if (options.sortOrder) params.append('sortOrder', options.sortOrder);
 
-    const response = await axiosInstance.get(`/products?${params}`);
+    // Pagination
+    if (options.page) params.append("page", options.page);
+    if (options.limit) params.append("limit", options.limit);
+
+    // Filters
+    if (options.categoryId) params.append("categoryId", options.categoryId);
+    if (options.minPrice) params.append("minPrice", options.minPrice);
+    if (options.maxPrice) params.append("maxPrice", options.maxPrice);
+    if (options.inStock) params.append("inStock", "true");
+    if (options.onSale) params.append("onSale", "true");
+    if (options.search) params.append("search", options.search);
+
+    // Sorting
+    if (options.sortBy) params.append("sortBy", options.sortBy);
+    if (options.sortOrder) params.append("sortOrder", options.sortOrder);
+
+    const response = await axiosInstance.get(`/products/discovery/all?${params}`);
 
     // Extract data using utility function
     const responseData = extractResponseData(response);
-    
+
     return {
       data: responseData.products || responseData,
       total: responseData.total,
       page: responseData.page || responseData.pagination?.currentPage,
-      totalPages: responseData.totalPages || responseData.pagination?.totalPages,
-      pagination: responseData.pagination
+      totalPages:
+        responseData.totalPages || responseData.pagination?.totalPages,
+      pagination: responseData.pagination,
     };
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -43,7 +44,7 @@ export const getProducts = async (options = {}) => {
 // Lấy sản phẩm theo ID
 export const getProductById = async (id) => {
   try {
-    const response = await axiosInstance.get(`/products/${id}`);
+    const response = await axiosInstance.get(`/products/${id}/details`);
     console.log("Product by ID response:", response.data);
 
     // Extract data using utility function
@@ -57,15 +58,21 @@ export const getProductById = async (id) => {
 // Lấy sản phẩm liên quan
 export const getRelatedProducts = async (productId, limit = 4) => {
   try {
-    const response = await axiosInstance.get(`/products/${productId}/related`, {
-      params: { limit }
-    });
+    const response = await axiosInstance.get(
+      `/products/analytics/related/${productId}`,
+      {
+        params: { limit },
+      }
+    );
 
     return {
       data: response.data.products || response.data.data || response.data,
     };
   } catch (error) {
-    console.error(`Error fetching related products for product ${productId}:`, error);
+    console.error(
+      `Error fetching related products for product ${productId}:`,
+      error
+    );
     return { data: [] };
   }
 };
@@ -73,8 +80,8 @@ export const getRelatedProducts = async (productId, limit = 4) => {
 // Lấy sản phẩm nổi bật
 export const getFeaturedProducts = async (limit = 8) => {
   try {
-    const response = await axiosInstance.get("/products/featured", {
-      params: { limit }
+    const response = await axiosInstance.get("/products/discovery/featured", {
+      params: { limit },
     });
 
     return {
@@ -89,9 +96,12 @@ export const getFeaturedProducts = async (limit = 8) => {
 // Lấy sản phẩm mới nhất
 export const getNewestProducts = async (limit = 8) => {
   try {
-    const response = await axiosInstance.get("/products/newest", {
-      params: { limit }
-    });
+    const response = await axiosInstance.get(
+      "/products/collections/new-arrivals",
+      {
+        params: { limit },
+      }
+    );
 
     return {
       data: response.data.products,
@@ -105,9 +115,12 @@ export const getNewestProducts = async (limit = 8) => {
 // Lấy sản phẩm bán chạy nhất
 export const getBestSellingProducts = async (limit = 8) => {
   try {
-    const response = await axiosInstance.get("/products/best-selling", {
-      params: { limit }
-    });
+    const response = await axiosInstance.get(
+      "/products/collections/best-sellers",
+      {
+        params: { limit },
+      }
+    );
 
     return {
       data: response.data.products,
@@ -118,18 +131,28 @@ export const getBestSellingProducts = async (limit = 8) => {
   }
 };
 
-// Lấy sản phẩm có khuyến mãi > 40%
-export const getDiscountedProducts = async (page = 1, limit = 10) => {
+// Lấy sản phẩm có khuyến mãi (có thể điều chỉnh minDiscount)
+export const getDiscountedProducts = async (
+  page = 1,
+  limit = 10,
+  minDiscount = 0
+) => {
   try {
-    const response = await axiosInstance.get("/products/discounted", {
-      params: { page, limit }
+    const response = await axiosInstance.get("/products/collections/on-sale", {
+      params: { page, limit, minDiscount },
     });
+    console.log("Discounted products response:", response.data);
+
+    // Backend trả về { success, data, message } - data chứa { products, total, page, totalPages }
+    const result = response.data;
+    const actualData = result.data || result; // data có thể nằm trong result.data
 
     return {
-      data: response.data.products,
-      total: response.data.total,
-      page: response.data.page,
-      totalPages: response.data.totalPages,
+      data: actualData.products || [], // products là array chứa sản phẩm
+      products: actualData.products || [],
+      total: actualData.total || 0,
+      page: actualData.page || 1,
+      totalPages: actualData.totalPages || 1,
     };
   } catch (error) {
     console.error("Error fetching discounted products:", error);
@@ -138,15 +161,22 @@ export const getDiscountedProducts = async (page = 1, limit = 10) => {
 };
 
 // Lấy sản phẩm theo Category (có phân trang)
-export const getProductsByCategory = async (categoryId, page = 1, limit = 12) => {
+export const getProductsByCategory = async (
+  categoryId,
+  page = 1,
+  limit = 12
+) => {
   try {
-    const response = await axiosInstance.get(`/products/category/${categoryId}`, {
-      params: { page, limit }
-    });
+    const response = await axiosInstance.get(
+      `/products/collections/categories/${categoryId}`,
+      {
+        params: { page, limit },
+      }
+    );
 
     // Extract data using utility function
     const responseData = extractResponseData(response);
-    console.log('Products by category responseData:', responseData);
+    console.log("Products by category responseData:", responseData);
 
     return {
       data: responseData.products || responseData,
@@ -164,15 +194,17 @@ export const getProductsByCategory = async (categoryId, page = 1, limit = 12) =>
 export const searchProducts = async (query, options = {}) => {
   try {
     const params = new URLSearchParams();
-    params.append('q', query);
-    
-    if (options.page) params.append('page', options.page);
-    if (options.limit) params.append('limit', options.limit);
-    if (options.categoryId) params.append('categoryId', options.categoryId);
-    if (options.sortBy) params.append('sortBy', options.sortBy);
-    if (options.sortOrder) params.append('sortOrder', options.sortOrder);
+    params.append("q", query);
 
-    const response = await axiosInstance.get(`/products/search?${params}`);
+    if (options.page) params.append("page", options.page);
+    if (options.limit) params.append("limit", options.limit);
+    if (options.categoryId) params.append("categoryId", options.categoryId);
+    if (options.sortBy) params.append("sortBy", options.sortBy);
+    if (options.sortOrder) params.append("sortOrder", options.sortOrder);
+
+    const response = await axiosInstance.get(
+      `/products/discovery/search?${params}`
+    );
 
     return {
       data: response.data.products,
@@ -182,7 +214,7 @@ export const searchProducts = async (query, options = {}) => {
       query: response.data.query,
       categoryId: response.data.categoryId,
       sortBy: response.data.sortBy,
-      sortOrder: response.data.sortOrder
+      sortOrder: response.data.sortOrder,
     };
   } catch (error) {
     console.error(`Error searching products with query "${query}":`, error);
@@ -193,9 +225,9 @@ export const searchProducts = async (query, options = {}) => {
 // Lấy thống kê sản phẩm theo category
 export const getProductStats = async () => {
   try {
-    const response = await axiosInstance.get("/products/stats");
+    const response = await axiosInstance.get("/products/analytics/stats");
     return {
-      data: response.data.stats
+      data: response.data.stats,
     };
   } catch (error) {
     console.error("Error fetching product stats:", error);

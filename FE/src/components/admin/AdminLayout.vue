@@ -2,6 +2,7 @@
 import { ref, computed } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
+import { useNotification } from "@/composables/client/useNotification";
 
 const router = useRouter();
 const route = useRoute();
@@ -74,6 +75,12 @@ const menuItems = [
     path: "/admin/statistics",
     gradient: "from-purple-500 to-pink-500",
   },
+  {
+    name: "Cài đặt",
+    icon: "fas fa-cog",
+    path: "/admin/settings",
+    gradient: "from-gray-500 to-gray-600",
+  },
 ];
 
 const currentPageTitle = computed(() => {
@@ -90,9 +97,18 @@ const toggleDarkMode = () => {
   document.documentElement.classList.toggle("dark", darkMode.value);
 };
 
-const logout = () => {
+const logout = async () => {
+  // Thông báo đăng xuất
+  const { notifyLogout } = useNotification();
+  notifyLogout();
+  
+  // Đăng xuất
   authStore.logout();
-  router.push("/login");
+  
+  // Delay 2.5 giây trước khi chuyển về trang đăng nhập
+  setTimeout(() => {
+    router.push("/login");
+  }, 2500);
 };
 
 const isActiveRoute = (path) => {
@@ -206,7 +222,12 @@ const navigateTo = async (path) => {
                 : 'hover:bg-gray-100 text-gray-600',
             ]"
           >
-            <i :class="sidebarOpen ? 'fas fa-chevron-left' : 'fas fa-chevron-right'" class="text-lg"></i>
+            <i
+              :class="
+                sidebarOpen ? 'fas fa-chevron-left' : 'fas fa-chevron-right'
+              "
+              class="text-lg"
+            ></i>
           </button>
         </div>
 
@@ -358,7 +379,9 @@ const navigateTo = async (path) => {
                       : 'bg-white/80 border-gray-200 text-gray-800 placeholder-gray-500',
                   ]"
                 />
-                <i class="fas fa-search absolute left-3 top-2.5 h-5 w-5 text-gray-400"></i>
+                <i
+                  class="fas fa-search absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                ></i>
               </div>
 
               <!-- Notifications -->

@@ -1,14 +1,14 @@
-import axiosInstance from '../utils/axiosConfig';
+import axiosInstance from "../utils/axiosConfig";
 
 // Gửi OTP để reset password
 export const sendResetOTP = async (email) => {
   try {
-    const response = await axiosInstance.post('/otp/send-reset-otp', {
-      email
+    const response = await axiosInstance.post("/auth/password/send-otp", {
+      email,
     });
     return response.data;
   } catch (error) {
-    console.error('Send reset OTP error:', error);
+    console.error("Send reset OTP error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -16,29 +16,28 @@ export const sendResetOTP = async (email) => {
 // Verify OTP
 export const verifyResetOTP = async (email, otp) => {
   try {
-    const response = await axiosInstance.post('/otp/verify-otp', {
+    const response = await axiosInstance.post("/auth/password/verify-otp", {
       email,
-      otp
+      otp,
     });
     return response.data;
   } catch (error) {
-    console.error('Verify OTP error:', error);
+    console.error("Verify OTP error:", error);
     throw error.response ? error.response.data : error;
   }
 };
 
 // Reset password
-export const resetPassword = async (email, otp, newPassword, confirmPassword) => {
+export const resetPassword = async (email, otp, newPassword) => {
   try {
-    const response = await axiosInstance.post('/otp/reset-password', {
+    const response = await axiosInstance.post("/auth/password/reset-with-otp", {
       email,
       otp,
       newPassword,
-      confirmPassword
     });
     return response.data;
   } catch (error) {
-    console.error('Reset password error:', error);
+    console.error("Reset password error:", error);
     throw error.response ? error.response.data : error;
   }
 };
@@ -46,12 +45,12 @@ export const resetPassword = async (email, otp, newPassword, confirmPassword) =>
 // Check email exists
 export const checkEmailExists = async (email) => {
   try {
-    const response = await axiosInstance.post('/otp/check-email', {
-      email
+    const response = await axiosInstance.post("/auth/email/check", {
+      email,
     });
     return response.data;
   } catch (error) {
-    console.error('Check email error:', error);
+    console.error("Check email error:", error);
     throw error.response ? error.response.data : error;
   }
 };

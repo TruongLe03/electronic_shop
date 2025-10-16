@@ -13,7 +13,7 @@ export function useProducts() {
       loading.value = true
       error.value = null
 
-      const result = await getProducts(page, itemsPerPage)
+      const result = await getProducts({ page, limit: itemsPerPage })
       console.log('API Response:', result)
 
       if (result && result.data) {
@@ -41,7 +41,7 @@ export function useProducts() {
 
       let result
       if (categoryId === 'all') {
-        result = await getProducts(page, itemsPerPage)
+        result = await getProducts({ page, limit: itemsPerPage })
       } else {
         result = await getProductsByCategory(categoryId, page, itemsPerPage)
       }

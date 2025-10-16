@@ -39,7 +39,7 @@ const userSchema = new mongoose.Schema({
   name: { type: String },
   phone_number: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
+  password: { type: String, required: true, select: false },
   address: { type: String },
   addresses: [addressSchema],
   avatar: { type: String, default: null },

@@ -5,17 +5,17 @@ const router = useRouter()
 
 const quickActions = [
   {
-    title: 'Thêm sản phẩm',
-    description: 'Thêm sản phẩm mới vào kho',
-    icon: '➕',
-    gradient: 'from-green-500 to-emerald-500',
-    path: '/admin/products/add',
-    stats: '+12 hôm nay'
+    title: 'Danh mục',
+    description: 'Quản lý danh mục sản phẩm',
+    icon: 'fas fa-tags',
+    gradient: 'from-indigo-500 to-purple-500',
+    path: '/admin/categories',
+    stats: 'Cập nhật mới'
   },
   {
     title: 'Xử lý đơn hàng',
     description: 'Quản lý đơn hàng mới',
-    icon: '📋',
+    icon: 'fas fa-clipboard-list',
     gradient: 'from-blue-500 to-cyan-500',
     path: '/admin/orders',
     stats: '23 chờ xử lý'
@@ -23,7 +23,7 @@ const quickActions = [
   {
     title: 'Quản lý người dùng',
     description: 'Xem và quản lý khách hàng',
-    icon: '👥',
+    icon: 'fas fa-users',
     gradient: 'from-purple-500 to-pink-500',
     path: '/admin/users',
     stats: '156 hoạt động'
@@ -31,15 +31,15 @@ const quickActions = [
   {
     title: 'Xem báo cáo',
     description: 'Thống kê và phân tích',
-    icon: '📊',
+    icon: 'fas fa-chart-bar',
     gradient: 'from-orange-500 to-red-500',
-    path: '/admin/analytics',
+    path: '/admin/statistics',
     stats: 'Cập nhật 1h trước'
   },
   {
     title: 'Quản lý kho',
     description: 'Kiểm tra tồn kho',
-    icon: '📦',
+    icon: 'fas fa-warehouse',
     gradient: 'from-teal-500 to-green-500',
     path: '/admin/inventory',
     stats: '5 sắp hết'
@@ -47,15 +47,23 @@ const quickActions = [
   {
     title: 'Cài đặt',
     description: 'Cấu hình hệ thống',
-    icon: '⚙️',
+    icon: 'fas fa-cog',
     gradient: 'from-gray-500 to-gray-600',
     path: '/admin/settings',
     stats: 'Cập nhật mới'
   }
 ]
 
-const handleAction = (path) => {
-  router.push(path)
+const handleAction = async (path) => {
+  try {
+    await router.push(path)
+  } catch (error) {
+    console.error('Navigation error:', error)
+    // Fallback - reload page if dynamic import fails
+    if (error.message.includes('Failed to fetch dynamically imported module')) {
+      window.location.href = path
+    }
+  }
 }
 </script>
 
@@ -64,7 +72,7 @@ const handleAction = (path) => {
     <!-- Header -->
     <div class="flex items-center space-x-3 mb-6">
       <div class="w-12 h-12 bg-gradient-to-r from-pink-500 to-rose-500 rounded-xl flex items-center justify-center text-white text-xl">
-        ⚡
+        <i class="fas fa-bolt"></i>
       </div>
       <div>
         <h3 class="text-xl font-bold text-gray-800 dark:text-white">Thao tác nhanh</h3>
@@ -91,7 +99,7 @@ const handleAction = (path) => {
         <div class="relative p-4">
           <!-- Icon -->
           <div :class="`w-12 h-12 bg-gradient-to-r ${action.gradient} rounded-xl flex items-center justify-center text-white text-xl mb-3 shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-200`">
-            {{ action.icon }}
+            <i :class="action.icon"></i>
           </div>
           
           <!-- Text Content -->

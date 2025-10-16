@@ -4,7 +4,7 @@ import { extractResponseData } from '../utils/responseUtils';
 // Lấy giỏ hàng hiện tại
 export const getCart = async () => {
   try {
-    const response = await axiosInstance.get('/cart');
+    const response = await axiosInstance.get('/cart/items');
     return extractResponseData(response);
   } catch (error) {
     console.error('Get cart error:', error);
@@ -15,7 +15,7 @@ export const getCart = async () => {
 // Thêm sản phẩm vào giỏ hàng
 export const addToCart = async (productId, quantity = 1) => {
   try {
-    const response = await axiosInstance.post('/cart/add', {
+    const response = await axiosInstance.post('/cart/items/add', {
       product_id: productId,
       quantity
     });
@@ -30,7 +30,7 @@ export const addToCart = async (productId, quantity = 1) => {
 // Cập nhật số lượng sản phẩm trong giỏ
 export const updateCartItem = async (productId, quantity) => {
   try {
-    const response = await axiosInstance.put('/cart/update', {
+    const response = await axiosInstance.put('/cart/items/update', {
       product_id: productId,
       quantity
     });
@@ -44,7 +44,7 @@ export const updateCartItem = async (productId, quantity) => {
 // Xóa sản phẩm khỏi giỏ hàng
 export const removeFromCart = async (productId) => {
   try {
-    const response = await axiosInstance.delete(`/cart/remove/${productId}`);
+    const response = await axiosInstance.delete(`/cart/items/${productId}`);
     return extractResponseData(response);
   } catch (error) {
     console.error('Remove from cart error:', error);

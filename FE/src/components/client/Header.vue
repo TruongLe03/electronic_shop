@@ -332,6 +332,10 @@
             <i class="fas fa-tags mr-2"></i>
             Thương hiệu
           </router-link>
+          <router-link to="/news" :class="getNavLinkClass('/news')">
+            <i class="fas fa-newspaper mr-2"></i>
+            Tin tức
+          </router-link>
           <router-link to="/support" :class="getNavLinkClass('/support')">
             <i class="fas fa-headset mr-2"></i>
             Hỗ trợ
@@ -417,6 +421,14 @@
               Thương hiệu
             </router-link>
             <router-link
+              to="/news"
+              :class="getMobileNavLinkClass('/news')"
+              @click="isMobileMenuOpen = false"
+            >
+              <i class="fas fa-newspaper mr-3"></i>
+              Tin tức
+            </router-link>
+            <router-link
               to="/support"
               :class="getMobileNavLinkClass('/support')"
               @click="isMobileMenuOpen = false"
@@ -498,6 +510,7 @@ import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "../../stores/auth";
 import { useCartStore } from "../../stores/cart";
 import { useSearch } from "../../composables/client/useSearch";
+import { useNotification } from "../../composables/client/useNotification";
 
 const router = useRouter();
 const route = useRoute();
@@ -526,7 +539,7 @@ const formatPrice = (price) => {
 };
 
 const selectProduct = (product) => {
-  router.push(`/products/${product._id}`);
+  router.push(`/product/${product._id}`);
   showResults.value = false;
   searchQuery.value = "";
 };
@@ -539,11 +552,22 @@ const goToSearchPage = () => {
   isMobileMenuOpen.value = false;
 };
 
-const handleLogout = () => {
-  authStore.logout();
+const handleLogout = async () => {
+  // Thông báo đăng xuất
+  const { notifyLogout } = useNotification();
+  notifyLogout();
+  
+  // Đóng menu
   showUserMenu.value = false;
   isMobileMenuOpen.value = false;
-  router.push("/");
+  
+  // Đăng xuất
+  authStore.logout();
+  
+  // Delay 2.5 giây trước khi chuyển về trang chủ
+  setTimeout(() => {
+    router.push("/");
+  }, 2500);
 };
 
 const toggleMobileMenu = () => {

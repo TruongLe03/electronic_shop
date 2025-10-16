@@ -20,6 +20,7 @@ const {
   orderStatuses,
   fetchOrders,
   updateOrderStatus,
+  deleteOrder,
   goToPage,
   nextPage,
   prevPage,
@@ -70,15 +71,11 @@ const stats = computed(() => {
   const all = orders.value || [];
   return {
     totalOrders: all.length,
-    pendingOrders: all.filter(
-      (o) => o.status === "pending" || o.status === "Chờ xác nhận"
-    ).length,
-    completedOrders: all.filter(
-      (o) => o.status === "delivered" || o.status === "Đã giao"
-    ).length,
+    pendingOrders: all.filter((o) => o.status === "pending").length,
+    completedOrders: all.filter((o) => o.status === "delivered").length,
     totalRevenue: all
-      .filter((o) => o.status === "delivered" || o.status === "Đã giao")
-      .reduce((sum, o) => sum + (o.total_amount || o.total || 0), 0),
+      .filter((o) => o.status === "delivered")
+      .reduce((sum, o) => sum + (o.total || 0), 0),
   };
 });
 
@@ -131,14 +128,19 @@ const printOrder = (order) => {
   // TODO: Implement print logic
 };
 
-const deleteOrder = (order) => {
+const deleteOrderHandler = async (order) => {
   if (
     confirm(
-      `Bạn có chắc muốn xóa đơn hàng #${order._id.slice(-8).toUpperCase()}?`
+      `Bạn có chắc muốn xóa đơn hàng #${order._id.slice(-8).toUpperCase()}?\n\nLưu ý: Chỉ có thể xóa đơn hàng ở trạng thái "Chờ xác nhận" hoặc "Đã hủy".`
     )
   ) {
-    console.log("Delete order:", order._id);
-    // TODO: call API delete order
+    try {
+      await deleteOrder(order._id);
+      alert("Xóa đơn hàng thành công!");
+    } catch (err) {
+      console.error("Error deleting order:", err);
+      alert("Có lỗi xảy ra khi xóa đơn hàng: " + (err.message || "Lỗi không xác định"));
+    }
   }
 };
 
@@ -166,25 +168,25 @@ onMounted(async () => {
         <ModernStatsCard
           title="Tổng đơn hàng"
           :value="stats.totalOrders"
-          icon="📊"
+          icon="fas fa-shopping-cart"
           color="blue"
         />
         <ModernStatsCard
           title="Đang xử lý"
           :value="stats.pendingOrders"
-          icon="⏳"
+          icon="fas fa-hourglass-half"
           color="yellow"
         />
         <ModernStatsCard
           title="Hoàn thành"
           :value="stats.completedOrders"
-          icon="✅"
+          icon="fas fa-check-circle"
           color="green"
         />
         <ModernStatsCard
           title="Doanh thu"
           :value="formatCurrency(stats.totalRevenue)"
-          icon="💰"
+          icon="fas fa-dollar-sign"
           color="purple"
         />
       </div>
@@ -259,11 +261,15 @@ onMounted(async () => {
         </div>
 
         <div v-else-if="error" class="p-8 text-center text-red-600">
-          <p>❌ {{ error }}</p>
+          <div class="mb-4">
+            <i class="fas fa-exclamation-triangle text-4xl"></i>
+          </div>
+          <p class="mb-4">{{ error }}</p>
           <button
             @click="fetchOrders"
             class="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
           >
+            <i class="fas fa-redo mr-2"></i>
             Thử lại
           </button>
         </div>
@@ -331,7 +337,7 @@ onMounted(async () => {
                   <td
                     class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
                   >
-                    {{ formatCurrency(order.total_amount || 0) }}
+                    {{ formatCurrency(order.total || 0) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <span
@@ -345,31 +351,33 @@ onMounted(async () => {
                     <div class="flex space-x-2">
                       <button
                         @click="viewOrderDetail(order)"
-                        class="text-blue-600 hover:text-blue-900"
+                        class="text-blue-600 hover:text-blue-900 p-1"
                         title="Xem chi tiết"
                       >
-                        👁️
+                        <i class="fas fa-eye"></i>
                       </button>
                       <button
                         @click="handleStatusChange(order)"
-                        class="text-green-600 hover:text-green-900"
+                        class="text-green-600 hover:text-green-900 p-1"
                         title="Thay đổi trạng thái"
                       >
-                        ✏️
+                        <i class="fas fa-edit"></i>
                       </button>
                       <button
                         @click="printOrder(order)"
-                        class="text-purple-600 hover:text-purple-900"
+                        class="text-purple-600 hover:text-purple-900 p-1"
                         title="In đơn hàng"
                       >
-                        🖨️
+                        <i class="fas fa-print"></i>
                       </button>
                       <button
-                        @click="deleteOrder(order)"
-                        class="text-red-600 hover:text-red-900"
+                        @click="deleteOrderHandler(order)"
+                        class="text-red-600 hover:text-red-900 p-1"
                         title="Xóa đơn hàng"
+                        :disabled="!['pending', 'cancelled'].includes(order.status)"
+                        :class="{'opacity-50 cursor-not-allowed': !['pending', 'cancelled'].includes(order.status)}"
                       >
-                        🗑️
+                        <i class="fas fa-trash"></i>
                       </button>
                     </div>
                   </td>
@@ -383,7 +391,8 @@ onMounted(async () => {
             v-if="filteredOrders.length === 0"
             class="p-8 text-center text-gray-500"
           >
-            📦 Không tìm thấy đơn hàng nào
+            <i class="fas fa-box-open text-4xl mb-2"></i>
+            <p>Không tìm thấy đơn hàng nào</p>
           </div>
 
           <!-- Pagination -->

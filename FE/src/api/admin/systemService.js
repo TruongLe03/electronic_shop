@@ -5,7 +5,7 @@ import axiosInstance from "../../utils/axiosConfig";
 // Lấy cài đặt hệ thống
 export const getSystemSettings = async () => {
   try {
-    const response = await axiosInstance.get("/admin/settings");
+    const response = await axiosInstance.get("/admin/system/settings");
     return response.data;
   } catch (error) {
     console.error("Get system settings error:", error);
@@ -16,7 +16,7 @@ export const getSystemSettings = async () => {
 // Cập nhật cài đặt hệ thống
 export const updateSystemSettings = async (settings) => {
   try {
-    const response = await axiosInstance.put("/admin/settings", settings);
+    const response = await axiosInstance.put("/admin/system/settings", settings);
     return response.data;
   } catch (error) {
     console.error("Update system settings error:", error);
@@ -60,7 +60,7 @@ export const clearCache = async (cacheType = 'all') => {
 // Kiểm tra trạng thái hệ thống
 export const getSystemHealth = async () => {
   try {
-    const response = await axiosInstance.get("/admin/health");
+    const response = await axiosInstance.get("/admin/system/information");
     return response.data;
   } catch (error) {
     console.error("Get system health error:", error);

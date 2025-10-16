@@ -10,14 +10,14 @@ const error = ref(null);
 const discountedProducts = ref([]);
 const scrollContainer = ref(null);
 
-// Lấy danh sách sản phẩm đang giảm giá
+// Lấy danh sách sản phẩm đang giảm giá (Flash Sale có discount >= 40%)
 const fetchDiscountedProducts = async () => {
   try {
     loading.value = true;
     error.value = null;
-    const response = await getDiscountedProducts();
+    const response = await getDiscountedProducts(1, 10, 40); // Lấy sản phẩm giảm giá >= 40%
     discountedProducts.value = response.data;
-    console.log("Discounted products:", discountedProducts.value);
+    console.log("Flash Sale products:", discountedProducts.value);
   } catch (err) {
     error.value = "Không thể tải danh sách sản phẩm giảm giá";
     console.error("Error fetching discounted products:", err);

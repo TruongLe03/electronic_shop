@@ -3,17 +3,17 @@ import Inventory from "../models/inventory.model.js";
 import { ValidationUtil } from "../utils/validation.util.js";
 
 export class ProductService {
-  // Lấy sản phẩm có discount lớn hơn threshold
-  static async getDiscountedProducts(threshold = 40, page = 1, limit = 20) {
+  // Lấy sản phẩm có discount lớn hơn hoặc bằng threshold
+  static async getDiscountedProducts(threshold = 0, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
-    const query = { discount_percent: { $gt: threshold } };
+    const query = { discount_percent: { $gte: threshold } };
 
     const [products, total] = await Promise.all([
       Product.find(query)
         .sort({ discount_percent: -1 })
         .skip(skip)
         .limit(limit)
-        .populate("category_id"),
+        .populate("category_id", "name slug description"),
       Product.countDocuments(query),
     ]);
 
@@ -36,14 +36,11 @@ export class ProductService {
       onSale,
       search,
       status,
-      sortBy = 'createdAt',
-      sortOrder = 'desc'
+      sortBy = "createdAt",
+      sortOrder = "desc",
     } = filters;
 
-    const {
-      page = 1,
-      limit = 20
-    } = pagination;
+    const { page = 1, limit = 20 } = pagination;
 
     const skip = (page - 1) * limit;
 
@@ -54,10 +51,15 @@ export class ProductService {
       query.category_id = categoryId || category_id;
     }
 
-    if ((minPrice !== null && minPrice !== undefined) || (maxPrice !== null && maxPrice !== undefined)) {
+    if (
+      (minPrice !== null && minPrice !== undefined) ||
+      (maxPrice !== null && maxPrice !== undefined)
+    ) {
       query.price = {};
-      if (minPrice !== null && minPrice !== undefined) query.price.$gte = minPrice;
-      if (maxPrice !== null && maxPrice !== undefined) query.price.$lte = maxPrice;
+      if (minPrice !== null && minPrice !== undefined)
+        query.price.$gte = minPrice;
+      if (maxPrice !== null && maxPrice !== undefined)
+        query.price.$lte = maxPrice;
     }
 
     if (inStock) {
@@ -68,38 +70,41 @@ export class ProductService {
       query.discount_percent = { $gt: 0 };
     }
 
-    if (status && status.trim() !== '') {
+    if (status && status.trim() !== "") {
       query.status = status;
     }
 
-    if (search && search.trim() !== '') {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } }
-      ];
+    if (search && search.trim() !== "") {
+      query.name = { $regex: search, $options: "i" };
     }
 
     // Build sort
     let sort = {};
-    if (sortBy === 'price') {
-      sort.price = sortOrder === 'asc' ? 1 : -1;
-    } else if (sortBy === 'name') {
-      sort.name = sortOrder === 'asc' ? 1 : -1;
-    } else if (sortBy === 'sold') {
-      sort.sold = sortOrder === 'asc' ? 1 : -1;
-    } else if (sortBy === 'rating') {
-      sort.rating = sortOrder === 'asc' ? 1 : -1;
+    if (sortBy === "price") {
+      sort.price = sortOrder === "asc" ? 1 : -1;
+    } else if (sortBy === "name") {
+      sort.name = sortOrder === "asc" ? 1 : -1;
+    } else if (sortBy === "sold") {
+      sort.sold = sortOrder === "asc" ? 1 : -1;
+    } else if (sortBy === "rating") {
+      sort.rating = sortOrder === "asc" ? 1 : -1;
     } else {
-      sort.createdAt = sortOrder === 'asc' ? 1 : -1;
+      sort.createdAt = sortOrder === "asc" ? 1 : -1;
     }
 
+    // Add timeout protection
+    const queryOptions = {
+      maxTimeMS: 5000, // 5 seconds timeout
+    };
+
     const [products, total] = await Promise.all([
-      Product.find(query)
+      Product.find(query, null, queryOptions)
         .sort(sort)
         .skip(skip)
         .limit(limit)
-        .populate("category_id"),
-      Product.countDocuments(query),
+        .populate("category_id", "name slug description")
+        .lean(), // Use lean() for better performance
+      Product.countDocuments(query, queryOptions),
     ]);
 
     return {
@@ -112,7 +117,14 @@ export class ProductService {
 
   // Lấy chi tiết sản phẩm
   static async getProductById(productId) {
-    const product = await Product.findById(productId).populate("category_id");
+    const queryOptions = {
+      maxTimeMS: 5000, // 5 seconds timeout
+    };
+
+    const product = await Product.findById(productId, null, queryOptions)
+      .populate("category_id", "name slug description")
+      .lean();
+
     if (!product) {
       throw new Error("Không tìm thấy sản phẩm");
     }
@@ -129,7 +141,7 @@ export class ProductService {
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
-        .populate("category_id"),
+        .populate("category_id", "name slug description"),
       Product.countDocuments(query),
     ]);
 
@@ -146,7 +158,7 @@ export class ProductService {
     return await Product.find()
       .sort({ sold: -1 })
       .limit(limit)
-      .populate("category_id");
+      .populate("category_id", "name slug description");
   }
 
   // Lấy sản phẩm mới nhất
@@ -154,7 +166,7 @@ export class ProductService {
     return await Product.find()
       .sort({ createdAt: -1 })
       .limit(limit)
-      .populate("category_id");
+      .populate("category_id", "name slug description");
   }
 
   // Tạo sản phẩm mới
@@ -165,16 +177,15 @@ export class ProductService {
 
   // Cập nhật sản phẩm
   static async updateProduct(productId, updateData) {
-    const product = await Product.findByIdAndUpdate(
-      productId, 
-      updateData, 
-      { new: true, runValidators: true }
-    ).populate("category_id");
-    
+    const product = await Product.findByIdAndUpdate(productId, updateData, {
+      new: true,
+      runValidators: true,
+    }).populate("category_id", "name slug description");
+
     if (!product) {
       throw new Error("Không tìm thấy sản phẩm");
     }
-    
+
     return product;
   }
 
@@ -187,53 +198,88 @@ export class ProductService {
     return product;
   }
 
-  // Kiểm tra stock
-  static async checkProductStock(productId, quantity) {
-    // Import Inventory model to check stock
-    const Inventory = (await import("../models/inventory.model.js")).default;
-    
+  // Lấy thông tin tồn kho chi tiết
+  static async getProductStock(productId) {
     const product = await Product.findById(productId);
     if (!product) {
-      throw new Error("Không tìm thấy sản phẩm");
+      return null;
     }
-    
-    // Check inventory for stock
+
+    // Kiểm tra stock từ product model hoặc inventory model
+    const Inventory = (await import("../models/inventory.model.js")).default;
     const inventory = await Inventory.findOne({ productId: productId });
-    if (!inventory) {
-      return false; // No inventory record means no stock
+    
+    if (inventory) {
+      return {
+        quantity: inventory.quantity - (inventory.reservedQuantity || 0),
+        totalQuantity: inventory.quantity,
+        reservedQuantity: inventory.reservedQuantity || 0
+      };
     }
     
-    const availableQuantity = inventory.quantity - (inventory.reservedQuantity || 0);
-    return availableQuantity >= quantity;
+    // Fallback to product stock field
+    return {
+      quantity: product.stock_quantity || product.stock || 0,
+      totalQuantity: product.stock_quantity || product.stock || 0,
+      reservedQuantity: 0
+    };
+  }
+
+  // Kiểm tra stock
+  static async checkProductStock(productId, quantity) {
+    const stockInfo = await this.getProductStock(productId);
+    return stockInfo && stockInfo.quantity >= quantity;
   }
 
   // Cập nhật stock
-  static async updateProductStock(productId, quantity, operation = 'decrease') {
+  static async updateProductStock(productId, quantity, operation = "decrease") {
     const product = await Product.findById(productId);
     if (!product) {
       throw new Error("Không tìm thấy sản phẩm");
     }
 
-    if (operation === 'decrease') {
-      if (product.stock_quantity < quantity) {
+    const oldStock = product.stock_quantity || product.stock || 0;
+
+    if (operation === "decrease") {
+      if (oldStock < quantity) {
         throw new Error("Không đủ hàng trong kho");
       }
-      product.stock_quantity -= quantity;
-      product.sold += quantity;
-    } else if (operation === 'increase') {
-      product.stock_quantity += quantity;
+      if (product.stock_quantity !== undefined) {
+        product.stock_quantity -= quantity;
+      } else {
+        product.stock -= quantity;
+      }
+      product.sold = (product.sold || 0) + quantity;
+    } else if (operation === "increase") {
+      if (product.stock_quantity !== undefined) {
+        product.stock_quantity += quantity;
+      } else {
+        product.stock += quantity;
+      }
     }
 
-    return await product.save();
+    const updatedProduct = await product.save();
+    
+    // Kiểm tra và gửi thông báo khi có hàng (chỉ khi increase stock)
+    if (operation === "increase") {
+      const newStock = updatedProduct.stock_quantity || updatedProduct.stock || 0;
+      if (oldStock === 0 && newStock > 0) {
+        // Import StockNotificationService dynamically to avoid circular dependency
+        try {
+          const { StockNotificationService } = await import("./stockNotificationService.js");
+          await StockNotificationService.checkAndNotifyStockAvailable(productId, newStock);
+        } catch (error) {
+          console.error("Error sending stock notifications:", error);
+        }
+      }
+    }
+
+    return updatedProduct;
   }
 
   // Lấy sản phẩm theo category
   static async getProductsByCategory(categoryId, options = {}) {
-    const {
-      page = 1,
-      limit = 20,
-      excludeId
-    } = options;
+    const { page = 1, limit = 20, excludeId } = options;
 
     const skip = (page - 1) * limit;
 
@@ -249,7 +295,7 @@ export class ProductService {
       Product.find(query)
         .skip(skip)
         .limit(limit)
-        .populate("category_id")
+        .populate("category_id", "name slug description")
         .sort({ createdAt: -1 }),
       Product.countDocuments(query),
     ]);
@@ -271,11 +317,11 @@ export class ProductService {
 
     const relatedProducts = await Product.find({
       category_id: currentProduct.category_id,
-      _id: { $ne: productId }
+      _id: { $ne: productId },
     })
-    .sort({ sold: -1, createdAt: -1 })
-    .limit(limit)
-    .populate("category_id", "name slug");
+      .sort({ sold: -1, createdAt: -1 })
+      .limit(limit)
+      .populate("category_id", "name slug description");
 
     return relatedProducts;
   }

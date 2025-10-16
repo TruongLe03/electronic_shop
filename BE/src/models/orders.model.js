@@ -55,12 +55,12 @@ const orderSchema = new mongoose.Schema(
     status: {
       type: String,
       enum: [
-        "Chờ xác nhận",
-        "Đã xác nhận",
-        "Đang xử lý",
-        "Đang giao",
-        "Đã giao",
-        "Đã hủy",
+        "pending",
+        "confirmed", 
+        "processing",
+        "shipping",
+        "delivered",
+        "cancelled",
       ],
       default: "pending",
     },

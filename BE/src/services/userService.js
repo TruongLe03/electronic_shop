@@ -16,6 +16,11 @@ export class UserService {
     return await User.findOne({ email });
   }
 
+  // Lấy thông tin user theo email kèm password (dành cho authentication)
+  static async getUserByEmailWithPassword(email) {
+    return await User.findOne({ email }).select('+password');
+  }
+
   // Tạo user mới
   static async createUser(userData) {
     const { email, password, phone_number, username } = userData;
@@ -64,9 +69,15 @@ export class UserService {
 
   // Thay đổi mật khẩu
   static async changePassword(userId, currentPassword, newPassword) {
-    const user = await User.findById(userId);
+    // Lấy user kèm password để kiểm tra
+    const user = await User.findById(userId).select('+password');
     if (!user) {
       throw new Error("Không tìm thấy người dùng");
+    }
+
+    // Kiểm tra password có tồn tại không
+    if (!user.password) {
+      throw new Error("Lỗi dữ liệu tài khoản");
     }
 
     // Kiểm tra mật khẩu hiện tại
@@ -76,7 +87,7 @@ export class UserService {
     }
 
     // Mã hoá mật khẩu mới
-    const hashedNewPassword = await bcrypt.hash(newPassword, 10);
+    const hashedNewPassword = await bcrypt.hash(newPassword, 12);
     
     user.password = hashedNewPassword;
     await user.save();

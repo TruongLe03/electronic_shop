@@ -14,23 +14,24 @@ import authMiddleware from "../middleware/authMiddleware.js";
 
 const paymentRouter = express.Router();
 
-// Create payment for order
-paymentRouter.post("/create", authMiddleware, createPayment);
+// ============= PAYMENT INITIALIZATION =============
+paymentRouter.post("/process", authMiddleware, createPayment);
 
-// VNPay routes
-paymentRouter.get("/vnpay/return", vnpayReturn);
-paymentRouter.post("/vnpay/ipn", vnpayIPN);
+// ============= GATEWAY CALLBACKS =============
+// VNPay integration
+paymentRouter.get("/gateways/vnpay/callback", vnpayReturn);
+paymentRouter.post("/gateways/vnpay/ipn", vnpayIPN);
 
-// MoMo routes
-paymentRouter.post("/momo/ipn", momoIPN);
-paymentRouter.post("/momo/return", momoReturn);
+// MoMo integration  
+paymentRouter.post("/gateways/momo/ipn", momoIPN);
+paymentRouter.post("/gateways/momo/callback", momoReturn);
 
-// Get payment info
-paymentRouter.get("/order/:orderId", authMiddleware, getPaymentByOrderId);
-paymentRouter.get("/user", authMiddleware, getUserPayments);
-paymentRouter.get("/:paymentId/verify", authMiddleware, verifyPaymentStatus);
+// ============= PAYMENT TRACKING =============
+paymentRouter.get("/orders/:orderId", authMiddleware, getPaymentByOrderId);
+paymentRouter.get("/my-payments", authMiddleware, getUserPayments);
+paymentRouter.get("/:paymentId/status", authMiddleware, verifyPaymentStatus);
 
-// Admin routes
+// ============= PAYMENT MANAGEMENT =============
 paymentRouter.post("/:paymentId/refund", authMiddleware, refundPayment);
 
 export default paymentRouter;

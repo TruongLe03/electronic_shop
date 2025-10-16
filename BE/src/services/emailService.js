@@ -7,18 +7,39 @@ export const generateOTP = () => {
 
 // Hàm tạo transporter cho nodemailer
 const createTransporter = () => {
-  return nodemailer.createTransporter({
+  // Kiểm tra cấu hình email
+  if (!process.env.EMAIL_USER || !process.env.EMAIL_PASSWORD) {
+    throw new Error('Email configuration missing: EMAIL_USER or EMAIL_PASSWORD not set');
+  }
+
+  return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: process.env.EMAIL_USER,
       pass: process.env.EMAIL_PASSWORD
+    },
+    // Thêm cấu hình bảo mật
+    secure: true, // true for 465, false for other ports
+    tls: {
+      rejectUnauthorized: false
     }
   });
 };
 
 export const sendOTPEmail = async (email, otp) => {
   try {
+    console.log('🚀 Starting email send process...');
+    console.log('📧 Email config:', {
+      user: process.env.EMAIL_USER ? 'configured' : 'missing',
+      pass: process.env.EMAIL_PASSWORD ? 'configured' : 'missing',
+      to: email
+    });
+
     const transporter = createTransporter();
+    
+    // Verify transporter connection
+    await transporter.verify();
+    console.log('✅ SMTP connection verified');
 
     const mailOptions = {
       from: `"Electronic Shop" <${process.env.EMAIL_USER}>`,
@@ -39,11 +60,18 @@ export const sendOTPEmail = async (email, otp) => {
       `
     };
 
+    console.log('📨 Sending email...');
     const result = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent successfully:', result.messageId);
 
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error("❌ Error sending OTP:", error);
+    console.error("❌ Error details:", {
+      message: error.message,
+      code: error.code,
+      command: error.command
+    });
     return { success: false, error: error.message };
   }
 };

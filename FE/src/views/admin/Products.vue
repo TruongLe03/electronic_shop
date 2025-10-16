@@ -56,6 +56,7 @@ const loading = comp.loading ?? ref(false);
 const error = comp.error ?? ref(null);
 const pagination =
   comp.pagination ?? ref({ page: 1, limit: 10, totalPages: 1, total: 0 });
+const filters = comp.filters ?? ref({});
 
 const fetchProducts = comp.fetchProducts ?? (async () => {});
 const fetchCategories = comp.fetchCategories ?? (async () => {});
@@ -312,11 +313,34 @@ const handleDelete = async () => {
   }
 };
 
-const applyCategoryFilter = () => {
-  const f = {};
-  if (selectedCategory.value) f.category = selectedCategory.value;
-  applyFiltersApi(f);
-  fetchProducts();
+const applyCategoryFilter = async () => {
+  console.log("🔍 applyCategoryFilter called with:", selectedCategory.value);
+
+  try {
+    // Update filters directly
+    if (filters && typeof filters === "object") {
+      if (selectedCategory.value) {
+        filters.category = selectedCategory.value;
+      } else {
+        filters.category = "";
+      }
+      console.log("✅ Filters updated:", filters);
+    } else {
+      console.error("❌ Filters object not available:", filters);
+    }
+
+    // Reset to page 1
+    if (pagination && pagination.page) {
+      pagination.page = 1;
+    }
+
+    // Call fetchProducts with updated filters
+    console.log("📞 Calling fetchProducts...");
+    await fetchProducts();
+    console.log("✅ fetchProducts completed");
+  } catch (error) {
+    console.error("❌ applyCategoryFilter error:", error);
+  }
 };
 
 const categoryName = (cat) => {
@@ -336,7 +360,10 @@ if (!authStore.user || authStore.user.role !== "admin") {
 
 // initial fetch
 onMounted(async () => {
+  console.log("Products.vue onMounted - starting...");
   await Promise.all([fetchCategories(), fetchProducts()]);
+  console.log("Categories after fetch:", categories.value);
+  console.log("Products after fetch:", products.value?.length);
 });
 
 // watch pagination.page to refetch products (if composable expects that)
@@ -344,6 +371,14 @@ watch(
   () => pagination.page,
   async () => {
     await fetchProducts();
+  }
+);
+
+// watch selectedCategory for debugging
+watch(
+  () => selectedCategory.value,
+  (newValue) => {
+    console.log("selectedCategory changed to:", newValue);
   }
 );
 </script>
@@ -447,10 +482,10 @@ watch(
                   @input="debouncedSearch"
                   type="text"
                   placeholder="Tìm kiếm sản phẩm..."
-                  class="w-full sm:w-64 pl-10 pr-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  class="w-full sm:w-64 pl-10 pr-4 py-2 text-amber-50 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 />
                 <i
-                  class="fas fa-search absolute left-3 top-2.5 h-5 w-5 text-gray-400"
+                  class="fas fa-search absolute left-3 top-2.5 h-5 w-5 text-amber-50"
                 ></i>
               </div>
 
@@ -458,7 +493,7 @@ watch(
               <select
                 v-model="selectedCategory"
                 @change="applyCategoryFilter"
-                class="px-4 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                class="px-4 py-2 text-amber-50 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
               >
                 <option value="">Tất cả danh mục</option>
                 <option

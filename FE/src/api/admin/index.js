@@ -43,6 +43,7 @@ export {
   // Order Management
   getAllOrdersAdmin,
   updateOrderStatus,
+  deleteOrderAdmin,
   getOrdersByDayStats,
 } from "./orderService";
 

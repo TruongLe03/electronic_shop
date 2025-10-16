@@ -1,4 +1,6 @@
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
   title: {
     type: String,
@@ -12,9 +14,13 @@ const props = defineProps({
     type: String,
     required: true
   },
+  color: {
+    type: String,
+    default: 'blue'
+  },
   gradient: {
     type: String,
-    default: 'from-blue-500 to-purple-600'
+    default: null
   },
   trend: {
     type: String,
@@ -29,6 +35,22 @@ const props = defineProps({
     default: false
   }
 })
+
+// Generate gradient based on color prop
+const computedGradient = computed(() => {
+  if (props.gradient) return props.gradient;
+  
+  const gradients = {
+    blue: 'from-blue-500 to-blue-600',
+    yellow: 'from-yellow-500 to-yellow-600', 
+    green: 'from-green-500 to-green-600',
+    purple: 'from-purple-500 to-purple-600',
+    red: 'from-red-500 to-red-600',
+    indigo: 'from-indigo-500 to-indigo-600',
+  };
+  
+  return gradients[props.color] || 'from-blue-500 to-purple-600';
+});
 
 const formatValue = (value) => {
   if (props.loading) return '---'
@@ -53,7 +75,7 @@ const getTrendColor = (trend) => {
     <div class="absolute inset-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl border border-white/20 dark:border-gray-700/50 shadow-xl group-hover:shadow-2xl transition-all duration-300"></div>
     
     <!-- Gradient overlay -->
-    <div :class="`absolute inset-0 bg-gradient-to-r ${gradient} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300`"></div>
+    <div :class="`absolute inset-0 bg-gradient-to-r ${computedGradient} opacity-0 group-hover:opacity-5 rounded-2xl transition-opacity duration-300`"></div>
     
     <!-- Content -->
     <div class="relative p-6">
@@ -74,7 +96,7 @@ const getTrendColor = (trend) => {
         </div>
         
         <!-- Icon with gradient background -->
-        <div :class="`w-14 h-14 bg-gradient-to-r ${gradient} rounded-xl flex items-center justify-center text-white text-xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300`">
+        <div :class="`w-14 h-14 bg-gradient-to-r ${computedGradient} rounded-xl flex items-center justify-center text-white text-xl shadow-lg group-hover:shadow-xl group-hover:scale-110 transition-all duration-300`">
           <i v-if="icon.startsWith('fas')" :class="icon"></i>
           <span v-else>{{ icon }}</span>
         </div>
@@ -82,7 +104,7 @@ const getTrendColor = (trend) => {
       
       <!-- Progress bar animation -->
       <div class="mt-4 h-1 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
-        <div :class="`h-full bg-gradient-to-r ${gradient} transform origin-left transition-transform duration-1000 ${loading ? 'scale-x-0' : 'scale-x-100'}`"></div>
+        <div :class="`h-full bg-gradient-to-r ${computedGradient} transform origin-left transition-transform duration-1000 ${loading ? 'scale-x-0' : 'scale-x-100'}`"></div>
       </div>
     </div>
   </div>

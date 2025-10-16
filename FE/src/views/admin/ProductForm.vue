@@ -1,8 +1,10 @@
 <script setup>
 import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { useAuthStore } from "../../stores/auth.js";
-import { useLoading } from "../../composables/useLoading.js";
+import { useAuthStore } from "@stores/auth.js";
+import { useLoading } from "@composables/useLoading.js";
+import { getProductById, createProduct, updateProduct } from "@api/productService.js";
+import AdminLayout from "@components/admin/AdminLayout.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -66,43 +68,28 @@ onMounted(async () => {
 const loadProduct = async () => {
   try {
     loading.value = true;
-
-    // Mock product data - replace with real API call
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // Sample product data
+    
+    const response = await getProductById(productId.value);
+    const product = response.data;
+    
     form.value = {
-      name: "Arduino Uno R3",
-      description:
-        "Bo mạch vi điều khiển Arduino Uno R3 chính hãng với chip ATmega328P",
-      price: "350000",
-      original_price: "400000",
-      category: "Arduino & Vi điều khiển",
-      brand: "Arduino",
-      SKU: "ARD-UNO-R3",
-      stock_quantity: "25",
-      warranty: "12 tháng",
-      main_image: "https://example.com/arduino-uno.jpg",
-      additional_images: [
-        "https://example.com/arduino-uno-2.jpg",
-        "https://example.com/arduino-uno-3.jpg",
-      ],
-      specifications: {
-        "Kích thước": "68.6 x 53.4mm",
-        "Trọng lượng": "25g",
-        "Bảo hành": "12 tháng",
-        "Xuất xứ": "Italy",
-      },
-      features: [
-        "Chip ATmega328P",
-        "14 chân digital I/O",
-        "6 chân analog input",
-        "USB connection",
-      ],
+      name: product.name || "",
+      description: product.description || "",
+      price: product.price?.toString() || "",
+      original_price: product.original_price?.toString() || "",
+      category: product.category || "",
+      brand: product.brand || "",
+      SKU: product.SKU || "",
+      stock_quantity: product.stock_quantity?.toString() || "",
+      warranty: product.warranty || "",
+      main_image: product.main_image || "",
+      additional_images: product.additional_images || [],
+      specifications: product.specifications || {},
+      features: product.features || [],
     };
   } catch (error) {
     console.error("Error loading product:", error);
-    alert("Không thể tải thông tin sản phẩm");
+    alert("Không thể tải thông tin sản phẩm: " + (error.message || "Lỗi không xác định"));
   } finally {
     loading.value = false;
   }
@@ -179,14 +166,12 @@ const submitForm = async () => {
       stock_quantity: parseInt(form.value.stock_quantity),
     };
 
-    // Mock API call - replace with real implementation
-    await new Promise((resolve) => setTimeout(resolve, 2000));
-
+    let response;
     if (isEditMode.value) {
-      console.log("Updating product:", productId.value, productData);
+      response = await updateProduct(productId.value, productData);
       alert("Cập nhật sản phẩm thành công!");
     } else {
-      console.log("Creating product:", productData);
+      response = await createProduct(productData);
       alert("Thêm sản phẩm thành công!");
     }
 
@@ -208,9 +193,9 @@ const cancelForm = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
+  <AdminLayout>
     <!-- Header -->
-    <header class="bg-white shadow-sm border-b">
+    <div class="bg-white shadow-sm border-b mb-6">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between items-center py-4">
           <div class="flex items-center">
@@ -218,15 +203,15 @@ const cancelForm = () => {
               to="/admin/products"
               class="text-indigo-600 hover:text-indigo-700 mr-4"
             >
-              ← Quay lại
+              <i class="fas fa-arrow-left"></i> Quay lại
             </router-link>
             <h1 class="text-2xl font-bold text-gray-900">
-              {{ isEditMode ? "✏️ Sửa sản phẩm" : "➕ Thêm sản phẩm mới" }}
+              {{ isEditMode ? "Sửa sản phẩm" : "Thêm sản phẩm mới" }}
             </h1>
           </div>
         </div>
       </div>
-    </header>
+    </div>
 
     <!-- Loading State -->
     <div v-if="loading" class="flex justify-center items-center py-20">
@@ -237,12 +222,13 @@ const cancelForm = () => {
     </div>
 
     <!-- Form -->
-    <main v-else class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+    <div v-else class="max-w-4xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
       <form @submit.prevent="submitForm" class="space-y-8">
         <!-- Basic Information -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6">
-            📝 Thông tin cơ bản
+          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-edit mr-2 text-indigo-600"></i>
+            Thông tin cơ bản
           </h2>
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -338,8 +324,9 @@ const cancelForm = () => {
 
         <!-- Pricing & Stock -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6">
-            💰 Giá và tồn kho
+          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-dollar-sign mr-2 text-green-600"></i>
+            Giá và tồn kho
           </h2>
 
           <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -393,7 +380,10 @@ const cancelForm = () => {
 
         <!-- Images -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6">🖼️ Hình ảnh</h2>
+          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-images mr-2 text-purple-600"></i>
+            Hình ảnh
+          </h2>
 
           <!-- Main Image -->
           <div class="mb-6">
@@ -458,8 +448,9 @@ const cancelForm = () => {
 
         <!-- Features -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6">
-            ✨ Tính năng nổi bật
+          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-star mr-2 text-yellow-600"></i>
+            Tính năng nổi bật
           </h2>
 
           <div class="mb-4">
@@ -501,8 +492,9 @@ const cancelForm = () => {
 
         <!-- Specifications -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6">
-            📋 Thông số kỹ thuật
+          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+            <i class="fas fa-list mr-2 text-blue-600"></i>
+            Thông số kỹ thuật
           </h2>
 
           <div class="mb-4">
@@ -573,8 +565,8 @@ const cancelForm = () => {
           </button>
         </div>
       </form>
-    </main>
-  </div>
+    </div>
+  </AdminLayout>
 </template>
 
 <style scoped>

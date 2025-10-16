@@ -26,26 +26,28 @@ const adminOnly = (req, res, next) => {
   }
 };
 
-// Public routes (no auth required)
-inventoryRouter.get("/check/:productId", getInventoryByProduct); // Check stock for adding to cart
+// ============= PUBLIC STOCK CHECK =============
+inventoryRouter.get("/check/products/:productId", getInventoryByProduct);
 
 // Apply auth middleware to protected routes
 inventoryRouter.use(authMiddleware);
 inventoryRouter.use(adminOnly);
 
-// Admin only routes
-inventoryRouter.get("/", getAllInventories);
-inventoryRouter.get("/product/:productId", getInventoryByProduct);
-inventoryRouter.get("/low-stock", getLowStockReport);
-inventoryRouter.get("/history/:productId", getStockHistory);
+// ============= INVENTORY OVERVIEW =============
+inventoryRouter.get("/all-products", getAllInventories);
+inventoryRouter.get("/reports/low-stock", getLowStockReport);
 
-// Update/Create inventory
-inventoryRouter.put("/product/:productId", updateInventory);
-inventoryRouter.post("/create", createInventory);
+// ============= PRODUCT INVENTORY DETAILS =============
+inventoryRouter.get("/products/:productId", getInventoryByProduct);
+inventoryRouter.get("/products/:productId/history", getStockHistory);
 
-// Stock operations
-inventoryRouter.post("/adjust/:productId", adjustStock);
-inventoryRouter.post("/reserve", reserveStock);
-inventoryRouter.post("/release", releaseReservedStock);
+// ============= INVENTORY MANAGEMENT =============
+inventoryRouter.put("/products/:productId", updateInventory);
+inventoryRouter.post("/products/create", createInventory);
+
+// ============= STOCK OPERATIONS =============
+inventoryRouter.post("/stock/adjust/:productId", adjustStock);
+inventoryRouter.post("/stock/reserve", reserveStock);
+inventoryRouter.post("/stock/release", releaseReservedStock);
 
 export default inventoryRouter;

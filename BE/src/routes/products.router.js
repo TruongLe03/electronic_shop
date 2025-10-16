@@ -17,25 +17,29 @@ import {
 
 const productRouter = express.Router();
 
-// GET routes - specific routes first, general routes last
-productRouter.get("/search", searchProducts); // Tìm kiếm sản phẩm
-productRouter.get("/discounted", getDiscountedProducts); // Lấy sản phẩm giảm giá > 40%
-productRouter.get("/featured", getFeaturedProducts); // Lấy sản phẩm nổi bật
-productRouter.get("/newest", getNewestProducts); // Lấy sản phẩm mới nhất
-productRouter.get("/best-selling", getBestSellingProducts); // Lấy sản phẩm bán chạy
-productRouter.get("/stats", getProductStats); // Thống kê sản phẩm theo category
-productRouter.get("/category/:categoryId", getProductsByCategory); // Lấy sản phẩm theo category
-productRouter.get("/:id/related", getRelatedProducts); // Lấy sản phẩm liên quan
-productRouter.get("/:id", getProductById); // Lấy 1 sản phẩm theo ID
-productRouter.get("/", getProducts); // Lấy tất cả sản phẩm với filters
+// ==== PRODUCT DISCOVERY ====
+productRouter.get("/discovery/all", getProducts); // Lấy tất cả sản phẩm với filters
+productRouter.get("/discovery/search", searchProducts); // Tìm kiếm sản phẩm
+productRouter.get("/discovery/featured", getFeaturedProducts); // Sản phẩm nổi bật
 
-// POST routes
-productRouter.post("/", createProduct); // Thêm sản phẩm
+// ==== PRODUCT COLLECTIONS ====
+productRouter.get("/collections/new-arrivals", getNewestProducts); // Sản phẩm mới nhất
+productRouter.get("/collections/best-sellers", getBestSellingProducts); // Bán chạy
+productRouter.get("/collections/on-sale", getDiscountedProducts); // Giảm giá
 
-// PUT routes
-productRouter.put("/:id", updateProduct); // Cập nhật sản phẩm
+// ==== PRODUCT ANALYTICS ====
+productRouter.get("/analytics/stats", getProductStats); // Thống kê sản phẩm
+productRouter.get("/analytics/related/:productId", getRelatedProducts); // Sản phẩm liên quan
 
-// DELETE routes
-productRouter.delete("/:id", deleteProduct); // Xóa sản phẩm
+// ==== PRODUCT CATEGORIES ====
+productRouter.get("/collections/categories/:categoryId", getProductsByCategory); // Theo danh mục
+
+// ==== INDIVIDUAL PRODUCTS ====
+productRouter.get("/:id/details", getProductById); // Chi tiết sản phẩm
+
+// ==== PRODUCT MANAGEMENT ====
+productRouter.post("/management/create", createProduct); // Tạo sản phẩm mới
+productRouter.put("/management/:id", updateProduct); // Cập nhật sản phẩm
+productRouter.delete("/management/:id", deleteProduct); // Xóa sản phẩm
 
 export default productRouter;

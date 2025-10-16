@@ -16,7 +16,7 @@ export const getAllOrdersAdmin = async (params = {}) => {
       sortOrder = "desc",
     } = params;
 
-    const response = await axiosInstance.get("/admin/orders", {
+    const response = await axiosInstance.get("/admin/orders/all", {
       params: {
         page,
         limit,
@@ -56,6 +56,17 @@ export const getOrdersByDayStats = async () => {
     return response.data;
   } catch (error) {
     console.error("Get orders by day stats error:", error);
+    throw error.response ? error.response.data : error;
+  }
+};
+
+// Xóa đơn hàng (Admin only)
+export const deleteOrderAdmin = async (orderId) => {
+  try {
+    const response = await axiosInstance.delete(`/admin/orders/${orderId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Delete order error:", error);
     throw error.response ? error.response.data : error;
   }
 };

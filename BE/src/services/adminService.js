@@ -13,7 +13,7 @@ export class AdminAnalyticsService {
    */
   static async getDashboardStats() {
     // Thống kê tổng số
-    const totalUsers = await User.countDocuments({ role: "customer" });
+    const totalUsers = await User.countDocuments();
     const totalProducts = await Product.countDocuments();
     const totalOrders = await Order.countDocuments();
     const totalCategories = await Category.countDocuments();

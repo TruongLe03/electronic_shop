@@ -5,23 +5,24 @@ import { extractResponseData } from "../utils/responseUtils";
 export const getCategories = async (options = {}) => {
   try {
     const params = new URLSearchParams();
-    
-    if (options.page) params.append('page', options.page);
-    if (options.limit) params.append('limit', options.limit);
-    if (options.includeProductCount) params.append('includeProductCount', 'true');
-    if (options.parentOnly) params.append('parentOnly', 'true');
 
-    const response = await axiosInstance.get(`/categories?${params}`);
-    
+    if (options.page) params.append("page", options.page);
+    if (options.limit) params.append("limit", options.limit);
+    if (options.includeProductCount)
+      params.append("includeProductCount", "true");
+    if (options.parentOnly) params.append("parentOnly", "true");
+
+    const response = await axiosInstance.get(`/categories/all?${params}`);
+
     // Extract data using responseUtils
     const responseData = extractResponseData(response);
-    console.log('Categories API responseData:', responseData);
-    
+    console.log("Categories API responseData:", responseData);
+
     // Backend trả về trực tiếp mảng categories
     if (Array.isArray(responseData)) {
       return {
         categories: responseData.map(transformCategory),
-        pagination: null
+        pagination: null,
       };
     } else if (responseData.categories) {
       // Nếu có structure với categories property
@@ -30,14 +31,14 @@ export const getCategories = async (options = {}) => {
         pagination: responseData.pagination || {
           total: responseData.total,
           page: responseData.page,
-          totalPages: responseData.totalPages
-        }
+          totalPages: responseData.totalPages,
+        },
       };
     } else {
       // Fallback - trả về empty array
       return {
         categories: [],
-        pagination: null
+        pagination: null,
       };
     }
   } catch (error) {
@@ -49,13 +50,13 @@ export const getCategories = async (options = {}) => {
 // Lấy category theo ID
 export const getCategoryById = async (id) => {
   try {
-    const response = await axiosInstance.get(`/categories/${id}`);
+    const response = await axiosInstance.get(`/categories/${id}/details`);
     const category = extractResponseData(response);
-    
+
     return {
       category: transformCategory(category),
       subcategories: category.subcategories?.map(transformCategory) || [],
-      productCount: category.productCount || 0
+      productCount: category.productCount || 0,
     };
   } catch (error) {
     console.error("Error fetching category:", error);
@@ -66,7 +67,9 @@ export const getCategoryById = async (id) => {
 // Lấy subcategories của một category
 export const getSubcategories = async (parentId) => {
   try {
-    const response = await axiosInstance.get(`/categories/${parentId}/subcategories`);
+    const response = await axiosInstance.get(
+      `/categories/${parentId}/subcategories`
+    );
     const subcategories = extractResponseData(response);
     return subcategories.map(transformCategory);
   } catch (error) {
@@ -78,7 +81,10 @@ export const getSubcategories = async (parentId) => {
 // Tạo category mới
 export const createCategory = async (categoryData) => {
   try {
-    const response = await axiosInstance.post("/categories", categoryData);
+    const response = await axiosInstance.post(
+      "/categories/create",
+      categoryData
+    );
     const category = extractResponseData(response);
     return transformCategory(category);
   } catch (error) {
@@ -113,7 +119,7 @@ export const deleteCategory = async (id) => {
 // Transform function để chuẩn hóa dữ liệu category
 const transformCategory = (category) => {
   if (!category) return null;
-  
+
   return {
     id: category._id || category.id,
     name: category.name,
@@ -124,6 +130,6 @@ const transformCategory = (category) => {
     parentName: category.parent_id?.name || null,
     productCount: category.productCount || 0,
     createdAt: category.createdAt,
-    updatedAt: category.updatedAt
+    updatedAt: category.updatedAt,
   };
 };

@@ -16,6 +16,14 @@ export const handleLogin = asyncHandler(async (req, res) => {
     );
   }
 
+  // Validate email format
+  if (!ValidationUtil.isValidEmail(email)) {
+    return ResponseUtil.validationError(res, 
+      ['Email không hợp lệ'], 
+      'Định dạng email không đúng'
+    );
+  }
+
   const { user, token } = await AuthService.login(email, password);
   
   return ResponseUtil.success(res, {
@@ -191,3 +199,92 @@ export const validateResetToken = async (req, res) => {
     });
   }
 };
+
+// ==== OTP FUNCTIONS ====
+
+// Gửi OTP để reset password
+export const sendResetOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return ResponseUtil.validationError(res, ['Email là bắt buộc']);
+  }
+
+  if (!ValidationUtil.isValidEmail(email)) {
+    return ResponseUtil.validationError(res, ['Email không hợp lệ']);
+  }
+
+  const result = await AuthService.sendResetOTP(email);
+  
+  return ResponseUtil.success(res, result, 'OTP đã được gửi đến email của bạn');
+});
+
+// Xác thực OTP
+export const verifyResetOTP = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return ResponseUtil.validationError(res, ['Email và OTP là bắt buộc']);
+  }
+
+  const result = await AuthService.verifyOTP(email, otp);
+  
+  return ResponseUtil.success(res, result, 'OTP hợp lệ');
+});
+
+// Reset password với OTP
+export const resetPasswordWithOTP = asyncHandler(async (req, res) => {
+  const { email, otp, newPassword } = req.body;
+
+  if (!email || !otp || !newPassword) {
+    return ResponseUtil.validationError(res, ['Email, OTP và mật khẩu mới là bắt buộc']);
+  }
+
+  if (newPassword.length < 6) {
+    return ResponseUtil.validationError(res, ['Mật khẩu phải có ít nhất 6 ký tự']);
+  }
+
+  const result = await AuthService.resetPasswordWithOTP(email, otp, newPassword);
+  
+  return ResponseUtil.success(res, result, result.message);
+});
+
+// Gửi OTP để verify email
+export const sendVerificationOTP = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return ResponseUtil.validationError(res, ['Email là bắt buộc']);
+  }
+
+  const result = await AuthService.sendVerificationOTP(email);
+  
+  return ResponseUtil.success(res, result, 'OTP xác thực đã được gửi đến email của bạn');
+});
+
+// Verify email với OTP
+export const verifyEmailWithOTP = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return ResponseUtil.validationError(res, ['Email và OTP là bắt buộc']);
+  }
+
+  const result = await AuthService.verifyEmailWithOTP(email, otp);
+  
+  return ResponseUtil.success(res, result, result.message);
+});
+
+// Check email exists
+export const checkEmailExists = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return ResponseUtil.validationError(res, ['Email là bắt buộc']);
+  }
+
+  const user = await User.findOne({ email });
+  const exists = !!user;
+  
+  return ResponseUtil.success(res, { exists }, exists ? 'Email đã tồn tại' : 'Email chưa được đăng ký');
+});

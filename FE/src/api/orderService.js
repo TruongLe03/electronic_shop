@@ -4,7 +4,7 @@ export const orderService = {
   // Tạo đơn hàng mới
   async createOrder(orderData) {
     try {
-      const response = await apiClient.post("/orders", orderData);
+      const response = await apiClient.post("/orders/create", orderData);
       return response.data;
     } catch (error) {
       console.error("Create order error:", error);
@@ -27,7 +27,7 @@ export const orderService = {
   async getUserOrders() {
     try {
       console.log('Calling getUserOrders API...');
-      const response = await apiClient.get("/orders/user");
+      const response = await apiClient.get("/orders/my-orders");
       console.log('getUserOrders response:', response);
       return response.data;
     } catch (error) {
@@ -41,7 +41,7 @@ export const orderService = {
   // Lấy chi tiết một đơn hàng
   async getOrderById(orderId) {
     try {
-      const response = await apiClient.get(`/orders/${orderId}`);
+      const response = await apiClient.get(`/orders/my-orders/${orderId}/details`);
       return response.data;
     } catch (error) {
       console.error("Get order by ID error:", error);
@@ -63,7 +63,7 @@ export const orderService = {
   // Hủy đơn hàng
   async cancelOrder(orderId, reason = '') {
     try {
-      const response = await apiClient.patch(`/orders/${orderId}/cancel`, {
+      const response = await apiClient.patch(`/orders/my-orders/${orderId}/cancel`, {
         reason: reason
       });
       return response.data;
@@ -172,7 +172,7 @@ export const orderService = {
   // Kiểm tra trạng thái đơn hàng gần đây của user (để verify order creation)
   async getRecentOrdersByUser() {
     try {
-      const response = await apiClient.get("/orders/user?limit=5");
+      const response = await apiClient.get("/orders/my-orders?limit=5");
       return response.data;
     } catch (error) {
       console.error("Get recent orders error:", error);

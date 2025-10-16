@@ -57,11 +57,11 @@ export class CategoryService {
         },
         {
           $addFields: {
-            parent_id: { 
+            parent_id: {
               $cond: {
                 if: { $eq: [{ $size: "$parent_category" }, 0] },
                 then: null,
-                else: { 
+                else: {
                   $arrayElemAt: [
                     {
                       $map: {
@@ -70,14 +70,15 @@ export class CategoryService {
                         in: {
                           _id: "$$parent._id",
                           name: "$$parent.name",
-                          slug: "$$parent.slug"
-                        }
-                      }
-                    }, 0
-                  ]
-                }
-              }
-            }
+                          slug: "$$parent.slug",
+                        },
+                      },
+                    },
+                    0,
+                  ],
+                },
+              },
+            },
           },
         },
         {
@@ -92,7 +93,7 @@ export class CategoryService {
       ]),
       Category.countDocuments(query),
     ]);
-
+    console.log("🔍 Categories found:", categories.length);
     return {
       categories,
       pagination: {
@@ -148,7 +149,7 @@ export class CategoryService {
   // 🟢 Cập nhật danh mục
   static async updateCategory(categoryId, updateData) {
     try {
-      console.log('🔄 Updating category:', categoryId, updateData);
+      console.log("🔄 Updating category:", categoryId, updateData);
 
       // Kiểm tra slug trùng lặp
       if (updateData.slug) {
@@ -157,7 +158,7 @@ export class CategoryService {
           _id: { $ne: categoryId },
         });
         if (existingCategory) {
-          console.log('❌ Slug already exists:', updateData.slug);
+          console.log("❌ Slug already exists:", updateData.slug);
           throw new Error("Slug danh mục đã tồn tại");
         }
       }
@@ -169,32 +170,36 @@ export class CategoryService {
           _id: { $ne: categoryId },
         });
         if (existingName) {
-          console.log('❌ Name already exists:', updateData.name);
+          console.log("❌ Name already exists:", updateData.name);
           throw new Error("Tên danh mục đã tồn tại");
         }
       }
 
       // Xử lý parent_id: nếu là empty string thì set thành null
-      if (updateData.parent_id === '' || updateData.parent_id === 'null') {
+      if (updateData.parent_id === "" || updateData.parent_id === "null") {
         updateData.parent_id = null;
       }
 
-      console.log('🔄 Final updateData:', updateData);
+      console.log("🔄 Final updateData:", updateData);
 
-    const category = await Category.findByIdAndUpdate(categoryId, updateData, {
-      new: true,
-      runValidators: true,
-    }).populate("parent_id", "name slug");
+      const category = await Category.findByIdAndUpdate(
+        categoryId,
+        updateData,
+        {
+          new: true,
+          runValidators: true,
+        }
+      ).populate("parent_id", "name slug");
 
       if (!category) {
-        console.log('❌ Category not found:', categoryId);
+        console.log("❌ Category not found:", categoryId);
         throw new Error("Không tìm thấy danh mục");
       }
 
-      console.log('✅ Category updated successfully:', category.name);
+      console.log("✅ Category updated successfully:", category.name);
       return category;
     } catch (error) {
-      console.error('❌ Update category error:', error.message);
+      console.error("❌ Update category error:", error.message);
       throw error;
     }
   }
@@ -205,21 +210,27 @@ export class CategoryService {
     if (!category) return { success: false, reason: "NOT_FOUND" };
 
     // Kiểm tra danh mục con
-    const childCategories = await Category.find({ parent_id: categoryId }).select('name');
+    const childCategories = await Category.find({
+      parent_id: categoryId,
+    }).select("name");
     console.log(`🔍 Children for category ${categoryId}:`, childCategories);
     if (childCategories.length > 0) {
-      const childNames = childCategories.map(c => c.name).join(', ');
-      return { 
-        success: false, 
+      const childNames = childCategories.map((c) => c.name).join(", ");
+      return {
+        success: false,
         reason: "HAS_CHILDREN",
         childNames: childNames,
-        childCount: childCategories.length
+        childCount: childCategories.length,
       };
     }
 
     // Kiểm tra sản phẩm - đảm bảo so sánh đúng kiểu dữ liệu
-    const productCount = await Product.countDocuments({ category_id: categoryId });
-    console.log(`🔍 Products count for category ${categoryId}: ${productCount}`);
+    const productCount = await Product.countDocuments({
+      category_id: categoryId,
+    });
+    console.log(
+      `🔍 Products count for category ${categoryId}: ${productCount}`
+    );
     if (productCount > 0) return { success: false, reason: "HAS_PRODUCTS" };
 
     await Category.findByIdAndDelete(categoryId);

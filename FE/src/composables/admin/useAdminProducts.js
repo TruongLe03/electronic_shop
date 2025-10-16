@@ -30,7 +30,7 @@ export function useAdminProducts() {
   // Pagination
   const pagination = reactive({
     page: 1,
-    limit: 10,
+    limit: 20,
     totalPages: 1,
   });
 
