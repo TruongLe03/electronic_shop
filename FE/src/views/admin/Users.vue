@@ -133,11 +133,11 @@ const addUser = () => {
 const viewUserDetails = (user) => {
   alert(`Chi tiết "${user.name}":
 - Email: ${user.email}
-- SĐT: ${user.phone}
-- Đơn hàng: ${user.totalOrders}
-- Tổng chi tiêu: ${formatCurrency(user.totalSpent)}
-- Tham gia: ${formatDate(user.joinDate)}
-- Đăng nhập cuối: ${formatDate(user.lastLogin)}`);
+- SĐT: ${user.phone || 'Chưa cập nhật'}
+- Đơn hàng: ${user.totalOrders || 0}
+- Tổng chi tiêu: ${formatCurrency(user.totalSpent || 0)}
+- Tham gia: ${formatDate(user.createdAt || user.joinDate)}
+- Đăng nhập cuối: ${formatDate(user.lastLogin || user.updatedAt)}`);
 };
 
 const resetPassword = (user) => {
@@ -357,9 +357,9 @@ const unbanUser = (user) => {
                     {{ getStatusText(user.status) }}
                   </span>
                 </td>
-                <td class="px-6 py-4">{{ user.totalOrders }} đơn</td>
+                <td class="px-6 py-4">{{ user.totalOrders || 0 }} đơn</td>
                 <td class="px-6 py-4">
-                  <div>{{ formatCurrency(user.totalSpent) }}</div>
+                  <div>{{ formatCurrency(user.totalSpent || 0) }}</div>
                   <div class="text-xs text-gray-500">
                     Đăng nhập: {{ formatDate(user.lastLogin) }}
                   </div>

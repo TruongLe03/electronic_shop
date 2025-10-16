@@ -317,7 +317,7 @@ export class UserService {
     return { success: true };
   }
 
-  // Lấy danh sách tất cả user với options (admin)
+  // Lấy danh sách tất cả user với thống kê đơn hàng (admin)
   static async getAllUsers(options) {
     const { 
       page = 1, 
@@ -352,13 +352,64 @@ export class UserService {
     const sortOptions = {};
     sortOptions[sortBy] = sortOrder === "desc" ? -1 : 1;
 
+    // Lấy users với thống kê đơn hàng
+    const Order = (await import("../models/orders.model.js")).default;
+    
     const [users, totalUsers] = await Promise.all([
-      User.find(query)
-        .select("-password")
-        .sort(sortOptions)
-        .limit(limit * 1)
-        .skip((page - 1) * limit)
-        .exec(),
+      User.aggregate([
+        { $match: query },
+        {
+          $lookup: {
+            from: "orders",
+            localField: "_id",
+            foreignField: "user_id",
+            as: "orders"
+          }
+        },
+        {
+          $addFields: {
+            totalOrders: { $size: "$orders" },
+            totalSpent: {
+              $sum: {
+                $map: {
+                  input: "$orders",
+                  as: "order",
+                  in: { $ifNull: ["$$order.total", 0] }
+                }
+              }
+            },
+            avgOrderValue: {
+              $cond: {
+                if: { $gt: [{ $size: "$orders" }, 0] },
+                then: {
+                  $divide: [
+                    {
+                      $sum: {
+                        $map: {
+                          input: "$orders",
+                          as: "order", 
+                          in: { $ifNull: ["$$order.total", 0] }
+                        }
+                      }
+                    },
+                    { $size: "$orders" }
+                  ]
+                },
+                else: 0
+              }
+            }
+          }
+        },
+        {
+          $project: {
+            password: 0,
+            orders: 0
+          }
+        },
+        { $sort: sortOptions },
+        { $skip: (page - 1) * limit },
+        { $limit: limit }
+      ]),
       User.countDocuments(query)
     ]);
 

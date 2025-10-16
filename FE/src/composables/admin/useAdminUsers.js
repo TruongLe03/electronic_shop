@@ -47,6 +47,10 @@ export function useAdminUsers() {
       };
 
       const response = await getAllUsersAdmin(queryParams);
+      console.log('Users API response:', response);
+      console.log('Users data:', response.data);
+      console.log('First user:', response.data.users?.[0]);
+      
       users.value = response.data.users;
 
       // Update pagination
