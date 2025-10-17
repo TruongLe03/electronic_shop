@@ -15,10 +15,16 @@ export const getCart = async () => {
 // Thêm sản phẩm vào giỏ hàng
 export const addToCart = async (productId, quantity = 1) => {
   try {
+    console.log('=== ADD TO CART ===');
+    console.log('Product ID:', productId);
+    console.log('Quantity:', quantity);
+    
     const response = await axiosInstance.post('/cart/items/add', {
       product_id: productId,
       quantity
     });
+    
+    console.log('Add to cart response:', response.data);
     return extractResponseData(response);
   } catch (error) {
     console.error('Add to cart error:', error);

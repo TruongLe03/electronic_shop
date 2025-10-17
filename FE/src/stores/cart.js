@@ -16,6 +16,7 @@ export const useCartStore = defineStore("cart", () => {
   const authStore = useAuthStore();
   const router = useRouter();
   const loading = ref(false);
+  const isNewItemAdded = ref(false); // Thêm để trigger animation
   const {
     notifyAddToCart,
     notifyRemoveFromCart,
@@ -113,6 +114,13 @@ export const useCartStore = defineStore("cart", () => {
 
       await addToCartApi(product._id, quantity);
       await fetchCart(); // Refresh cart data from server
+      
+      // Trigger animation
+      isNewItemAdded.value = true;
+      setTimeout(() => {
+        isNewItemAdded.value = false;
+      }, 600); // Reset sau 600ms
+      
       notifyAddToCart(product.name);
       return true;
     } catch (error) {
@@ -195,6 +203,7 @@ export const useCartStore = defineStore("cart", () => {
     cartTotal,
     cartCount,
     loading,
+    isNewItemAdded,
     addToCart,
     removeFromCart,
     updateQuantity,

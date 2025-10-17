@@ -7,11 +7,11 @@
         <div class="flex items-center space-x-4">
           <span class="flex items-center">
             <i class="fas fa-phone mr-2"></i>
-            +84 123 456 789
+            0565 694 787
           </span>
           <span class="flex items-center">
             <i class="fas fa-envelope mr-2"></i>
-            info@electronics.com
+            lengoctruong020703@gmail.com
           </span>
         </div>
 
@@ -129,24 +129,6 @@
 
           <!-- Header Actions -->
           <div class="flex items-center space-x-2 md:space-x-4">
-            <!-- Wishlist -->
-            <div
-              class="hidden lg:flex flex-col items-center cursor-pointer group"
-            >
-              <div class="relative">
-                <i
-                  class="fas fa-heart text-lg md:text-xl text-gray-600 group-hover:text-red-500 transition-colors"
-                ></i>
-                <span
-                  class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center"
-                  >0</span
-                >
-              </div>
-              <span class="text-xs text-gray-600 mt-1 hidden md:block"
-                >Yêu thích</span
-              >
-            </div>
-
             <!-- Cart -->
             <router-link to="/cart" class="flex flex-col items-center group">
               <div class="relative">
@@ -155,12 +137,13 @@
                 ></i>
                 <span
                   v-if="cartCount > 0"
-                  class="absolute -top-2 -right-2 bg-blue-600 text-white text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center"
+                  class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-4 h-4 md:w-5 md:h-5 flex items-center justify-center"
                 >
-                  {{ cartCount }}
+                  {{ cartCount > 99 ? "99+" : cartCount }}
                 </span>
               </div>
-              <span class="text-xs text-gray-600 mt-1 hidden md:block"
+              <span
+                class="text-xs text-gray-600 mt-1 hidden md:block group-hover:text-blue-600 transition-colors"
                 >Giỏ hàng</span
               >
             </router-link>
@@ -386,6 +369,28 @@
             </button>
           </div>
 
+          <!-- Mobile Quick Actions -->
+          <div class="flex gap-2 pt-2 border-t border-gray-100">
+            <!-- Cart Button -->
+            <router-link
+              to="/cart"
+              class="flex-1 bg-blue-50 hover:bg-blue-100 text-blue-600 p-3 rounded-lg flex items-center justify-center transition-colors relative"
+              @click="isMobileMenuOpen = false"
+            >
+              <div class="flex items-center">
+                <i class="fas fa-shopping-cart mr-2"></i>
+                <span class="font-medium">Giỏ hàng</span>
+                <span
+                  v-if="cartCount > 0"
+                  class="ml-2 bg-blue-600 text-white text-xs font-bold rounded-full min-w-[20px] h-5 flex items-center justify-center"
+                  :class="{ 'animate-pulse': isNewItemAdded }"
+                >
+                  {{ cartCount > 99 ? "99+" : cartCount }}
+                </span>
+              </div>
+            </router-link>
+          </div>
+
           <!-- Mobile Navigation Links -->
           <div class="space-y-2">
             <router-link
@@ -528,7 +533,8 @@ const isMobileMenuOpen = ref(false);
 // Computed properties
 const isAuthenticated = computed(() => authStore.isAuthenticated);
 const user = computed(() => authStore.user);
-const cartCount = computed(() => cartStore.totalItems);
+const cartCount = computed(() => cartStore.cartCount);
+const isNewItemAdded = computed(() => cartStore.isNewItemAdded);
 
 // Methods
 const formatPrice = (price) => {
@@ -556,14 +562,14 @@ const handleLogout = async () => {
   // Thông báo đăng xuất
   const { notifyLogout } = useNotification();
   notifyLogout();
-  
+
   // Đóng menu
   showUserMenu.value = false;
   isMobileMenuOpen.value = false;
-  
+
   // Đăng xuất
   authStore.logout();
-  
+
   // Delay 2.5 giây trước khi chuyển về trang chủ
   setTimeout(() => {
     router.push("/");
@@ -621,6 +627,104 @@ watch(route, () => {
 <style scoped>
 .dropdown-container {
   position: relative;
+}
+
+/* Cart Badge Animation */
+.cart-badge {
+  animation: cartPulse 2s infinite;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.cart-badge::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    left: -100%;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+@keyframes cartPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.5);
+  }
+}
+
+/* Bounce animation for new items */
+.animate-bounce {
+  animation: cartBounce 0.6s ease-in-out;
+}
+
+@keyframes cartBounce {
+  0%,
+  20%,
+  53%,
+  80%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  40%,
+  43% {
+    transform: translateY(-8px) scale(1.1);
+  }
+  70% {
+    transform: translateY(-4px) scale(1.05);
+  }
+  90% {
+    transform: translateY(-2px) scale(1.02);
+  }
+}
+
+/* Glow effect */
+.cart-badge::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(45deg, #ef4444, #dc2626);
+  border-radius: 50%;
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.cart-badge:hover::before {
+  opacity: 0.3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .cart-badge {
+    min-width: 18px;
+    height: 18px;
+    font-size: 10px;
+  }
 }
 
 /* Prevent body scroll when mobile menu is open */

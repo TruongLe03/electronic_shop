@@ -1,10 +1,10 @@
-import axios from '@utils/axiosConfig'
-import { extractResponseData } from '@utils/responseUtils'
+import axiosInstance from '../utils/axiosConfig'
+import { extractResponseData } from '../utils/responseUtils'
 
 // Get all inventories with filters and pagination
 export const getInventories = async (params = {}) => {
   try {
-    const response = await axios.get('/inventory', { params })
+    const response = await axiosInstance.get('/inventory', { params })
     return response.data
   } catch (error) {
     console.error('Error fetching inventories:', error)
@@ -15,7 +15,7 @@ export const getInventories = async (params = {}) => {
 // Get inventory by product ID
 export const getInventoryByProduct = async (productId) => {
   try {
-    const response = await axios.get(`/inventory/product/${productId}`)
+    const response = await axiosInstance.get(`/inventory/product/${productId}`)
     return response.data
   } catch (error) {
     console.error('Error fetching inventory by product:', error)
@@ -26,7 +26,7 @@ export const getInventoryByProduct = async (productId) => {
 // Update inventory
 export const updateInventory = async (productId, inventoryData) => {
   try {
-    const response = await axios.put(`/inventory/product/${productId}`, inventoryData)
+    const response = await axiosInstance.put(`/inventory/product/${productId}`, inventoryData)
     return response.data
   } catch (error) {
     console.error('Error updating inventory:', error)
@@ -37,7 +37,7 @@ export const updateInventory = async (productId, inventoryData) => {
 // Add stock
 export const addStock = async (productId, stockData) => {
   try {
-    const response = await axios.post(`/inventory/add/${productId}`, stockData)
+    const response = await axiosInstance.post(`/inventory/add/${productId}`, stockData)
     return response.data
   } catch (error) {
     console.error('Error adding stock:', error)
@@ -48,7 +48,7 @@ export const addStock = async (productId, stockData) => {
 // Remove stock
 export const removeStock = async (productId, stockData) => {
   try {
-    const response = await axios.post(`/inventory/remove/${productId}`, stockData)
+    const response = await axiosInstance.post(`/inventory/remove/${productId}`, stockData)
     return response.data
   } catch (error) {
     console.error('Error removing stock:', error)
@@ -59,7 +59,7 @@ export const removeStock = async (productId, stockData) => {
 // Check stock availability
 export const checkStock = async (productId, quantity = 1) => {
   try {
-    const response = await axios.get(`/inventory/check/${productId}`, {
+    const response = await axiosInstance.get(`/inventory/check/products/${productId}`, {
       params: { quantity }
     })
     return extractResponseData(response)
@@ -72,7 +72,7 @@ export const checkStock = async (productId, quantity = 1) => {
 // Get stock movements history
 export const getStockMovements = async (productId, params = {}) => {
   try {
-    const response = await axios.get(`/inventory/movements/${productId}`, { params })
+    const response = await axiosInstance.get(`/inventory/movements/${productId}`, { params })
     return response.data
   } catch (error) {
     console.error('Error fetching stock movements:', error)
@@ -83,7 +83,7 @@ export const getStockMovements = async (productId, params = {}) => {
 // Get inventory dashboard stats
 export const getInventoryStats = async () => {
   try {
-    const response = await axios.get('/api/inventory/stats')
+    const response = await axiosInstance.get('/api/inventory/stats')
     return response.data
   } catch (error) {
     console.error('Error fetching inventory stats:', error)

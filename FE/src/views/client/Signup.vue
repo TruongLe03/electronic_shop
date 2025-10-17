@@ -74,21 +74,23 @@ const validateForm = () => {
   // Validate username
   if (!formData.value.username) {
     newErrors.username = "Vui lòng nhập tên đăng nhập";
-  } else if (formData.value.username.length < 3) {
-    newErrors.username = "Tên đăng nhập phải có ít nhất 3 ký tự";
+  } else if (formData.value.username.length < 2) {
+    newErrors.username = "Tên đăng nhập phải có ít nhất 2 ký tự";
   }
 
   // Validate phone
   if (!formData.value.phone_number) {
     newErrors.phone_number = "Vui lòng nhập số điện thoại";
-  } else if (!/^[0-9]{10}$/.test(formData.value.phone_number)) {
-    newErrors.phone_number = "Số điện thoại không hợp lệ";
+  } else if (!/^(0|\+84)[3-9][0-9]{8}$/.test(formData.value.phone_number)) {
+    newErrors.phone_number = "Số điện thoại không hợp lệ (phải bắt đầu bằng 0 hoặc +84, theo sau là 3-9 và 8 chữ số)";
   }
   // Validate password
   if (!formData.value.password) {
     newErrors.password = "Vui lòng nhập mật khẩu";
   } else if (formData.value.password.length < 6) {
     newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự";
+  } else if (!/^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*#?&]{6,}$/.test(formData.value.password)) {
+    newErrors.password = "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ và số";
   }
 
   // Validate confirm password
@@ -293,7 +295,7 @@ const handleSubmit = async () => {
                 class="w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 placeholder-gray-400"
                 :class="errors.phone_number ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'"
                 :disabled="loading"
-                placeholder="Nhập số điện thoại"
+                placeholder="Nhập số điện thoại (VD: 0123456789)"
               />
             </div>
             <p v-if="errors.phone_number" class="text-sm text-red-600 flex items-center">
@@ -399,7 +401,7 @@ const handleSubmit = async () => {
                 class="w-full pl-12 pr-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 placeholder-gray-400"
                 :class="errors.password ? 'border-red-300 focus:border-red-500 focus:ring-red-200' : 'border-gray-200 focus:border-purple-500 focus:ring-purple-200'"
                 :disabled="loading"
-                placeholder="Nhập mật khẩu (ít nhất 6 ký tự)"
+                placeholder="Mật khẩu (ít nhất 6 ký tự, có chữ và số)"
               />
             </div>
             <p v-if="errors.password" class="text-sm text-red-600 flex items-center">

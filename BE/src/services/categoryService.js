@@ -93,7 +93,6 @@ export class CategoryService {
       ]),
       Category.countDocuments(query),
     ]);
-    console.log("🔍 Categories found:", categories.length);
     return {
       categories,
       pagination: {

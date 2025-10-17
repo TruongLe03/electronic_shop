@@ -12,14 +12,6 @@ const props = defineProps({
   showQuickView: {
     type: Boolean,
     default: true,
-  },
-  showCompare: {
-    type: Boolean,
-    default: true,
-  },
-  showWishlist: {
-    type: Boolean,
-    default: true,
   }
 });
 
@@ -76,12 +68,39 @@ const formatPrice = (price) => {
   }).format(price);
 };
 
-const handleAddToCart = async () => {
+const handleAddToCart = async (event) => {
   if (loading.value) return;
+
+  // Create ripple effect
+  const button = event.currentTarget;
+  const rect = button.getBoundingClientRect();
+  const ripple = document.createElement('span');
+  const size = Math.max(rect.width, rect.height);
+  const x = event.clientX - rect.left - size / 2;
+  const y = event.clientY - rect.top - size / 2;
+  
+  ripple.className = 'ripple-effect';
+  ripple.style.width = ripple.style.height = size + 'px';
+  ripple.style.left = x + 'px';
+  ripple.style.top = y + 'px';
+  
+  button.appendChild(ripple);
+  
+  // Remove ripple after animation
+  setTimeout(() => {
+    ripple.remove();
+  }, 600);
 
   try {
     loading.value = true;
     await cartStore.addToCart(props.product, 1);
+    
+    // Add success class for feedback
+    button.classList.add('success');
+    setTimeout(() => {
+      button.classList.remove('success');
+    }, 600);
+    
     // Thông báo sẽ hiển thị từ cart store
   } catch (error) {
     console.error("Error adding to cart:", error);
@@ -94,16 +113,6 @@ const handleAddToCart = async () => {
 const handleQuickView = () => {
   // Implement quick view modal
   console.log('Quick view:', props.product);
-};
-
-const handleAddToWishlist = () => {
-  // Implement wishlist functionality
-  showSuccess('Đã thêm vào danh sách yêu thích!');
-};
-
-const handleCompare = () => {
-  // Implement compare functionality
-  showSuccess('Đã thêm vào danh sách so sánh!');
 };
 </script>
 
@@ -161,29 +170,6 @@ const handleCompare = () => {
           </div>
         </div>
       </router-link>
-
-      <!-- Action Buttons -->
-      <div class="absolute top-1/2 right-2 sm:right-3 transform -translate-y-1/2 hidden sm:flex flex-col space-y-2 opacity-0 group-hover:opacity-100 transition-all duration-300 translate-x-10 group-hover:translate-x-0">
-        <!-- Wishlist -->
-        <button
-          v-if="showWishlist"
-          @click="handleAddToWishlist"
-          class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-red-500 hover:scale-110 transition-all duration-200"
-          title="Thêm vào yêu thích"
-        >
-          <i class="fas fa-heart text-xs sm:text-sm"></i>
-        </button>
-
-        <!-- Compare -->
-        <button
-          v-if="showCompare"
-          @click="handleCompare"
-          class="w-8 h-8 sm:w-10 sm:h-10 bg-white rounded-full shadow-md flex items-center justify-center text-gray-600 hover:text-blue-500 hover:scale-110 transition-all duration-200"
-          title="So sánh sản phẩm"
-        >
-          <i class="fas fa-balance-scale text-xs sm:text-sm"></i>
-        </button>
-      </div>
     </div>
 
     <!-- Product Info -->
@@ -259,20 +245,27 @@ const handleCompare = () => {
 
       <!-- Add to Cart Button -->
       <button
-        @click="handleAddToCart"
+        @click="handleAddToCart($event)"
         :disabled="loading || product.stock === 0"
         :class="[
-          'w-full py-2 sm:py-3 px-2 sm:px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-1 sm:space-x-2 text-sm sm:text-base',
+          'add-to-cart-btn w-full py-2 sm:py-3 px-2 sm:px-4 rounded-lg font-medium transition-all duration-300 flex items-center justify-center space-x-1 sm:space-x-2 text-sm sm:text-base relative overflow-hidden',
           product.stock === 0
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
             : loading
               ? 'bg-blue-400 text-white cursor-wait'
-              : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg transform hover:scale-105'
+              : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg transform hover:scale-105'
         ]"
       >
+        <!-- Success ripple effect -->
+        <div 
+          v-if="!loading && product.stock > 0"
+          class="ripple-effect absolute inset-0 rounded-lg opacity-0 bg-white"
+        ></div>
+        
         <i 
           :class="[
-            loading ? 'fas fa-spinner fa-spin' : 'fas fa-shopping-cart'
+            loading ? 'fas fa-spinner fa-spin' : 'fas fa-shopping-cart',
+            'transition-transform duration-300'
           ]"
         ></i>
         <span>
@@ -305,6 +298,87 @@ const handleCompare = () => {
 /* Custom hover animations */
 .group:hover .transform {
   transform: translateY(-4px);
+}
+
+/* Add to Cart Button Effects */
+.add-to-cart-btn {
+  position: relative;
+  overflow: hidden;
+}
+
+.add-to-cart-btn:hover:not(:disabled) {
+  box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
+}
+
+.add-to-cart-btn:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Ripple effect */
+.ripple-effect {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.6);
+  transform: scale(0);
+  animation: ripple 0.6s linear;
+  pointer-events: none;
+}
+
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+/* Success feedback animation */
+.add-to-cart-btn.success {
+  animation: successPulse 0.6s ease-out;
+}
+
+@keyframes successPulse {
+  0% {
+    transform: scale(1);
+    background: linear-gradient(to right, #2563eb, #1d4ed8);
+  }
+  50% {
+    transform: scale(1.05);
+    background: linear-gradient(to right, #059669, #047857);
+  }
+  100% {
+    transform: scale(1);
+    background: linear-gradient(to right, #2563eb, #1d4ed8);
+  }
+}
+
+/* Loading spinner enhancement */
+.fa-spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Button shine effect */
+.add-to-cart-btn:before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.5s;
+}
+
+.add-to-cart-btn:hover:before {
+  left: 100%;
 }
 
 /* Smooth transitions for all elements */
