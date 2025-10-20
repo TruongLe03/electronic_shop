@@ -7,17 +7,18 @@ import {
   updateCategory,
   deleteCategory,
 } from "../controllers/categories.controller.js";
+import { requireAdminAuth } from "../middleware/authMiddleware.js";
 
 const categoryRouter = express.Router();
 
-// ============= CATEGORY DISCOVERY =============
+// ============= CATEGORY DISCOVERY - Public Routes =============
 categoryRouter.get("/all", getCategories);
 categoryRouter.get("/:id/details", getCategoryById);
 categoryRouter.get("/:parentId/subcategories", getSubcategories);
 
-// ============= CATEGORY MANAGEMENT =============
-categoryRouter.post("/create", createCategory);
-categoryRouter.put("/:id", updateCategory);
-categoryRouter.delete("/:id", deleteCategory);
+// ============= CATEGORY MANAGEMENT - Admin Only =============
+categoryRouter.post("/create", requireAdminAuth, createCategory);
+categoryRouter.put("/:id", requireAdminAuth, updateCategory);
+categoryRouter.delete("/:id", requireAdminAuth, deleteCategory);
 
 export default categoryRouter;

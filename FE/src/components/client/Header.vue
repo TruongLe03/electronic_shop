@@ -129,8 +129,16 @@
 
           <!-- Header Actions -->
           <div class="flex items-center space-x-2 md:space-x-4">
-            <!-- Cart -->
-            <router-link to="/cart" class="flex flex-col items-center group">
+            <!-- Mobile Menu Button - First on mobile -->
+            <button
+              @click="toggleMobileMenu"
+              class="md:hidden text-gray-600 hover:text-gray-900 p-2 order-1"
+            >
+              <i class="fas fa-bars text-xl"></i>
+            </button>
+
+            <!-- Cart - Second on mobile -->
+            <router-link to="/cart" class="flex flex-col items-center group order-2">
               <div class="relative">
                 <i
                   class="fas fa-shopping-cart text-lg md:text-xl text-gray-600 group-hover:text-blue-600 transition-colors"
@@ -148,8 +156,8 @@
               >
             </router-link>
 
-            <!-- User Account -->
-            <div class="relative dropdown-container">
+            <!-- User Account - Third on mobile -->
+            <div class="relative dropdown-container order-3">
               <div
                 v-if="!isAuthenticated"
                 class="hidden md:flex items-center space-x-2"
@@ -228,14 +236,6 @@
                 </div>
               </div>
             </div>
-
-            <!-- Mobile Menu Button -->
-            <button
-              @click="toggleMobileMenu"
-              class="md:hidden text-gray-600 hover:text-gray-900 p-2"
-            >
-              <i class="fas fa-bars text-xl"></i>
-            </button>
           </div>
         </div>
       </div>

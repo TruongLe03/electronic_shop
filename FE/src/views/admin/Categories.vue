@@ -222,7 +222,7 @@
 
           <!-- Pagination -->
           <div
-            v-if="pagination.totalPages > 1"
+            v-if="pagination && pagination.totalPages > 1"
             class="px-6 py-4 border-t border-gray-200"
           >
             <div class="flex items-center justify-between">
@@ -432,7 +432,7 @@
 
 <script setup>
 import { ref, onMounted, watch } from "vue";
-import AdminLayout from "@/components/admin/AdminLayout.vue";
+import AdminLayout from "@/layout/AdminLayout.vue";
 import { useAdminCategories } from "@/composables/admin/useAdminCategories.js";
 
 const {
@@ -546,7 +546,7 @@ const resetFilters = () => {
 };
 
 const changePage = (page) => {
-  if (page < 1 || page > pagination.totalPages) return;
+  if (!pagination.value || page < 1 || page > pagination.value.totalPages) return;
   filters.value.page = page;
   fetchCategories(filters.value);
 };

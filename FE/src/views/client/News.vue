@@ -1,23 +1,21 @@
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <Header />
-
+  <ClientLayout>
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Page Header -->
-      <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">
-          <i class="fas fa-newspaper text-blue-600 mr-3"></i>
-          Tin tức công nghệ chính thống
+      <div class="text-center mb-8 sm:mb-12 px-4">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <i class="fas fa-newspaper text-blue-600 mr-2 sm:mr-3"></i>
+          <span class="block sm:inline">Tin tức công nghệ chính thống</span>
         </h1>
-        <p class="text-lg text-gray-600 max-w-3xl mx-auto">
+        <p class="text-base sm:text-lg text-gray-600 max-w-3xl mx-auto">
           Truy cập các nguồn tin tức uy tín và chính thống về công nghệ, linh
           kiện điện tử từ khắp thế giới
         </p>
       </div>
 
       <!-- International Tech News -->
-      <div class="mb-12">
-        <h2 class="text-2xl font-bold text-gray-900 mb-8 flex items-center">
+      <div class="mb-8 sm:mb-12">
+        <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-6 sm:mb-8 flex items-center px-4 sm:px-0">
           <i class="fas fa-globe text-blue-600 mr-2"></i>
           Tin tức công nghệ quốc tế
         </h2>
@@ -474,15 +472,12 @@
         </div>
       </div>
     </main>
-
-    <Footer />
-  </div>
+  </ClientLayout>
 </template>
 
 <script setup>
 import { onMounted } from "vue";
-import Header from "@/components/client/Header.vue";
-import Footer from "@/components/client/Footer.vue";
+import ClientLayout from "@/layout/ClientLayout.vue";
 </script>
 
 <style scoped>

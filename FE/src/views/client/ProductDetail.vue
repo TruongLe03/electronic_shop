@@ -1,8 +1,8 @@
 <template>
-  <Header />
-  <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-    <!-- Loading state -->
-    <div v-if="loading" class="flex justify-center items-center min-h-screen">
+  <ClientLayout>
+    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <!-- Loading state -->
+      <div v-if="loading" class="flex justify-center items-center min-h-screen">
       <div class="flex flex-col items-center space-y-4">
         <div class="relative">
           <div class="animate-spin rounded-full h-16 w-16 border-4 border-indigo-200"></div>
@@ -36,29 +36,6 @@
 
     <!-- Product detail -->
     <div v-else class="container mx-auto px-4 py-8">
-      <!-- Breadcrumb -->
-      <nav class="flex items-center space-x-2 text-sm mb-8 bg-white/50 backdrop-blur-sm rounded-lg px-4 py-3 shadow-sm">
-        <router-link to="/" class="text-indigo-600 hover:text-indigo-800 font-medium transition-colors">
-          <svg class="w-4 h-4 inline mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
-          </svg>
-          Trang chủ
-        </router-link>
-        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-        </svg>
-        <router-link
-          v-if="product.category_id"
-          :to="`/products?categoryId=${product.category_id._id}`"
-          class="text-indigo-600 hover:text-indigo-800 font-medium transition-colors"
-        >
-          {{ product.category_id.name }}
-        </router-link>
-        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-        </svg>
-        <span class="text-gray-600 font-medium">{{ product.name }}</span>
-      </nav>
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <!-- Product Images -->
         <div class="space-y-4">
@@ -485,8 +462,8 @@
         </div>
       </div>
     </div>
-  </div>
-  <Footer />
+    </div>
+  </ClientLayout>
 </template>
 
 <script setup>
@@ -498,6 +475,7 @@ import { useNotification } from "@/composables/client/useNotification";
 import { useGlobalLoading } from "@/composables/client/useLoading";
 import { getProductById, getRelatedProducts } from "@api/productService";
 import { orderService } from "@api/orderService";
+import ClientLayout from "@/layout/ClientLayout.vue";
 import { getFullImage } from "@utils/imageUtils";
 import {
   extractSpecifications,
@@ -505,8 +483,6 @@ import {
   formatSpecifications,
 } from "@utils/productUtils";
 import ProductCard from "@components/client/productCard.vue";
-import Header from "@components/client/Header.vue";
-import Footer from "@components/client/Footer.vue";
 
 const route = useRoute();
 const router = useRouter();
@@ -576,6 +552,12 @@ const fetchProduct = async (productId) => {
     product.value = response.data;
     selectedImage.value = getFullImage(response.data.main_image);
 
+    // Cập nhật route meta cho breadcrumb
+    if (route.meta) {
+      route.meta.productName = response.data.name;
+      route.meta.categoryName = response.data.category_id?.name;
+    }
+
     // Fetch related products
     if (response.data.category_id?._id) {
       try {
@@ -619,6 +601,8 @@ const decreaseQuantity = () => {
 
 const addToCart = async () => {
   if (!authStore.isAuthenticated) {
+    // Lưu trữ intended route để chuyển hướng về sau khi đăng nhập
+    localStorage.setItem("intendedRoute", router.currentRoute.value.fullPath);
     showError("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng");
     router.push("/login");
     return;
@@ -644,6 +628,8 @@ const addToCart = async () => {
 
 const buyNow = async () => {
   if (!authStore.isAuthenticated) {
+    // Lưu trữ intended route để chuyển hướng về sau khi đăng nhập
+    localStorage.setItem("intendedRoute", router.currentRoute.value.fullPath);
     showError("Vui lòng đăng nhập để mua hàng");
     router.push("/login");
     return;
@@ -684,6 +670,8 @@ const buyNow = async () => {
 
 const toggleWishlist = () => {
   if (!authStore.isAuthenticated) {
+    // Lưu trữ intended route để quay lại sau khi đăng nhập
+    localStorage.setItem("intendedRoute", router.currentRoute.value.fullPath);
     showError("Vui lòng đăng nhập để thêm vào danh sách yêu thích");
     router.push("/login");
     return;

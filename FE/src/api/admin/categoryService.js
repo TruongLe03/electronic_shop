@@ -5,10 +5,29 @@ import axiosInstance from "../../utils/axiosConfig";
 // Lấy danh sách danh mục cho admin
 export const getCategoriesAdmin = async (params = {}) => {
   try {
-    console.log("Calling /admin/categories with params:", params);
-    const response = await axiosInstance.get("/categories/all", { params });
+    // Nếu không có params, lấy tất cả với limit lớn
+    const finalParams = {
+      limit: 1000, // Đảm bảo lấy tất cả
+      page: 1,
+      ...params
+    };
+    
+    console.log("Calling /admin/categories/all with params:", finalParams);
+    const response = await axiosInstance.get("/admin/categories/all", { params: finalParams });
     console.log("Categories API response:", response);
-    return response.data;
+    
+    // The backend returns { success: true, data: { categories: [...], pagination: {...} }, message: "..." }
+    if (response.data && response.data.data && response.data.data.categories) {
+      return {
+        data: response.data.data.categories,
+        pagination: response.data.data.pagination
+      };
+    } else if (response.data && response.data.data && Array.isArray(response.data.data)) {
+      return { data: response.data.data };
+    } else {
+      console.warn("Unexpected response structure:", response.data);
+      return { data: [] };
+    }
   } catch (error) {
     console.error("Get categories admin error:", error);
     console.error("Error details:", error.response);
@@ -21,7 +40,11 @@ export const getCategoriesAdmin = async (params = {}) => {
           params,
         });
         console.log("Fallback categories API response:", fallbackResponse);
-        return fallbackResponse.data;
+        
+        if (fallbackResponse.data && fallbackResponse.data.data) {
+          return { data: fallbackResponse.data.data };
+        }
+        return { data: [] };
       } catch (fallbackError) {
         console.error("Fallback categories error:", fallbackError);
         throw fallbackError.response

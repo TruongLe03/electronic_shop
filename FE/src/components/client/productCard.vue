@@ -12,7 +12,7 @@ const props = defineProps({
   showQuickView: {
     type: Boolean,
     default: true,
-  }
+  },
 });
 
 const cartStore = useCartStore();
@@ -34,29 +34,39 @@ const discountedPrice = computed(() => {
 });
 
 const hasDiscount = computed(() => {
-  return (props.product.discount_price && props.product.discount_price > 0 && props.product.discount_price < props.product.price) ||
-         (props.product.discount_percent && props.product.discount_percent > 0);
+  return (
+    (props.product.discount_price &&
+      props.product.discount_price > 0 &&
+      props.product.discount_price < props.product.price) ||
+    (props.product.discount_percent && props.product.discount_percent > 0)
+  );
 });
 
 const discountPercentage = computed(() => {
   if (props.product.discount_percent && props.product.discount_percent > 0) {
     return Math.round(props.product.discount_percent);
   }
-  if (props.product.discount_price && props.product.discount_price > 0 && props.product.discount_price < props.product.price) {
-    return Math.round(((props.product.price - props.product.discount_price) / props.product.price) * 100);
+  if (
+    props.product.discount_price &&
+    props.product.discount_price > 0 &&
+    props.product.discount_price < props.product.price
+  ) {
+    return Math.round(
+      ((props.product.price - props.product.discount_price) /
+        props.product.price) *
+        100
+    );
   }
   return 0;
 });
 
 const stockStatus = computed(() => {
   const stock = props.product.stock || 0;
-  if (stock === 0) return { text: 'Hết hàng', class: 'bg-red-100 text-red-800' };
-  if (stock <= 5) return { text: 'Sắp hết', class: 'bg-yellow-100 text-yellow-800' };
-  return { text: 'Còn hàng', class: 'bg-green-100 text-green-800' };
-});
-
-const rating = computed(() => {
-  return props.product.rating || 4.5; // Default rating
+  if (stock === 0)
+    return { text: "Hết hàng", class: "bg-red-100 text-red-800" };
+  if (stock <= 5)
+    return { text: "Sắp hết", class: "bg-yellow-100 text-yellow-800" };
+  return { text: "Còn hàng", class: "bg-green-100 text-green-800" };
 });
 
 // Methods
@@ -74,18 +84,18 @@ const handleAddToCart = async (event) => {
   // Create ripple effect
   const button = event.currentTarget;
   const rect = button.getBoundingClientRect();
-  const ripple = document.createElement('span');
+  const ripple = document.createElement("span");
   const size = Math.max(rect.width, rect.height);
   const x = event.clientX - rect.left - size / 2;
   const y = event.clientY - rect.top - size / 2;
-  
-  ripple.className = 'ripple-effect';
-  ripple.style.width = ripple.style.height = size + 'px';
-  ripple.style.left = x + 'px';
-  ripple.style.top = y + 'px';
-  
+
+  ripple.className = "ripple-effect";
+  ripple.style.width = ripple.style.height = size + "px";
+  ripple.style.left = x + "px";
+  ripple.style.top = y + "px";
+
   button.appendChild(ripple);
-  
+
   // Remove ripple after animation
   setTimeout(() => {
     ripple.remove();
@@ -93,14 +103,22 @@ const handleAddToCart = async (event) => {
 
   try {
     loading.value = true;
-    await cartStore.addToCart(props.product, 1);
-    
+    const added = await cartStore.addToCart(props.product, 1);
+    if (!added) {
+      // User likely not authenticated — save intended route and redirect to login
+      // We want to return to product detail page after login
+      const currentPath = window.location.pathname + window.location.search;
+      localStorage.setItem("intendedRoute", currentPath);
+      window.location.href = "/login";
+      return;
+    }
+
     // Add success class for feedback
-    button.classList.add('success');
+    button.classList.add("success");
     setTimeout(() => {
-      button.classList.remove('success');
+      button.classList.remove("success");
     }, 600);
-    
+
     // Thông báo sẽ hiển thị từ cart store
   } catch (error) {
     console.error("Error adding to cart:", error);
@@ -112,7 +130,7 @@ const handleAddToCart = async (event) => {
 
 const handleQuickView = () => {
   // Implement quick view modal
-  console.log('Quick view:', props.product);
+  console.log("Quick view:", props.product);
 };
 </script>
 
@@ -136,14 +154,23 @@ const handleQuickView = () => {
       <div
         :class="[
           'absolute top-2 right-2 sm:top-3 sm:right-3 z-10 text-xs font-medium px-1 sm:px-2 py-1 rounded-full',
-          stockStatus.class
+          stockStatus.class,
         ]"
       >
         {{ stockStatus.text }}
       </div>
 
       <!-- Product Image -->
-      <router-link :to="`/product/${product._id}`" class="block">
+      <router-link
+        :to="{
+          path: `/product/${product._id}`,
+          query: {
+            name: product.name,
+            category: product.category_id?.name,
+          },
+        }"
+        class="block"
+      >
         <div class="aspect-square relative overflow-hidden">
           <img
             :src="getFullImage(product.main_image)"
@@ -151,12 +178,14 @@ const handleQuickView = () => {
             @error="handleImageError"
             class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           />
-          
+
           <!-- Overlay on Hover -->
-          <div class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-          
+          <div
+            class="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+          ></div>
+
           <!-- Quick View Button -->
-          <div 
+          <div
             v-if="showQuickView"
             class="absolute inset-0 hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300"
           >
@@ -175,13 +204,25 @@ const handleQuickView = () => {
     <!-- Product Info -->
     <div class="p-2 sm:p-3 md:p-4">
       <!-- Category -->
-      <div class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1 sm:mb-2">
-        {{ product.category_id?.name || 'Electronics' }}
+      <div
+        class="text-xs text-gray-500 uppercase tracking-wide font-medium mb-1 sm:mb-2"
+      >
+        {{ product.category_id?.name || "Electronics" }}
       </div>
 
       <!-- Product Name -->
-      <router-link :to="`/product/${product._id}`">
-        <h3 class="font-semibold text-gray-900 mb-1 sm:mb-2 line-clamp-2 hover:text-blue-600 transition-colors leading-tight text-sm sm:text-base">
+      <router-link
+        :to="{
+          path: `/product/${product._id}`,
+          query: {
+            name: product.name,
+            category: product.category_id?.name,
+          },
+        }"
+      >
+        <h3
+          class="font-semibold text-gray-900 mb-1 sm:mb-2 line-clamp-2 hover:text-blue-600 transition-colors leading-tight text-sm sm:text-base"
+        >
           {{ product.name }}
         </h3>
       </router-link>
@@ -195,17 +236,21 @@ const handleQuickView = () => {
               :key="star"
               :class="[
                 'text-xs sm:text-sm',
-                star <= Math.floor(rating) 
-                  ? 'fas fa-star text-yellow-400' 
-                  : star <= rating 
-                    ? 'fas fa-star-half-alt text-yellow-400'
-                    : 'far fa-star text-gray-300'
+                star <= Math.floor(rating)
+                  ? 'fas fa-star text-yellow-400'
+                  : star <= rating
+                  ? 'fas fa-star-half-alt text-yellow-400'
+                  : 'far fa-star text-gray-300',
               ]"
             ></i>
           </div>
-          <span class="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2">({{ rating }})</span>
+          <span class="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2"
+            >({{ rating }})</span
+          >
         </div>
-        <span class="text-xs text-gray-400 ml-auto">{{ product.sold || 0 }}</span>
+        <span class="text-xs text-gray-400 ml-auto">{{
+          product.sold || 0
+        }}</span>
       </div>
 
       <!-- Price -->
@@ -215,7 +260,7 @@ const handleQuickView = () => {
           <span class="text-sm sm:text-lg font-bold text-red-600">
             {{ formatPrice(discountedPrice) }}
           </span>
-          
+
           <!-- Original Price -->
           <span
             v-if="hasDiscount"
@@ -223,7 +268,7 @@ const handleQuickView = () => {
           >
             {{ formatPrice(product.price) }}
           </span>
-          
+
           <!-- Discount savings -->
           <div v-if="hasDiscount" class="text-xs text-green-600 font-medium">
             Tiết kiệm {{ formatPrice(product.price - discountedPrice) }}
@@ -252,36 +297,38 @@ const handleQuickView = () => {
           product.stock === 0
             ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
             : loading
-              ? 'bg-blue-400 text-white cursor-wait'
-              : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg transform hover:scale-105'
+            ? 'bg-blue-400 text-white cursor-wait'
+            : 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 hover:shadow-lg transform hover:scale-105',
         ]"
       >
         <!-- Success ripple effect -->
-        <div 
+        <div
           v-if="!loading && product.stock > 0"
           class="ripple-effect absolute inset-0 rounded-lg opacity-0 bg-white"
         ></div>
-        
-        <i 
+
+        <i
           :class="[
             loading ? 'fas fa-spinner fa-spin' : 'fas fa-shopping-cart',
-            'transition-transform duration-300'
+            'transition-transform duration-300',
           ]"
         ></i>
         <span>
-          {{ 
-            product.stock === 0 
-              ? 'Hết hàng' 
-              : loading 
-                ? 'Đang thêm...' 
-                : 'Thêm vào giỏ' 
+          {{
+            product.stock === 0
+              ? "Hết hàng"
+              : loading
+              ? "Đang thêm..."
+              : "Thêm vào giỏ"
           }}
         </span>
       </button>
     </div>
 
     <!-- Hover Effect Border -->
-    <div class="absolute inset-0 border-2 border-transparent group-hover:border-blue-200 rounded-xl transition-colors duration-300 pointer-events-none"></div>
+    <div
+      class="absolute inset-0 border-2 border-transparent group-hover:border-blue-200 rounded-xl transition-colors duration-300 pointer-events-none"
+    ></div>
   </div>
 </template>
 
@@ -367,13 +414,18 @@ const handleQuickView = () => {
 
 /* Button shine effect */
 .add-to-cart-btn:before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
   transition: left 0.5s;
 }
 

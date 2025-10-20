@@ -10,26 +10,23 @@ import {
   deleteAddress,
   setDefaultAddress,
 } from "../controllers/user.controller.js";
-import authMiddleware from "../middleware/authMiddleware.js";
+import { authMiddleware, requireOwner } from "../middleware/authMiddleware.js";
 
 const userRouter = express.Router();
 
-// Tất cả routes đều cần authentication
-userRouter.use(authMiddleware);
-
 // ==== USER PROFILE ====
-userRouter.get("/profile", getProfile);
-userRouter.put("/profile", updateProfile);
-userRouter.post("/profile/avatar", uploadAvatar);
+userRouter.get("/profile", authMiddleware, getProfile);
+userRouter.put("/profile", authMiddleware, updateProfile);
+userRouter.post("/profile/avatar", authMiddleware, uploadAvatar);
 
 // ==== PASSWORD ====
-userRouter.put("/password/change", changePassword);
+userRouter.put("/password/change", authMiddleware, changePassword);
 
 // ==== ADDRESSES ====
-userRouter.get("/addresses", getAddresses);
-userRouter.post("/addresses", addAddress);
-userRouter.put("/addresses/:addressId", updateAddress);
-userRouter.delete("/addresses/:addressId", deleteAddress);
-userRouter.put("/addresses/:addressId/set-default", setDefaultAddress);
+userRouter.get("/addresses", authMiddleware, getAddresses);
+userRouter.post("/addresses", authMiddleware, addAddress);
+userRouter.put("/addresses/:addressId", authMiddleware, requireOwner("userId"), updateAddress);
+userRouter.delete("/addresses/:addressId", authMiddleware, requireOwner("userId"), deleteAddress);
+userRouter.put("/addresses/:addressId/set-default", authMiddleware, requireOwner("userId"), setDefaultAddress);
 
 export default userRouter;

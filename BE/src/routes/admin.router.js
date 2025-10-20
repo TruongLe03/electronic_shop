@@ -20,6 +20,7 @@ import {
   
   // Order Management
   getAllOrdersAdmin,
+  getOrderById,
   updateOrderStatus,
   deleteOrder,
   
@@ -56,69 +57,65 @@ import {
   updateSystemSettings
 } from "../controllers/admin.controller.js";
 
-import authMiddleware from "../middleware/authMiddleware.js";
-import adminMiddleware from "../middleware/adminMiddleware.js";
+import { requireAdminAuth } from "../middleware/authMiddleware.js";
 
 const adminRouter = express.Router();
 
-// Middleware: Tất cả routes admin phải được xác thực và là admin
-adminRouter.use(authMiddleware);
-adminRouter.use(adminMiddleware);
+// ============= DASHBOARD & ANALYTICS - Admin Only =============
+adminRouter.get("/dashboard/overview", requireAdminAuth, getDashboardStats);
+adminRouter.get("/dashboard/growth", requireAdminAuth, getGrowthAnalytics);
 
-// ============= DASHBOARD & ANALYTICS =============
-adminRouter.get("/dashboard/overview", getDashboardStats);
-adminRouter.get("/dashboard/growth", getGrowthAnalytics);
+// ============= USER MANAGEMENT - Admin Only =============
+adminRouter.get("/users/all", requireAdminAuth, getAllUsers);
+adminRouter.get("/users/vip-customers", requireAdminAuth, getVIPCustomers);
+adminRouter.get("/users/:id", requireAdminAuth, getUserById);
+adminRouter.put("/users/:id", requireAdminAuth, updateUser);
+adminRouter.patch("/users/:id/status", requireAdminAuth, toggleUserStatus);
+adminRouter.delete("/users/:id", requireAdminAuth, deleteUser);
 
-// ============= USER MANAGEMENT =============
-adminRouter.get("/users/all", getAllUsers);
-adminRouter.get("/users/vip-customers", getVIPCustomers);
-adminRouter.get("/users/:id", getUserById);
-adminRouter.put("/users/:id", updateUser);
-adminRouter.patch("/users/:id/status", toggleUserStatus);
-adminRouter.delete("/users/:id", deleteUser);
-
-// ============= PRODUCT MANAGEMENT =============
+// ============= PRODUCT MANAGEMENT - Admin Only =============
 // Product listings and discovery
-adminRouter.get("/products/all", getAllProductsAdmin);
-adminRouter.get("/products/:id", getProductById);
+adminRouter.get("/products/all", requireAdminAuth, getAllProductsAdmin);
+adminRouter.get("/products/:id", requireAdminAuth, getProductById);
 // Product analytics
-adminRouter.get("/products/category-stats", getProductCategoryStats);
-adminRouter.get("/products/low-stock-alert", getLowStockAlert);
+adminRouter.get("/products/category-stats", requireAdminAuth, getProductCategoryStats);
+adminRouter.get("/products/low-stock-alert", requireAdminAuth, getLowStockAlert);
 // Product operations
-adminRouter.post("/products", createProduct);
-adminRouter.put("/products/:id", updateProduct);
-adminRouter.patch("/products/:id/status", toggleProductStatus);
-adminRouter.delete("/products/:id", deleteProduct);
+adminRouter.post("/products", requireAdminAuth, createProduct);
+adminRouter.put("/products/:id", requireAdminAuth, updateProduct);
+adminRouter.patch("/products/:id/status", requireAdminAuth, toggleProductStatus);
+adminRouter.delete("/products/:id", requireAdminAuth, deleteProduct);
 
-// ============= ORDER MANAGEMENT =============
-adminRouter.get("/orders/all", getAllOrdersAdmin);
-adminRouter.get("/orders/daily-stats", getOrdersByDayStats);
-adminRouter.patch("/orders/:id/status", updateOrderStatus);
-adminRouter.delete("/orders/:id", deleteOrder);
+// ============= ORDER MANAGEMENT - Admin Only =============
+adminRouter.get("/orders/all", requireAdminAuth, getAllOrdersAdmin);
+adminRouter.get("/orders/daily-stats", requireAdminAuth, getOrdersByDayStats);
+adminRouter.get("/orders/:id", requireAdminAuth, getOrderById);
+adminRouter.patch("/orders/:id/status", requireAdminAuth, updateOrderStatus);
+adminRouter.delete("/orders/:id", requireAdminAuth, deleteOrder);
 
-// ============= INVENTORY CONTROL =============
-adminRouter.get("/inventory/stock-levels", getInventoryList);
-adminRouter.put("/inventory/products/:productId", updateInventory);
+// ============= INVENTORY CONTROL - Admin Only =============
+adminRouter.get("/inventory/stock-levels", requireAdminAuth, getInventoryList);
+adminRouter.put("/inventory/products/:productId", requireAdminAuth, updateInventory);
 
-// ============= CATEGORY MANAGEMENT =============
-adminRouter.get("/categories/all", getAllCategories);
-adminRouter.post("/categories", createCategory);
-adminRouter.put("/categories/:id", updateCategory);
-adminRouter.delete("/categories/:id", deleteCategory);
+// ============= CATEGORY MANAGEMENT - Admin Only =============
+adminRouter.get("/categories/all", requireAdminAuth, getAllCategories);
+adminRouter.post("/categories", requireAdminAuth, createCategory);
+adminRouter.put("/categories/:id", requireAdminAuth, updateCategory);
+adminRouter.delete("/categories/:id", requireAdminAuth, deleteCategory);
 
-// ============= PAYMENT OVERSIGHT =============
-adminRouter.get("/payments/all", getAllPayments);
-adminRouter.get("/payments/statistics", getPaymentStats);
-adminRouter.get("/payments/:id", getPaymentById);
-adminRouter.patch("/payments/:id/status", updatePaymentStatus);
+// ============= PAYMENT OVERSIGHT - Admin Only =============
+adminRouter.get("/payments/all", requireAdminAuth, getAllPayments);
+adminRouter.get("/payments/statistics", requireAdminAuth, getPaymentStats);
+adminRouter.get("/payments/:id", requireAdminAuth, getPaymentById);
+adminRouter.patch("/payments/:id/status", requireAdminAuth, updatePaymentStatus);
 
-// ============= REPORTS & ANALYTICS =============
-adminRouter.get("/reports/revenue", generateRevenueReport);
-adminRouter.get("/reports/products", generateProductReport);
+// ============= REPORTS & ANALYTICS - Admin Only =============
+adminRouter.get("/reports/revenue", requireAdminAuth, generateRevenueReport);
+adminRouter.get("/reports/products", requireAdminAuth, generateProductReport);
 
-// ============= SYSTEM ADMINISTRATION =============
-adminRouter.get("/system/information", getSystemInfo);
-adminRouter.get("/system/settings", getSystemSettings);
-adminRouter.put("/system/settings", updateSystemSettings);
+// ============= SYSTEM ADMINISTRATION - Admin Only =============
+adminRouter.get("/system/information", requireAdminAuth, getSystemInfo);
+adminRouter.get("/system/settings", requireAdminAuth, getSystemSettings);
+adminRouter.put("/system/settings", requireAdminAuth, updateSystemSettings);
 
 export default adminRouter;

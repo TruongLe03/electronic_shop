@@ -48,7 +48,11 @@
       <div class="flex flex-col lg:flex-row gap-8">
         <!-- Checkout Form -->
         <div class="lg:w-2/3">
-          <form id="checkout-form" @submit.prevent="processCheckout" class="space-y-6">
+          <form
+            id="checkout-form"
+            @submit.prevent="processCheckout"
+            class="space-y-6"
+          >
             <!-- Customer Information -->
             <div class="bg-white rounded-lg shadow-md p-6">
               <div class="flex items-center justify-between mb-4">
@@ -335,6 +339,32 @@
                     </div>
                   </div>
                 </label>
+                <!-- VNPay -->
+                <label
+                  class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
+                >
+                  <input
+                    v-model="form.paymentMethod"
+                    type="radio"
+                    value="vnpay"
+                    class="mr-3 text-blue-600"
+                  />
+                  v-model="form.paymentMethod" type="radio" value="vnpay"
+                  class="mr-3 text-blue-600" />
+                  <div class="flex items-center">
+                    <div
+                      class="w-6 h-6 mr-3 bg-blue-600 rounded-full flex items-center justify-center"
+                    >
+                      <span class="text-white text-xs font-bold">V</span>
+                    </div>
+                    <div>
+                      <div class="font-semibold">VNPay</div>
+                      <div class="text-sm text-gray-600">
+                        Thanh toán qua cổng VNPay
+                      </div>
+                    </div>
+                  </div>
+                </label>
 
                 <!-- Bank -->
                 <label
@@ -389,31 +419,6 @@
                       <div class="font-semibold">Ví MoMo</div>
                       <div class="text-sm text-gray-600">
                         Thanh toán qua ví điện tử MoMo
-                      </div>
-                    </div>
-                  </div>
-                </label>
-
-                <!-- VNPay -->
-                <label
-                  class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
-                >
-                  <input
-                    v-model="form.paymentMethod"
-                    type="radio"
-                    value="vnpay"
-                    class="mr-3 text-blue-600"
-                  />
-                  <div class="flex items-center">
-                    <div
-                      class="w-6 h-6 mr-3 bg-blue-600 rounded-full flex items-center justify-center"
-                    >
-                      <span class="text-white text-xs font-bold">V</span>
-                    </div>
-                    <div>
-                      <div class="font-semibold">VNPay</div>
-                      <div class="text-sm text-gray-600">
-                        Thanh toán qua cổng VNPay
                       </div>
                     </div>
                   </div>
@@ -490,7 +495,7 @@
               :disabled="!isFormValid || isProcessingOrder"
               class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 px-6 rounded-lg font-semibold transition-colors"
             >
-              {{ isProcessingOrder ? 'Đang xử lý...' : buttonText }}
+              {{ isProcessingOrder ? "Đang xử lý..." : buttonText }}
             </button>
 
             <p class="text-xs text-gray-500 mt-3 text-center">
@@ -595,11 +600,11 @@ const isFormValid = computed(() => {
   // Check address validity
   const addressValid = hasCompleteAddress.value;
 
-  console.log('Form validation:', {
+  console.log("Form validation:", {
     basicInfoValid,
     addressValid,
     hasCompleteAddress: hasCompleteAddress.value,
-    formData: form.value
+    formData: form.value,
   });
 
   return basicInfoValid && addressValid;
@@ -624,7 +629,11 @@ const buttonText = computed(() => {
 // Check if address is complete
 const hasCompleteAddress = computed(() => {
   // If user has a full address text (from previous orders) with commas, consider it complete
-  if (form.value.address && form.value.address.includes(",") && form.value.address.split(",").length >= 3) {
+  if (
+    form.value.address &&
+    form.value.address.includes(",") &&
+    form.value.address.split(",").length >= 3
+  ) {
     return true;
   }
 
@@ -642,7 +651,11 @@ const fullAddressText = computed(() => {
   if (!hasCompleteAddress.value) return "";
 
   // If address already contains full text (from previous order), use it directly
-  if (form.value.address && form.value.address.includes(",") && form.value.address.split(",").length >= 3) {
+  if (
+    form.value.address &&
+    form.value.address.includes(",") &&
+    form.value.address.split(",").length >= 3
+  ) {
     return form.value.address;
   }
 
@@ -905,7 +918,7 @@ const processCheckout = async () => {
 
   let loader; // Declare loader outside try block
   let orderCreated = false; // Track if order was created successfully
-  
+
   try {
     isProcessingOrder.value = true;
     loader = showPageLoading("Đang xử lý thanh toán...");
@@ -914,7 +927,11 @@ const processCheckout = async () => {
     let finalAddress = "";
 
     // If address already contains full text (from previous order), use it directly
-    if (form.value.address && form.value.address.includes(",") && form.value.address.split(",").length >= 3) {
+    if (
+      form.value.address &&
+      form.value.address.includes(",") &&
+      form.value.address.split(",").length >= 3
+    ) {
       finalAddress = form.value.address;
     } else {
       // Otherwise, construct from separate fields (new address)
@@ -929,7 +946,7 @@ const processCheckout = async () => {
     }
 
     // Validate final address
-    if (!finalAddress || finalAddress.trim() === '') {
+    if (!finalAddress || finalAddress.trim() === "") {
       showError("Địa chỉ giao hàng không hợp lệ");
       hideLoading(loader);
       return;
@@ -939,7 +956,7 @@ const processCheckout = async () => {
     const shippingInfo = {
       name: form.value.fullName?.trim(),
       phone: form.value.phone?.trim(),
-      address: finalAddress.trim()
+      address: finalAddress.trim(),
     };
 
     // Validate shipping info
@@ -955,35 +972,37 @@ const processCheckout = async () => {
       return;
     }
 
-    console.log('Shipping info prepared:', shippingInfo);
-    console.log('Payment method:', form.value.paymentMethod);
+    console.log("Shipping info prepared:", shippingInfo);
+    console.log("Payment method:", form.value.paymentMethod);
 
     let orderResponse = null;
 
     if (orderType.value === "direct") {
       // Create new order from direct purchase
       const productInfo = orderItems.value[0]; // Single product
-      console.log('Direct order - productInfo:', productInfo);
-      
+      console.log("Direct order - productInfo:", productInfo);
+
       const productId = productInfo.productId || productInfo.id;
       if (!productId) {
         showError("Không tìm thấy thông tin sản phẩm");
         hideLoading(loader);
         return;
       }
-      
+
       const orderData = {
-        items: [{
-          productId: productId,
-          quantity: productInfo.quantity,
-          price: productInfo.discount_price || productInfo.price
-        }],
+        items: [
+          {
+            productId: productId,
+            quantity: productInfo.quantity,
+            price: productInfo.discount_price || productInfo.price,
+          },
+        ],
         shippingAddress: shippingInfo,
         paymentMethod: form.value.paymentMethod,
-        note: form.value.notes
+        note: form.value.notes,
       };
-      
-      console.log('Direct order - sending data:', orderData);
+
+      console.log("Direct order - sending data:", orderData);
       orderResponse = await orderService.createDirectOrder(orderData);
     } else if (orderType.value === "cart") {
       // Create new order from cart
@@ -1006,7 +1025,7 @@ const processCheckout = async () => {
       orderResponse = await orderService.createOrderFromCart({
         shippingAddress: shippingInfo,
         paymentMethod: form.value.paymentMethod,
-        note: form.value.notes
+        note: form.value.notes,
       });
     }
 
@@ -1046,34 +1065,42 @@ const processCheckout = async () => {
     hideLoading(loader);
   } catch (error) {
     console.error("Checkout error:", error);
-    
+
     // Kiểm tra xem có order nào được tạo thành công hay không trong trường hợp lỗi network
-    if (!orderCreated && (error.request || error.code === 'ECONNABORTED')) {
+    if (!orderCreated && (error.request || error.code === "ECONNABORTED")) {
       try {
-        console.log("Checking for recent orders due to potential network error...");
+        console.log(
+          "Checking for recent orders due to potential network error..."
+        );
         const recentOrdersResponse = await orderService.getRecentOrdersByUser();
-        
-        if (recentOrdersResponse.success && recentOrdersResponse.data.length > 0) {
+
+        if (
+          recentOrdersResponse.success &&
+          recentOrdersResponse.data.length > 0
+        ) {
           const recentOrder = recentOrdersResponse.data[0];
           const orderTime = new Date(recentOrder.createdAt);
           const now = new Date();
           const timeDiff = now - orderTime;
-          
+
           // Nếu có order được tạo trong vòng 2 phút qua, có thể đó là order vừa tạo
           if (timeDiff < 2 * 60 * 1000) {
-            console.log("Found recent order, redirecting to success page:", recentOrder._id);
+            console.log(
+              "Found recent order, redirecting to success page:",
+              recentOrder._id
+            );
             showSuccess("Đặt hàng thành công! Đang chuyển hướng...");
-            
+
             // Clear cart if order from cart
             if (orderType.value === "cart") {
               cartStore.clearCart();
             }
-            
+
             router.push({
               name: "orderSuccess",
-              query: { orderId: recentOrder._id }
+              query: { orderId: recentOrder._id },
             });
-            
+
             if (loader) hideLoading(loader);
             return;
           }
@@ -1082,10 +1109,10 @@ const processCheckout = async () => {
         console.error("Error verifying recent orders:", verifyError);
       }
     }
-    
+
     // Xử lý chi tiết các loại lỗi
     let errorMessage = "Đã có lỗi xảy ra. Vui lòng thử lại.";
-    
+
     if (error.success === false) {
       // Lỗi từ custom error handling
       errorMessage = error.message;
@@ -1093,7 +1120,7 @@ const processCheckout = async () => {
       // Lỗi HTTP response
       const status = error.response.status;
       const data = error.response.data;
-      
+
       if (status === 400) {
         errorMessage = data.message || "Thông tin đơn hàng không hợp lệ";
       } else if (status === 401) {
@@ -1107,10 +1134,13 @@ const processCheckout = async () => {
       // Network error
       errorMessage = "Mất kết nối mạng trong quá trình đặt hàng.";
       showError(errorMessage);
-      
+
       // Thêm notification cho user kiểm tra account
       setTimeout(() => {
-        showWarning("Vui lòng kiểm tra đơn hàng trong tài khoản để xác nhận đơn hàng đã được tạo hay chưa.", { duration: 8000 });
+        showWarning(
+          "Vui lòng kiểm tra đơn hàng trong tài khoản để xác nhận đơn hàng đã được tạo hay chưa.",
+          { duration: 8000 }
+        );
       }, 3000);
     } else if (error.message) {
       errorMessage = error.message;

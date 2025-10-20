@@ -307,6 +307,22 @@ export const getAllOrdersAdmin = asyncHandler(async (req, res) => {
   return ResponseUtil.success(res, result, 'Lấy danh sách đơn hàng thành công');
 });
 
+// Lấy chi tiết đơn hàng (Admin)
+export const getOrderById = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  if (!id || !ValidationUtil.isValidObjectId(id)) {
+    return ResponseUtil.validationError(res, ['Order ID không hợp lệ']);
+  }
+
+  const order = await OrderService.getOrderById(id);
+  if (!order) {
+    return ResponseUtil.notFound(res, 'Không tìm thấy đơn hàng');
+  }
+
+  return ResponseUtil.success(res, order, 'Lấy chi tiết đơn hàng thành công');
+});
+
 // Cập nhật trạng thái đơn hàng
 export const updateOrderStatus = asyncHandler(async (req, res) => {
   const { id } = req.params;

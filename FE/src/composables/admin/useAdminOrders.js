@@ -32,12 +32,12 @@ export function useAdminOrders() {
 
   // Order statuses based on actual BE model
   const orderStatuses = [
-    { value: "pending", label: "Chờ xác nhận" },
-    { value: "confirmed", label: "Đã xác nhận" },
-    { value: "processing", label: "Đang xử lý" },
-    { value: "shipping", label: "Đang giao" },
-    { value: "delivered", label: "Đã giao" },
-    { value: "cancelled", label: "Đã hủy" },
+    "pending",
+    "confirmed", 
+    "processing",
+    "shipping",
+    "delivered",
+    "cancelled"
   ];
 
   // Methods
@@ -126,6 +126,51 @@ export function useAdminOrders() {
     } catch (err) {
       error.value = err.message || "Lỗi khi xóa đơn hàng";
       console.error("Error deleting order:", err);
+      throw err;
+    } finally {
+      loading.value = false;
+    }
+  };
+
+  const deleteBulkOrders = async (orderIds) => {
+    try {
+      loading.value = true;
+      error.value = null;
+
+      const deletePromises = orderIds.map(orderId => deleteOrderAdmin(orderId));
+      const responses = await Promise.allSettled(deletePromises);
+
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 0; i < responses.length; i++) {
+        const response = responses[i];
+        const orderId = orderIds[i];
+
+        if (response.status === 'fulfilled' && response.value.success) {
+          // Remove from local data
+          const orderIndex = orders.value.findIndex(order => order._id === orderId);
+          if (orderIndex !== -1) {
+            orders.value.splice(orderIndex, 1);
+          }
+          successCount++;
+        } else {
+          errorCount++;
+          console.error(`Error deleting order ${orderId}:`, response.reason || response.value?.message);
+        }
+      }
+
+      // Update pagination
+      pagination.total = Math.max(0, pagination.total - successCount);
+
+      if (errorCount > 0) {
+        throw new Error(`Xóa thành công ${successCount}/${orderIds.length} đơn hàng. ${errorCount} đơn hàng xóa thất bại.`);
+      }
+
+      return { success: true, message: `Xóa thành công ${successCount} đơn hàng` };
+    } catch (err) {
+      error.value = err.message || "Lỗi khi xóa đơn hàng";
+      console.error("Error bulk deleting orders:", err);
       throw err;
     } finally {
       loading.value = false;
@@ -228,6 +273,7 @@ export function useAdminOrders() {
     fetchOrders,
     updateOrderStatus: updateOrderStatusLocal,
     deleteOrder,
+    deleteBulkOrders,
     goToPage,
     nextPage,
     prevPage,

@@ -4,7 +4,7 @@ import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
 import { useAdminUsers } from "@/composables/admin/useAdminUsers.js";
 import { useNotification } from "@/composables/admin/useNotification.js";
-import AdminLayout from "@/components/admin/AdminLayout.vue";
+import AdminLayout from "@/layout/AdminLayout.vue";
 import ModernStatsCard from "@/components/admin/ModernStatsCard.vue";
 
 const router = useRouter();
@@ -133,7 +133,7 @@ const addUser = () => {
 const viewUserDetails = (user) => {
   alert(`Chi tiết "${user.name}":
 - Email: ${user.email}
-- SĐT: ${user.phone || 'Chưa cập nhật'}
+- SĐT: ${user.phone || "Chưa cập nhật"}
 - Đơn hàng: ${user.totalOrders || 0}
 - Tổng chi tiêu: ${formatCurrency(user.totalSpent || 0)}
 - Tham gia: ${formatDate(user.createdAt || user.joinDate)}

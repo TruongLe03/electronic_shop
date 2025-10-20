@@ -161,6 +161,14 @@ const handleLogin = async () => {
     // Load cart sau khi login thành công
     try {
       await cartStore.fetchCart();
+      // Nếu có sản phẩm chờ thêm vào giỏ trước khi login, xử lý nó
+      if (typeof cartStore.checkPendingCartItem === 'function') {
+        try {
+          await cartStore.checkPendingCartItem();
+        } catch (e) {
+          console.error('Error processing pending cart item after login:', e);
+        }
+      }
     } catch (error) {
       console.error("Error loading cart after login:", error);
     }

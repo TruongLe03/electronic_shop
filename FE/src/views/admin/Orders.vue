@@ -3,7 +3,7 @@ import { ref, onMounted, computed } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
 import { useAdminOrders } from "@/composables/admin/useAdminOrders.js";
-import AdminLayout from "@/components/admin/AdminLayout.vue";
+import AdminLayout from "@/layout/AdminLayout.vue";
 import ModernStatsCard from "@/components/admin/ModernStatsCard.vue";
 
 // --- STORE & ROUTER ---
@@ -21,6 +21,7 @@ const {
   fetchOrders,
   updateOrderStatus,
   deleteOrder,
+  deleteBulkOrders,
   goToPage,
   nextPage,
   prevPage,
@@ -39,6 +40,13 @@ const showStatusModal = ref(false);
 const orderToUpdate = ref(null);
 const newStatus = ref("");
 const statusNote = ref("");
+
+// --- DELETE MODAL STATE ---
+const showDeleteModal = ref(false);
+const orderToDelete = ref(null);
+const selectedOrders = ref(new Set());
+const showBulkDeleteModal = ref(false);
+const selectAllChecked = ref(false);
 
 // --- FILTER ORDERS LOCALLY ---
 const filteredOrders = computed(() => {
@@ -79,7 +87,107 @@ const stats = computed(() => {
   };
 });
 
-// --- METHODS ---
+// --- SELECTION METHODS ---
+const selectedOrdersCount = computed(() => selectedOrders.value.size);
+
+const canDeleteSelected = computed(() => {
+  if (selectedOrders.value.size === 0) return false;
+
+  const selectedOrdersList = Array.from(selectedOrders.value);
+  return selectedOrdersList.every((orderId) => {
+    const order = orders.value.find((o) => o._id === orderId);
+    return order && ["pending", "cancelled"].includes(order.status);
+  });
+});
+
+const toggleSelectAll = () => {
+  if (selectAllChecked.value) {
+    selectedOrders.value.clear();
+  } else {
+    filteredOrders.value
+      .filter((order) => ["pending", "cancelled"].includes(order.status))
+      .forEach((order) => selectedOrders.value.add(order._id));
+  }
+  selectAllChecked.value = !selectAllChecked.value;
+};
+
+const toggleSelectOrder = (orderId) => {
+  if (selectedOrders.value.has(orderId)) {
+    selectedOrders.value.delete(orderId);
+  } else {
+    selectedOrders.value.add(orderId);
+  }
+
+  // Update select all checkbox
+  const deletableOrders = filteredOrders.value.filter((order) =>
+    ["pending", "cancelled"].includes(order.status)
+  );
+  selectAllChecked.value =
+    deletableOrders.length > 0 &&
+    deletableOrders.every((order) => selectedOrders.value.has(order._id));
+};
+
+const isOrderSelected = (orderId) => selectedOrders.value.has(orderId);
+
+const canSelectOrder = (order) =>
+  ["pending", "cancelled"].includes(order.status);
+
+// --- DELETE METHODS ---
+const showDeleteConfirmation = (order) => {
+  orderToDelete.value = order;
+  showDeleteModal.value = true;
+};
+
+const showBulkDeleteConfirmation = () => {
+  if (selectedOrders.value.size === 0) return;
+  showBulkDeleteModal.value = true;
+};
+
+const confirmDelete = async () => {
+  try {
+    await deleteOrder(orderToDelete.value._id);
+    showDeleteModal.value = false;
+    orderToDelete.value = null;
+
+    // Remove from selection if it was selected
+    selectedOrders.value.delete(orderToDelete.value?._id);
+  } catch (err) {
+    console.error("Error deleting order:", err);
+    alert(
+      "Có lỗi xảy ra khi xóa đơn hàng: " + (err.message || "Lỗi không xác định")
+    );
+  }
+};
+
+const confirmBulkDelete = async () => {
+  try {
+    const selectedOrdersList = Array.from(selectedOrders.value);
+
+    // Use the bulk delete method from composable
+    await deleteBulkOrders(selectedOrdersList);
+
+    // Clear selection
+    selectedOrders.value.clear();
+    selectAllChecked.value = false;
+    showBulkDeleteModal.value = false;
+  } catch (err) {
+    console.error("Error bulk deleting orders:", err);
+    alert(
+      "Có lỗi xảy ra khi xóa đơn hàng: " + (err.message || "Lỗi không xác định")
+    );
+  }
+};
+
+const cancelDelete = () => {
+  showDeleteModal.value = false;
+  orderToDelete.value = null;
+};
+
+const cancelBulkDelete = () => {
+  showBulkDeleteModal.value = false;
+};
+
+// --- OTHER METHODS ---
 const handleStatusChange = (order) => {
   orderToUpdate.value = order;
   newStatus.value = order.status;
@@ -126,22 +234,6 @@ const viewOrderDetail = (order) => {
 const printOrder = (order) => {
   console.log("Print order:", order._id);
   // TODO: Implement print logic
-};
-
-const deleteOrderHandler = async (order) => {
-  if (
-    confirm(
-      `Bạn có chắc muốn xóa đơn hàng #${order._id.slice(-8).toUpperCase()}?\n\nLưu ý: Chỉ có thể xóa đơn hàng ở trạng thái "Chờ xác nhận" hoặc "Đã hủy".`
-    )
-  ) {
-    try {
-      await deleteOrder(order._id);
-      alert("Xóa đơn hàng thành công!");
-    } catch (err) {
-      console.error("Error deleting order:", err);
-      alert("Có lỗi xảy ra khi xóa đơn hàng: " + (err.message || "Lỗi không xác định"));
-    }
-  }
 };
 
 // --- LIFECYCLE ---
@@ -229,22 +321,40 @@ onMounted(async () => {
               <option value="">Tất cả trạng thái</option>
               <option
                 v-for="status in orderStatuses"
-                :key="status.value"
-                :value="status.value"
+                :key="status"
+                :value="status"
               >
-                {{ status.label }}
+                {{ getStatusText(status) }}
               </option>
             </select>
           </div>
 
-          <!-- Clear Filters -->
+          <!-- Bulk Actions -->
           <div class="flex items-end">
-            <button
-              @click="clearFilters"
-              class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+            <div
+              v-if="selectedOrdersCount > 0"
+              class="flex items-center gap-3 w-full"
             >
-              Xóa bộ lọc
-            </button>
+              <div class="text-sm text-gray-600 flex-1">
+                Đã chọn: {{ selectedOrdersCount }} đơn hàng
+              </div>
+              <button
+                v-if="canDeleteSelected"
+                @click="showBulkDeleteConfirmation"
+                class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors flex items-center gap-2"
+              >
+                <i class="fas fa-trash text-sm"></i>
+                Xóa đã chọn
+              </button>
+            </div>
+            <div v-else>
+              <button
+                @click="clearFilters"
+                class="px-4 py-2 text-gray-600 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              >
+                Xóa bộ lọc
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -279,6 +389,16 @@ onMounted(async () => {
             <table class="min-w-full divide-y divide-gray-200">
               <thead class="bg-gray-50">
                 <tr>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="selectAllChecked"
+                      @change="toggleSelectAll"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                  </th>
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
@@ -317,7 +437,18 @@ onMounted(async () => {
                   v-for="order in filteredOrders"
                   :key="order._id"
                   class="hover:bg-gray-50"
+                  :class="{ 'bg-blue-50': isOrderSelected(order._id) }"
                 >
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <input
+                      v-if="canSelectOrder(order)"
+                      type="checkbox"
+                      :checked="isOrderSelected(order._id)"
+                      @change="toggleSelectOrder(order._id)"
+                      class="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span v-else class="inline-block w-4 h-4"></span>
+                  </td>
                   <td
                     class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900"
                   >
@@ -371,11 +502,18 @@ onMounted(async () => {
                         <i class="fas fa-print"></i>
                       </button>
                       <button
-                        @click="deleteOrderHandler(order)"
+                        v-if="['pending', 'cancelled'].includes(order.status)"
+                        @click="showDeleteConfirmation(order)"
                         class="text-red-600 hover:text-red-900 p-1"
                         title="Xóa đơn hàng"
-                        :disabled="!['pending', 'cancelled'].includes(order.status)"
-                        :class="{'opacity-50 cursor-not-allowed': !['pending', 'cancelled'].includes(order.status)}"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                      <button
+                        v-else
+                        class="text-gray-400 p-1 cursor-not-allowed"
+                        title="Không thể xóa đơn hàng này"
+                        disabled
                       >
                         <i class="fas fa-trash"></i>
                       </button>
@@ -456,9 +594,11 @@ onMounted(async () => {
     <Teleport to="body">
       <div
         v-if="showStatusModal"
-        class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+        class="fixed inset-0 flex items-center justify-center z-50"
       >
-        <div class="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+        <div
+          class="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-2xl border"
+        >
           <h3 class="text-lg font-semibold text-gray-900 mb-4">
             Cập nhật trạng thái đơn hàng
           </h3>
@@ -481,10 +621,10 @@ onMounted(async () => {
               >
                 <option
                   v-for="status in orderStatuses"
-                  :key="status.value"
-                  :value="status.value"
+                  :key="status"
+                  :value="status"
                 >
-                  {{ status.label }}
+                  {{ getStatusText(status) }}
                 </option>
               </select>
             </div>
@@ -517,6 +657,133 @@ onMounted(async () => {
               class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
             >
               Cập nhật
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal xác nhận xóa đơn lẻ -->
+    <Teleport to="body">
+      <div
+        v-if="showDeleteModal"
+        class="fixed inset-0 flex items-center justify-center z-50"
+      >
+        <div
+          class="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-2xl border"
+        >
+          <div class="flex items-center mb-4">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-lg font-semibold text-gray-900">
+                Xác nhận xóa đơn hàng
+              </h3>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <p class="text-sm text-gray-700 mb-2">
+              Bạn có chắc chắn muốn xóa đơn hàng sau?
+            </p>
+            <div class="bg-gray-50 p-3 rounded-md">
+              <p class="font-medium text-gray-900">
+                #{{ orderToDelete?._id?.slice(-8).toUpperCase() }}
+              </p>
+              <p class="text-sm text-gray-600">
+                Khách hàng: {{ orderToDelete?.user_id?.name }}
+              </p>
+              <p class="text-sm text-gray-600">
+                Tổng tiền: {{ formatCurrency(orderToDelete?.total || 0) }}
+              </p>
+            </div>
+            <p class="text-xs text-red-600 mt-2">
+              <i class="fas fa-info-circle"></i>
+              Hành động này không thể hoàn tác.
+            </p>
+          </div>
+
+          <div class="flex justify-end space-x-3">
+            <button
+              @click="cancelDelete"
+              class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              Hủy
+            </button>
+            <button
+              @click="confirmDelete"
+              class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              <i class="fas fa-trash mr-2"></i>
+              Xóa đơn hàng
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Modal xác nhận xóa hàng loạt -->
+    <Teleport to="body">
+      <div
+        v-if="showBulkDeleteModal"
+        class="fixed inset-0 flex items-center justify-center z-50"
+      >
+        <div
+          class="bg-white rounded-lg p-6 w-full max-w-md mx-4 shadow-2xl border"
+        >
+          <div class="flex items-center mb-4">
+            <div class="flex-shrink-0">
+              <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+            </div>
+            <div class="ml-3">
+              <h3 class="text-lg font-semibold text-gray-900">
+                Xác nhận xóa hàng loạt
+              </h3>
+            </div>
+          </div>
+
+          <div class="mb-6">
+            <p class="text-sm text-gray-700 mb-2">
+              Bạn có chắc chắn muốn xóa
+              <span class="font-semibold text-red-600">{{
+                selectedOrdersCount
+              }}</span>
+              đơn hàng đã chọn?
+            </p>
+            <div class="bg-gray-50 p-3 rounded-md max-h-32 overflow-y-auto">
+              <div
+                v-for="orderId in Array.from(selectedOrders)"
+                :key="orderId"
+                class="text-sm text-gray-700 mb-1"
+              >
+                {{
+                  orders
+                    .find((o) => o._id === orderId)
+                    ?._id?.slice(-8)
+                    .toUpperCase() || "N/A"
+                }}
+              </div>
+            </div>
+            <p class="text-xs text-red-600 mt-2">
+              <i class="fas fa-info-circle"></i>
+              Hành động này không thể hoàn tác.
+            </p>
+          </div>
+
+          <div class="flex justify-end space-x-3">
+            <button
+              @click="cancelBulkDelete"
+              class="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              Hủy
+            </button>
+            <button
+              @click="confirmBulkDelete"
+              class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+            >
+              <i class="fas fa-trash mr-2"></i>
+              Xóa {{ selectedOrdersCount }} đơn hàng
             </button>
           </div>
         </div>

@@ -6,7 +6,7 @@ import { useAdminDashboard } from "@/composables/admin/useAdminDashboard.js";
 import { useAdminOrders } from "@/composables/admin/useAdminOrders.js";
 import { useAdminUsers } from "@/composables/admin/useAdminUsers.js";
 import { useAdminAnalytics } from "@/composables/admin/useAdminAnalytics.js";
-import AdminLayout from "@/components/admin/AdminLayout.vue";
+import AdminLayout from "@/layout/AdminLayout.vue";
 import ModernStatsCard from "@/components/admin/ModernStatsCard.vue";
 import RevenueChart from "@/components/admin/RevenueChart.vue";
 import OrdersChart from "@/components/admin/OrdersChart.vue";
@@ -123,9 +123,9 @@ const loadDashboardData = async () => {
   try {
     // Load dashboard stats and growth data
     await Promise.all([
-      fetchDashboardStats(), 
-      fetchGrowthStats(), 
-      fetchCategoryStats()
+      fetchDashboardStats(),
+      fetchGrowthStats(),
+      fetchCategoryStats(),
     ]);
 
     // Load recent orders (limit 5)

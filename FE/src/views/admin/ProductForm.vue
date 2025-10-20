@@ -3,8 +3,12 @@ import { ref, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@stores/auth.js";
 import { useLoading } from "@composables/useLoading.js";
-import { getProductById, createProduct, updateProduct } from "@api/productService.js";
-import AdminLayout from "@components/admin/AdminLayout.vue";
+import {
+  getProductById,
+  createProduct,
+  updateProduct,
+} from "@api/productService.js";
+import AdminLayout from "@/layout/AdminLayout.vue";
 
 const router = useRouter();
 const route = useRoute();
@@ -68,10 +72,10 @@ onMounted(async () => {
 const loadProduct = async () => {
   try {
     loading.value = true;
-    
+
     const response = await getProductById(productId.value);
     const product = response.data;
-    
+
     form.value = {
       name: product.name || "",
       description: product.description || "",
@@ -89,7 +93,10 @@ const loadProduct = async () => {
     };
   } catch (error) {
     console.error("Error loading product:", error);
-    alert("Không thể tải thông tin sản phẩm: " + (error.message || "Lỗi không xác định"));
+    alert(
+      "Không thể tải thông tin sản phẩm: " +
+        (error.message || "Lỗi không xác định")
+    );
   } finally {
     loading.value = false;
   }
@@ -226,7 +233,9 @@ const cancelForm = () => {
       <form @submit.prevent="submitForm" class="space-y-8">
         <!-- Basic Information -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+          <h2
+            class="text-lg font-semibold text-gray-900 mb-6 flex items-center"
+          >
             <i class="fas fa-edit mr-2 text-indigo-600"></i>
             Thông tin cơ bản
           </h2>
@@ -324,7 +333,9 @@ const cancelForm = () => {
 
         <!-- Pricing & Stock -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+          <h2
+            class="text-lg font-semibold text-gray-900 mb-6 flex items-center"
+          >
             <i class="fas fa-dollar-sign mr-2 text-green-600"></i>
             Giá và tồn kho
           </h2>
@@ -380,7 +391,9 @@ const cancelForm = () => {
 
         <!-- Images -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+          <h2
+            class="text-lg font-semibold text-gray-900 mb-6 flex items-center"
+          >
             <i class="fas fa-images mr-2 text-purple-600"></i>
             Hình ảnh
           </h2>
@@ -448,7 +461,9 @@ const cancelForm = () => {
 
         <!-- Features -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+          <h2
+            class="text-lg font-semibold text-gray-900 mb-6 flex items-center"
+          >
             <i class="fas fa-star mr-2 text-yellow-600"></i>
             Tính năng nổi bật
           </h2>
@@ -492,7 +507,9 @@ const cancelForm = () => {
 
         <!-- Specifications -->
         <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-6">
-          <h2 class="text-lg font-semibold text-gray-900 mb-6 flex items-center">
+          <h2
+            class="text-lg font-semibold text-gray-900 mb-6 flex items-center"
+          >
             <i class="fas fa-list mr-2 text-blue-600"></i>
             Thông số kỹ thuật
           </h2>

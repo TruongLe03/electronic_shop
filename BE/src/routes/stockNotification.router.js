@@ -5,8 +5,7 @@ import {
   getUserStockNotifications,
   triggerStockNotificationCheck
 } from "../controllers/stockNotification.controller.js";
-import authMiddleware from "../middleware/authMiddleware.js";
-import adminMiddleware from "../middleware/adminMiddleware.js";
+import { authMiddleware, requireAdminAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
@@ -22,6 +21,6 @@ router.get("/my-notifications", authMiddleware, getUserStockNotifications);
 
 // ============= ADMIN STOCK NOTIFICATIONS =============
 // Trigger manual check for stock notifications
-router.post("/trigger/:productId", authMiddleware, adminMiddleware, triggerStockNotificationCheck);
+router.post("/trigger/:productId", requireAdminAuth, triggerStockNotificationCheck);
 
 export default router;

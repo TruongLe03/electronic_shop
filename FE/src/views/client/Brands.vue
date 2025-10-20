@@ -1,8 +1,7 @@
 <script setup>
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from 'vue-router'
-import Header from "@components/client/Header.vue";
-import Footer from "@components/client/Footer.vue";
+import ClientLayout from "@/layout/ClientLayout.vue";
 
 const router = useRouter()
 const brands = ref([]);
@@ -15,7 +14,7 @@ const popularBrands = ref([
   {
     id: 1,
     name: "Arduino",
-    logo: "⚡",
+    logo: "fas fa-bolt",
     description: "Nền tảng phần cứng mã nguồn mở cho các dự án điện tử",
     productCount: 45,
     featured: true,
@@ -54,7 +53,7 @@ const popularBrands = ref([
   {
     id: 4,
     name: "Adafruit",
-    logo: "🔧",
+    logo: "fas fa-tools",
     description: "Nhà phân phối linh kiện điện tử và học tập DIY",
     productCount: 156,
     featured: true,
@@ -67,7 +66,7 @@ const popularBrands = ref([
   {
     id: 5,
     name: "SparkFun",
-    logo: "⚙️",
+    logo: "fas fa-cog",
     description: "Giáo dục điện tử và open source hardware",
     productCount: 134,
     featured: true,
@@ -80,7 +79,7 @@ const popularBrands = ref([
   {
     id: 6,
     name: "STMicroelectronics",
-    logo: "🔬",
+    logo: "fas fa-microscope",
     description: "Vi điều khiển ARM Cortex-M và analog ICs",
     productCount: 123,
     featured: false,
@@ -93,7 +92,7 @@ const popularBrands = ref([
   {
     id: 7,
     name: "Texas Instruments",
-    logo: "🧮",
+    logo: "fas fa-calculator",
     description: "Bán dẫn và linh kiện điện tử chất lượng cao",
     productCount: 89,
     featured: false,
@@ -183,9 +182,7 @@ const otherBrands = computed(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <Header />
-    
+  <ClientLayout>
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Page Header -->
       <div class="text-center mb-12">
@@ -260,7 +257,9 @@ const otherBrands = computed(() => {
           >
             <div :class="`bg-gradient-to-br ${brand.color} rounded-2xl p-6 text-white shadow-xl group-hover:shadow-2xl`">
               <div class="text-center">
-                <div class="text-4xl mb-4">{{ brand.logo }}</div>
+                <div class="text-4xl mb-4 text-blue-600">
+                  <i :class="brand.logo"></i>
+                </div>
                 <h3 class="text-xl font-bold mb-2">{{ brand.name }}</h3>
                 <p class="text-sm opacity-90 mb-3">{{ brand.description }}</p>
                 
@@ -309,7 +308,9 @@ const otherBrands = computed(() => {
           >
             <div class="p-6">
               <div class="text-center mb-4">
-                <div class="text-4xl mb-3">{{ brand.logo }}</div>
+                <div class="text-4xl mb-3 text-blue-600">
+                  <i :class="brand.logo"></i>
+                </div>
                 <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ brand.name }}</h3>
                 <p class="text-sm text-gray-600 mb-3">{{ brand.description }}</p>
               </div>
@@ -475,9 +476,7 @@ const otherBrands = computed(() => {
         </button>
       </div>
     </main>
-
-    <Footer />
-  </div>
+  </ClientLayout>
 </template>
 
 <style scoped>

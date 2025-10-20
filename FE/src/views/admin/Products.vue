@@ -3,7 +3,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@/stores/auth.js";
 import { useAdminProducts } from "@/composables/admin/useAdminProducts.js";
-import AdminLayout from "@/components/admin/AdminLayout.vue";
+import AdminLayout from "@/layout/AdminLayout.vue";
 import ModernStatsCard from "@/components/admin/ModernStatsCard.vue";
 
 console.log("Products.vue - Starting to load...");
@@ -83,6 +83,10 @@ const applyFiltersApi = comp.applyFilters ?? (() => {});
 const getStatusColor =
   comp.getStatusColor ?? ((s) => "bg-gray-200 text-gray-800");
 const getStatusText = comp.getStatusText ?? ((s) => s || "—");
+const getStockStatusColor = 
+  comp.getStockStatusColor ?? ((s) => "bg-gray-200 text-gray-800");
+const getStockStatusText = 
+  comp.getStockStatusText ?? ((s) => "Không xác định");
 const formatCurrency =
   comp.formatCurrency ??
   ((v) => (typeof v === "number" ? v.toLocaleString("vi-VN") + "₫" : v));
@@ -127,7 +131,15 @@ const activeProductsCount = computed(() =>
 );
 const outOfStockCount = computed(() =>
   Array.isArray(products.value)
-    ? products.value.filter((p) => (p.stock ?? 0) === 0).length
+    ? products.value.filter((p) => (p.stock ?? p.stock_quantity ?? 0) === 0).length
+    : 0
+);
+const lowStockCount = computed(() =>
+  Array.isArray(products.value)
+    ? products.value.filter((p) => {
+        const stock = p.stock ?? p.stock_quantity ?? 0;
+        return stock > 0 && stock <= 10;
+      }).length
     : 0
 );
 const draftProductsCount = computed(() =>
@@ -346,6 +358,12 @@ const applyCategoryFilter = async () => {
 const categoryName = (cat) => {
   // cat could be id or object
   if (!cat) return "—";
+  
+  // If cat is a populated object with name, return it directly
+  if (typeof cat === "object" && cat.name) {
+    return cat.name;
+  }
+  
   // if categories list contains object with _id matching
   const found = (categories.value || []).find(
     (c) => c._id === (cat._id ?? cat) || c.id === cat
@@ -427,6 +445,13 @@ watch(
           :format="'number'"
           icon="⚠️"
           color="red"
+        />
+        <ModernStatsCard
+          title="Sắp hết"
+          :value="lowStockCount"
+          :format="'number'"
+          icon="📉"
+          color="yellow"
         />
         <ModernStatsCard
           title="Bản nháp"
@@ -562,7 +587,7 @@ watch(
                 <th
                   class="px-6 py-4 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
                 >
-                  Trạng thái
+                  Tình trạng
                 </th>
                 <th
                   class="px-6 py-4 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider"
@@ -599,7 +624,7 @@ watch(
 
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span class="text-sm text-gray-600 dark:text-gray-300">
-                    {{ categoryName(product.category) }}
+                    {{ categoryName(product.category_id || product.category) }}
                   </span>
                 </td>
 
@@ -619,10 +644,10 @@ watch(
 
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span
-                    :class="`inline-flex px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
-                      product.status
+                    :class="`inline-flex px-3 py-1 text-xs font-medium rounded-full ${getStockStatusColor(
+                      product.stock || product.stock_quantity || 0
                     )}`"
-                    >{{ getStatusText(product.status) }}</span
+                    >{{ getStockStatusText(product.stock || product.stock_quantity || 0) }}</span
                   >
                 </td>
 

@@ -1,7 +1,6 @@
 <script setup>
 import { ref } from "vue";
-import Header from "@components/client/Header.vue";
-import Footer from "@components/client/Footer.vue";
+import ClientLayout from "@/layout/ClientLayout.vue";
 
 const selectedTab = ref('faq');
 const showContactForm = ref(false);
@@ -70,45 +69,45 @@ const submitContactForm = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50">
-    <Header />
-    
+  <ClientLayout>
     <main class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <!-- Page Header -->
-      <div class="text-center mb-12">
-        <h1 class="text-4xl font-bold text-gray-900 mb-4">💬 Hỗ trợ khách hàng</h1>
-        <p class="text-lg text-gray-600 max-w-2xl mx-auto">
+      <div class="text-center mb-8 sm:mb-12">
+        <h1 class="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+          <i class="fas fa-comments text-blue-600 mr-3"></i>Hỗ trợ khách hàng
+        </h1>
+        <p class="text-base sm:text-lg text-gray-600 max-w-2xl mx-auto px-4">
           Chúng tôi luôn sẵn sàng hỗ trợ bạn 24/7. Tìm câu trả lời nhanh chóng hoặc liên hệ trực tiếp với chúng tôi.
         </p>
       </div>
 
       <!-- Quick Contact -->
-      <div class="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-12">
-        <div class="bg-blue-50 border border-blue-200 rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-white text-xl">📞</span>
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-8 sm:mb-12">
+        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 sm:p-6 text-center">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <i class="fas fa-phone text-white text-lg sm:text-xl"></i>
           </div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Hotline</h3>
-          <p class="text-blue-600 font-medium mb-2">1900 1234</p>
-          <p class="text-sm text-gray-600">Hỗ trợ 24/7</p>
+          <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2">Hotline</h3>
+          <p class="text-blue-600 font-medium mb-2 text-sm sm:text-base">1900 1234</p>
+          <p class="text-xs sm:text-sm text-gray-600">Hỗ trợ 24/7</p>
         </div>
 
-        <div class="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-white text-xl">💬</span>
+        <div class="bg-green-50 border border-green-200 rounded-xl p-4 sm:p-6 text-center">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <i class="fas fa-comments text-white text-lg sm:text-xl"></i>
           </div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Live Chat</h3>
-          <button class="text-green-600 font-medium mb-2 hover:underline">Bắt đầu chat</button>
-          <p class="text-sm text-gray-600">Phản hồi ngay lập tức</p>
+          <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2">Live Chat</h3>
+          <button class="text-green-600 font-medium mb-2 hover:underline text-sm sm:text-base">Bắt đầu chat</button>
+          <p class="text-xs sm:text-sm text-gray-600">Phản hồi ngay lập tức</p>
         </div>
 
-        <div class="bg-purple-50 border border-purple-200 rounded-xl p-6 text-center">
-          <div class="w-12 h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-4">
-            <span class="text-white text-xl">✉️</span>
+        <div class="bg-purple-50 border border-purple-200 rounded-xl p-4 sm:p-6 text-center col-span-1 sm:col-span-2 md:col-span-1">
+          <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-500 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+            <i class="fas fa-envelope text-white text-lg sm:text-xl"></i>
           </div>
-          <h3 class="text-lg font-semibold text-gray-900 mb-2">Email</h3>
-          <p class="text-purple-600 font-medium mb-2">support@electroshop.com</p>
-          <p class="text-sm text-gray-600">Phản hồi trong 2h</p>
+          <h3 class="text-base sm:text-lg font-semibold text-gray-900 mb-2">Email</h3>
+          <p class="text-purple-600 font-medium mb-2 text-sm sm:text-base break-all">support@electroshop.com</p>
+          <p class="text-xs sm:text-sm text-gray-600">Phản hồi trong 2h</p>
         </div>
       </div>
 
@@ -224,13 +223,16 @@ const submitContactForm = () => {
           @click="showContactForm = !showContactForm"
           class="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
         >
-          {{ showContactForm ? '🔼 Ẩn form liên hệ' : '📝 Gửi yêu cầu hỗ trợ' }}
+          <i :class="showContactForm ? 'fas fa-chevron-up' : 'fas fa-edit'" class="mr-2"></i>
+          {{ showContactForm ? 'Ẩn form liên hệ' : 'Gửi yêu cầu hỗ trợ' }}
         </button>
       </div>
 
       <!-- Contact Form -->
       <div v-if="showContactForm" class="bg-white rounded-xl shadow-md p-6">
-        <h3 class="text-xl font-semibold mb-6">📝 Gửi yêu cầu hỗ trợ</h3>
+        <h3 class="text-xl font-semibold mb-6">
+          <i class="fas fa-edit text-blue-600 mr-2"></i>Gửi yêu cầu hỗ trợ
+        </h3>
         <form @submit.prevent="submitContactForm" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -299,7 +301,7 @@ const submitContactForm = () => {
               type="submit"
               class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
             >
-              🚀 Gửi yêu cầu
+              <i class="fas fa-paper-plane mr-2"></i>Gửi yêu cầu
             </button>
             <button
               type="button"
@@ -312,9 +314,7 @@ const submitContactForm = () => {
         </form>
       </div>
     </main>
-
-    <Footer />
-  </div>
+  </ClientLayout>
 </template>
 
 <style scoped>

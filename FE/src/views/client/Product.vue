@@ -1,9 +1,8 @@
 <script setup>
 import { ref, onMounted, watch, computed } from "vue";
 import { useRoute } from "vue-router";
-import Header from "@components/client/Header.vue";
+import ClientLayout from "@/layout/ClientLayout.vue";
 import ProductCard from "@components/client/productCard.vue";
-import Footer from "@components/client/Footer.vue";
 import { useCartStore } from "@stores/cart.js";
 import { useCategories } from "@/composables/client/useCategories.js";
 import { useProducts } from "@/composables/client/useProducts.js";
@@ -65,6 +64,11 @@ const handleAddToCart = async (product) => {
     const success = await cartStore.addToCart(product, quantity.value);
     if (success) {
       alert("Thêm vào giỏ hàng thành công!");
+    } else {
+      // Nếu không thành công (có thể do chưa đăng nhập), lưu intended route và chuyển đến login
+      const currentPath = window.location.pathname + window.location.search;
+      localStorage.setItem('intendedRoute', currentPath);
+      window.location.href = '/login';
     }
   } catch (error) {
     console.error("Error adding to cart:", error);
@@ -227,8 +231,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <Header />
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+  <ClientLayout>
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
     <div
       class="container mx-auto px-3 sm:px-4 lg:px-6 xl:px-8 py-4 sm:py-6 lg:py-8"
     >
@@ -313,7 +317,7 @@ onMounted(async () => {
             <h3
               class="text-lg font-semibold text-gray-800 flex items-center gap-2"
             >
-              <span class="text-xl">📂</span>
+              <i class="fas fa-folder text-xl text-blue-600 mr-2"></i>
               Danh mục sản phẩm
             </h3>
           </div>
@@ -464,9 +468,9 @@ onMounted(async () => {
                   class="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white text-gray-700"
                 >
                   <option value="newest">⭐ Mới nhất</option>
-                  <option value="oldest">📅 Cũ nhất</option>
-                  <option value="price-asc">💰 Giá tăng dần</option>
-                  <option value="price-desc">💸 Giá giảm dần</option>
+                  <option value="oldest">� Cũ nhất</option>
+                  <option value="price-asc">� Giá tăng dần</option>
+                  <option value="price-desc">� Giá giảm dần</option>
                   <option value="name-asc">🔤 Tên A-Z</option>
                   <option value="name-desc">🔡 Tên Z-A</option>
                 </select>
@@ -475,7 +479,7 @@ onMounted(async () => {
               <!-- Price Filter Section -->
               <div class="bg-gray-50 rounded-lg p-4">
                 <label class="block text-sm font-semibold text-gray-700 mb-3">
-                  💰 Khoảng giá
+                  <i class="fas fa-dollar-sign text-green-600 mr-2"></i>Khoảng giá
                 </label>
                 <select
                   v-model="priceRange"
@@ -487,7 +491,7 @@ onMounted(async () => {
                   <option value="100-200">💴 100K - 200K</option>
                   <option value="200-400">💶 200K - 400K</option>
                   <option value="400-1000">💷 400K - 1M</option>
-                  <option value="over-1000">💎 Trên 1M</option>
+                  <option value="over-1000"><i class="fas fa-gem mr-1"></i>Trên 1M</option>
                 </select>
               </div>
 
@@ -529,7 +533,7 @@ onMounted(async () => {
                 <label
                   class="text-sm font-semibold text-gray-700 whitespace-nowrap flex items-center gap-2"
                 >
-                  <span class="text-base">💰</span>
+                  <i class="fas fa-dollar-sign text-base text-green-600"></i>
                   Giá:
                 </label>
                 <select
@@ -736,8 +740,8 @@ onMounted(async () => {
         </div>
       </div>
     </div>
-  </div>
-  <Footer />
+    </div>
+  </ClientLayout>
 </template>
 
 <style scoped>

@@ -1,10 +1,9 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import Header from "@components/client/Header.vue";
+import ClientLayout from "@/layout/ClientLayout.vue";
 import heroSection from "@components/client/heroSection.vue";
 import CategorySidebar from "@components/client/CategorySidebar.vue";
 import FeaturedProducts from "@components/client/FeaturedProducts.vue";
-import Footer from "@components/client/Footer.vue";
 
 // Page loading state
 const pageLoading = ref(true);
@@ -31,22 +30,17 @@ onMounted(async () => {
   </div>
 
   <!-- Main Content -->
-  <div v-else class="min-h-screen bg-gray-50">
-    <!-- Header -->
-    <Header />
+  <ClientLayout v-else>
+    <!-- Hero Section -->
+    <heroSection />
     
-    <!-- Main Content -->
-    <main>
-      <!-- Hero Section -->
-      <heroSection />
-      
-      <!-- Main Content Area with Sidebar -->
-      <div class="container mx-auto px-4 py-8">
-        <div class="flex flex-col lg:flex-row gap-6">
-          <!-- Sidebar - Categories -->
-          <aside class="lg:w-1/4">
-            <CategorySidebar />
-          </aside>
+    <!-- Main Content Area with Sidebar -->
+    <div class="container mx-auto px-4 py-8">
+      <div class="flex flex-col lg:flex-row gap-6">
+        <!-- Sidebar - Categories -->
+        <aside class="lg:w-1/4">
+          <CategorySidebar />
+        </aside>
           
           <!-- Main Content -->
           <div class="lg:w-3/4">
@@ -98,24 +92,24 @@ onMounted(async () => {
       </div>
       
       <!-- Statistics Section -->
-      <section class="py-16 bg-blue-600">
+      <section class="py-12 sm:py-16 bg-blue-600">
         <div class="container mx-auto px-4">
-          <div class="grid grid-cols-1 md:grid-cols-4 gap-8 text-center text-white">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center text-white">
             <div class="space-y-2">
-              <div class="text-4xl font-bold">10K+</div>
-              <div class="text-blue-100">Khách hàng tin tưởng</div>
+              <div class="text-2xl sm:text-3xl md:text-4xl font-bold">10K+</div>
+              <div class="text-blue-100 text-sm sm:text-base">Khách hàng tin tưởng</div>
             </div>
             <div class="space-y-2">
-              <div class="text-4xl font-bold">5K+</div>
-              <div class="text-blue-100">Sản phẩm chất lượng</div>
+              <div class="text-2xl sm:text-3xl md:text-4xl font-bold">5K+</div>
+              <div class="text-blue-100 text-sm sm:text-base">Sản phẩm chất lượng</div>
             </div>
             <div class="space-y-2">
-              <div class="text-4xl font-bold">24/7</div>
-              <div class="text-blue-100">Hỗ trợ khách hàng</div>
+              <div class="text-2xl sm:text-3xl md:text-4xl font-bold">24/7</div>
+              <div class="text-blue-100 text-sm sm:text-base">Hỗ trợ khách hàng</div>
             </div>
             <div class="space-y-2">
-              <div class="text-4xl font-bold">99%</div>
-              <div class="text-blue-100">Khách hàng hài lòng</div>
+              <div class="text-2xl sm:text-3xl md:text-4xl font-bold">99%</div>
+              <div class="text-blue-100 text-sm sm:text-base">Khách hàng hài lòng</div>
             </div>
           </div>
         </div>
@@ -199,11 +193,7 @@ onMounted(async () => {
           </div>
         </div>
       </section>
-    </main>
-
-    <!-- Footer -->
-    <Footer />
-  </div>
+  </ClientLayout>
 </template>
 
 <style scoped>

@@ -42,6 +42,7 @@ export {
 export {
   // Order Management
   getAllOrdersAdmin,
+  getOrderById,
   updateOrderStatus,
   deleteOrderAdmin,
   getOrdersByDayStats,

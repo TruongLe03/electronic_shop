@@ -39,8 +39,15 @@ export function useAdminCategories() {
     
     try {
       const response = await getCategoriesAdmin(filters);
-      categories.value = response.data.categories;
-      pagination.value = response.data.pagination;
+      console.log('Categories response in composable:', response);
+      
+      // Handle the response structure correctly
+      categories.value = response.data || [];
+      pagination.value = {
+        ...pagination.value,
+        ...response.pagination,
+        totalPages: response.pagination?.totalPages || Math.ceil((response.pagination?.total || 0) / (response.pagination?.limit || 10))
+      };
     } catch (err) {
       error.value = err.response?.data?.message || 'Có lỗi xảy ra khi tải danh mục';
       console.error('Error fetching categories:', err);
@@ -53,7 +60,7 @@ export function useAdminCategories() {
   const fetchAllCategories = async () => {
     try {
       const response = await getCategoriesAdmin({ limit: 1000 });
-      allCategories.value = response.data.categories;
+      allCategories.value = response.data || [];
     } catch (err) {
       console.error('Error fetching all categories:', err);
     }

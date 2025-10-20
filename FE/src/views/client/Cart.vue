@@ -5,8 +5,7 @@ import { useRouter } from "vue-router";
 import { useNotification } from "@/composables/client/useNotification";
 import { useGlobalLoading } from "@/composables/client/useLoading";
 import { orderService } from "@api/orderService";
-import Header from "@components/client/Header.vue";
-import Footer from "@components/client/Footer.vue";
+import ClientLayout from "@/layout/ClientLayout.vue";
 
 const cart = useCartStore();
 const authStore = useAuthStore();
@@ -47,12 +46,14 @@ const handleCheckout = async () => {
 </script>
 
 <template>
-  <Header />
-  <div class="container mx-auto px-4 py-8">
+  <ClientLayout>
+    <div class="container mx-auto px-4 py-8">
     <!-- Empty Cart State -->
     <div v-if="cart.cartItems.length === 0" class="text-center py-8">
       <div class="flex flex-col items-center">
-        <div class="text-6xl mb-4">🛒</div>
+        <div class="text-6xl mb-4 text-gray-400">
+          <i class="fas fa-shopping-cart"></i>
+        </div>
         <h1 class="text-2xl font-semibold mb-2">Giỏ hàng trống</h1>
         <p class="text-gray-600 mb-6">Hãy thêm sản phẩm vào giỏ hàng của bạn</p>
         <button
@@ -75,10 +76,10 @@ const handleCheckout = async () => {
             <div
               v-for="item in cart.cartItems"
               :key="item.id"
-              class="flex items-center gap-6 p-6 border-b last:border-b-0 hover:bg-gray-50 transition"
+              class="flex flex-col sm:flex-row sm:items-center gap-4 sm:gap-6 p-4 sm:p-6 border-b last:border-b-0 hover:bg-gray-50 transition"
             >
               <!-- Product Image -->
-              <div class="w-24 h-24 flex-shrink-0">
+              <div class="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 mx-auto sm:mx-0">
                 <img
                   :src="item.image"
                   :alt="item.name"
@@ -87,25 +88,25 @@ const handleCheckout = async () => {
               </div>
 
               <!-- Product Info -->
-              <div class="flex-grow">
-                <h3 class="font-semibold text-lg mb-1">{{ item.name }}</h3>
-                <p class="text-gray-600 mb-3">
+              <div class="flex-grow text-center sm:text-left">
+                <h3 class="font-semibold text-base sm:text-lg mb-1">{{ item.name }}</h3>
+                <p class="text-gray-600 mb-3 text-sm sm:text-base">
                   {{ item.price.toLocaleString() }}đ
                 </p>
 
-                <div class="flex items-center gap-4">
-                  <div class="flex items-center border rounded max-w-[120px]">
+                <div class="flex flex-col sm:flex-row items-center justify-center sm:justify-start gap-2 sm:gap-4">
+                  <div class="flex items-center border rounded">
                     <input
                       type="number"
                       :value="item.quantity"
                       min="1"
                       @change="(e) => handleUpdateQuantity(item.id, e)"
-                      class="w-16 p-1 text-center focus:outline-none"
+                      class="w-16 p-1 text-center focus:outline-none text-sm"
                     />
                   </div>
                   <button
                     @click="handleRemoveItem(item.id)"
-                    class="text-red-500 hover:text-red-600 transition"
+                    class="text-red-500 hover:text-red-600 transition text-sm sm:text-base"
                   >
                     <span class="hidden sm:inline">Xóa</span>
                     <span class="sm:hidden">×</span>
@@ -114,8 +115,8 @@ const handleCheckout = async () => {
               </div>
 
               <!-- Product Total -->
-              <div class="text-right">
-                <p class="font-semibold text-lg">
+              <div class="text-center sm:text-right">
+                <p class="font-semibold text-base sm:text-lg">
                   {{ (item.price * item.quantity).toLocaleString() }}đ
                 </p>
               </div>
@@ -154,6 +155,6 @@ const handleCheckout = async () => {
         </div>
       </div>
     </div>
-  </div>
-  <Footer />
+    </div>
+  </ClientLayout>
 </template>

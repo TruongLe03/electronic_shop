@@ -101,10 +101,10 @@ const logout = async () => {
   // Thông báo đăng xuất
   const { notifyLogout } = useNotification();
   notifyLogout();
-  
+
   // Đăng xuất
   authStore.logout();
-  
+
   // Delay 2.5 giây trước khi chuyển về trang đăng nhập
   setTimeout(() => {
     router.push("/login");
