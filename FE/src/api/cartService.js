@@ -57,3 +57,14 @@ export const removeFromCart = async (productId) => {
     throw error.response ? error.response.data : error;
   }
 };
+
+// Xóa toàn bộ giỏ hàng
+export const clearCart = async () => {
+  try {
+    const response = await axiosInstance.delete('/cart/items/clear');
+    return extractResponseData(response);
+  } catch (error) {
+    console.error('Clear cart error:', error);
+    throw error.response ? error.response.data : error;
+  }
+};

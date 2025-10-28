@@ -23,6 +23,41 @@ export const paymentService = {
     }
   },
 
+  // ====== VNPay Methods ======
+  
+  // Tạo payment URL (tổng quát - support nhiều payment methods)
+  createPayment: async (paymentData) => {
+    try {
+      const response = await apiClient.post('/payment/create', paymentData)
+      return response.data
+    } catch (error) {
+      console.error('Create payment error:', error)
+      throw error
+    }
+  },
+
+  // Tạo VNPay payment URL (chuyên dụng)
+  createVNPayPayment: async (paymentData) => {
+    try {
+      const response = await apiClient.post('/vnpay/create', paymentData)
+      return response.data
+    } catch (error) {
+      console.error('Create VNPay payment error:', error)
+      throw error
+    }
+  },
+
+  // Kiểm tra trạng thái thanh toán
+  checkPaymentStatus: async (orderId) => {
+    try {
+      const response = await apiClient.get(`/vnpay/status/${orderId}`)
+      return response.data
+    } catch (error) {
+      console.error('Check payment status error:', error)
+      throw error
+    }
+  },
+
   // Get payment methods
   getPaymentMethods: async () => {
     try {

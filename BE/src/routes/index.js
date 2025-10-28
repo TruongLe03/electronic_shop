@@ -7,6 +7,7 @@ import cartRouter from "./cart.router.js";
 import ordersRouter from "./orders.router.js";
 import inventoryRouter from "./inventory.router.js";
 import paymentRouter from "./payment.router.js";
+import vnpayRouter from "./vnpay.router.js";
 import adminRouter from "./admin.router.js";
 import stockNotificationRouter from "./stockNotification.router.js";
 
@@ -30,9 +31,10 @@ appRouter.use("/orders", ordersRouter);
 // Commerce Operations
 appRouter.use("/inventory", inventoryRouter);
 appRouter.use("/payment", paymentRouter);
+appRouter.use("/vnpay", vnpayRouter);
 
 // Administrative
-appRouter.use("/admin", adminRouter);         
+appRouter.use("/admin", adminRouter);
 
 // Stock Notifications
 appRouter.use("/stock-notifications", stockNotificationRouter);

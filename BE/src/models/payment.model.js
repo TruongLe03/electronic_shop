@@ -1,19 +1,24 @@
 import mongoose from 'mongoose';
 
 const paymentSchema = new mongoose.Schema({
+  // Unique payment identifier
   paymentId: {
     type: String,
     unique: true,
-    required: true
+    default: function() {
+      return 'PAY' + Date.now() + Math.random().toString(36).substr(2, 5).toUpperCase();
+    }
   },
-  orderId: {
+  // Sử dụng _id của MongoDB làm payment ID chính
+  order_id: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Order',
     required: true
   },
   amount: {
     type: Number,
-    required: true
+    required: true,
+    min: 0
   },
   currency: {
     type: String,
@@ -26,66 +31,52 @@ const paymentSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['pending', 'processing', 'success', 'failed', 'cancelled', 'refunded'],
+    enum: ['pending', 'processing', 'completed', 'failed', 'cancelled', 'refunded', 'partially_refunded'],
     default: 'pending'
   },
-  // Gateway specific fields
-  gatewayProvider: String, // vnpay, momo, etc.
-  transactionId: String, // Gateway transaction ID
-  gatewayResponseCode: String,
-  gatewayResponseMessage: String,
+  // Gateway transaction information
+  gateway_transaction_id: String, // ID từ gateway (VNPay, MoMo, etc.)
+  gateway_response: mongoose.Schema.Types.Mixed, // Raw response từ gateway
   
-  // VNPay specific
-  vnp_TxnRef: String,
-  vnp_TransactionNo: String,
-  vnp_ResponseCode: String,
-  vnp_SecureHash: String,
-  
-  // MoMo specific
-  partnerCode: String,
-  momoTransId: String,
-  momoSignature: String,
-  
-  // ZaloPay specific
-  app_trans_id: String,
-  zp_trans_id: String,
-  
-  // Bank Transfer specific
-  bankCode: String,
-  bankTransactionId: String,
-  
-  // Callback verification
-  callbackVerified: {
-    type: Boolean,
-    default: false
-  },
-  callbackData: mongoose.Schema.Types.Mixed,
-  
-  // Timing
-  initiatedAt: {
-    type: Date,
-    default: Date.now
-  },
-  completedAt: Date,
-  expiredAt: Date,
-  
-  // Refund information
-  refundAmount: {
-    type: Number,
-    default: 0
-  },
-  refundReason: String,
-  refundedAt: Date,
-  refundTransactionId: String,
-  
-  // Additional data
-  customerInfo: {
+  // Customer information
+  customer_info: {
     name: String,
     email: String,
     phone: String
   },
-  ipAddress: String,
-  userAgent: String,
+  
+  // Network info
+  ip_address: String,
+  user_agent: String,
+  
+  // Payment timing
+  paid_at: Date,
+  failed_at: Date,
+  cancelled_at: Date,
+  expires_at: Date,
+  
+  // Failure information
+  failure_reason: String,
+  
+  // Refund information
+  refund_amount: {
+    type: Number,
+    default: 0
+  },
+  refunds: [{
+    amount: Number,
+    reason: String,
+    refunded_at: Date,
+    refund_transaction_id: String,
+    status: {
+      type: String,
+      enum: ['pending', 'completed', 'failed'],
+      default: 'pending'
+    }
+  }],
+  
+  // Admin notes
+  admin_note: String,
   notes: String,
   
   createdAt: {
@@ -98,22 +89,28 @@ const paymentSchema = new mongoose.Schema({
   }
 });
 
-// Generate payment ID
-paymentSchema.pre('save', async function(next) {
-  if (!this.paymentId) {
-    this.paymentId = 'PAY' + Date.now().toString() + Math.random().toString(36).substring(2, 5).toUpperCase();
-  }
+// Middleware to update timestamps
+paymentSchema.pre('save', function(next) {
   this.updatedAt = new Date();
   next();
 });
 
+// Virtual để tương thích với code cũ
+paymentSchema.virtual('orderId').get(function() {
+  return this.order_id;
+});
+
+paymentSchema.virtual('orderId').set(function(value) {
+  this.order_id = value;
+});
+
 // Index for better query performance
-paymentSchema.index({ orderId: 1 });
-paymentSchema.index({ transactionId: 1 });
-paymentSchema.index({ paymentId: 1 });
+paymentSchema.index({ order_id: 1 });
+paymentSchema.index({ gateway_transaction_id: 1 });
 paymentSchema.index({ status: 1 });
 paymentSchema.index({ method: 1 });
 paymentSchema.index({ createdAt: -1 });
+paymentSchema.index({ 'customer_info.email': 1 });
 
 const Payment = mongoose.model('Payment', paymentSchema);
 

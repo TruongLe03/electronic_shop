@@ -330,30 +330,22 @@ export function useAdminProducts() {
     fetchProducts();
   };
 
-  // Utility functions
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "active":
-        return "text-green-600 bg-green-50";
-      case "inactive":
-        return "text-red-600 bg-red-50";
-      case "draft":
-        return "text-yellow-600 bg-yellow-50";
-      default:
-        return "text-gray-600 bg-gray-50";
+  // Utility functions - Status dựa trên stock thay vì active/inactive
+  const getStatusColor = (stock) => {
+    const stockNum = parseInt(stock) || 0;
+    if (stockNum === 0) {
+      return "text-red-600 bg-red-50";
+    } else {
+      return "text-green-600 bg-green-50";
     }
   };
 
-  const getStatusText = (status) => {
-    switch (status) {
-      case "active":
-        return "Hoạt động";
-      case "inactive":
-        return "Không hoạt động";
-      case "draft":
-        return "Bản nháp";
-      default:
-        return "Không xác định";
+  const getStatusText = (stock) => {
+    const stockNum = parseInt(stock) || 0;
+    if (stockNum === 0) {
+      return "Hết hàng";
+    } else {
+      return "Còn hàng";
     }
   };
 

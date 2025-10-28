@@ -24,6 +24,8 @@ export class AdminAnalyticsService {
       { $group: { _id: null, total: { $sum: "$totalAmount" } } }
     ]);
 
+
+
     // Thống kê đơn hàng theo trạng thái
     const ordersByStatus = await Order.aggregate([
       {

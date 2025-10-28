@@ -3,35 +3,44 @@ import {
   createPayment,
   vnpayReturn,
   vnpayIPN,
-  momoIPN,
-  momoReturn,
-  getPaymentByOrderId,
+  getPaymentById,
   getUserPayments,
   refundPayment,
-  verifyPaymentStatus
+  getAllPayments,
+  updatePaymentStatus,
+  getPaymentStats,
 } from "../controllers/payment.controller.js";
-import authMiddleware from "../middleware/authMiddleware.js";
+import authMiddleware, { requireAdminAuth } from "../middleware/authMiddleware.js";
 
 const paymentRouter = express.Router();
 
-// ============= PAYMENT INITIALIZATION =============
-paymentRouter.post("/process", authMiddleware, createPayment);
+// ============= PUBLIC ROUTES (không cần auth) =============
+// VNPay callbacks - VNPay sẽ call trực tiếp, không có token
+paymentRouter.get("/vnpay/return", vnpayReturn); // User redirect từ VNPay
+paymentRouter.get("/vnpay/ipn", vnpayIPN); // VNPay webhook
+paymentRouter.post("/vnpay/ipn", vnpayIPN); // VNPay webhook backup
 
-// ============= GATEWAY CALLBACKS =============
-// VNPay integration
-paymentRouter.get("/gateways/vnpay/callback", vnpayReturn);
-paymentRouter.post("/gateways/vnpay/ipn", vnpayIPN);
+// ============= USER ROUTES (cần auth) =============
+// Tạo thanh toán
+paymentRouter.post("/create", authMiddleware, createPayment);
 
-// MoMo integration  
-paymentRouter.post("/gateways/momo/ipn", momoIPN);
-paymentRouter.post("/gateways/momo/callback", momoReturn);
+// Lấy danh sách thanh toán của user
+paymentRouter.get("/user/my-payments", authMiddleware, getUserPayments);
 
-// ============= PAYMENT TRACKING =============
-paymentRouter.get("/orders/:orderId", authMiddleware, getPaymentByOrderId);
-paymentRouter.get("/my-payments", authMiddleware, getUserPayments);
-paymentRouter.get("/:paymentId/status", authMiddleware, verifyPaymentStatus);
+// ============= ADMIN ROUTES (cần auth + admin role) =============
+// Lấy tất cả payments
+paymentRouter.get("/admin/all", requireAdminAuth, getAllPayments);
 
-// ============= PAYMENT MANAGEMENT =============
-paymentRouter.post("/:paymentId/refund", authMiddleware, refundPayment);
+// Thống kê thanh toán
+paymentRouter.get("/admin/stats", requireAdminAuth, getPaymentStats);
+
+// Cập nhật trạng thái payment
+paymentRouter.put("/admin/:paymentId/status", requireAdminAuth, updatePaymentStatus);
+
+// Hoàn tiền
+paymentRouter.post("/admin/:paymentId/refund", requireAdminAuth, refundPayment);
+
+// Lấy thông tin thanh toán (đặt cuối cùng để tránh xung đột)
+paymentRouter.get("/:paymentId", authMiddleware, getPaymentById);
 
 export default paymentRouter;

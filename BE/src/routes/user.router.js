@@ -10,7 +10,7 @@ import {
   deleteAddress,
   setDefaultAddress,
 } from "../controllers/user.controller.js";
-import { authMiddleware, requireOwner } from "../middleware/authMiddleware.js";
+import authMiddleware, { requireOwner } from "../middleware/authMiddleware.js";
 
 const userRouter = express.Router();
 

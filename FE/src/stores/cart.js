@@ -8,6 +8,7 @@ import {
   addToCart as addToCartApi,
   updateCartItem as updateCartItemApi,
   removeFromCart as removeFromCartApi,
+  clearCart as clearCartApi,
 } from "../api/cartService";
 import { checkStock } from "../api/inventoryService.js";
 
@@ -178,9 +179,27 @@ export const useCartStore = defineStore("cart", () => {
     }
   };
 
-  const clearCart = () => {
-    cartItems.value = [];
-    notifyClearCart();
+  const clearCart = async () => {
+    if (!authStore.isAuthenticated) {
+      cartItems.value = [];
+      notifyClearCart();
+      return;
+    }
+
+    try {
+      loading.value = true;
+      await clearCartApi();
+      cartItems.value = [];
+      notifyClearCart();
+    } catch (error) {
+      console.error("Error clearing cart:", error);
+      showError("Không thể xóa giỏ hàng");
+      // Fallback to local clear if API fails
+      cartItems.value = [];
+      notifyClearCart();
+    } finally {
+      loading.value = false;
+    }
   };
 
   // Kiểm tra xem có sản phẩm đang chờ thêm vào giỏ không

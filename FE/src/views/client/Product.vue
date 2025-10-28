@@ -491,7 +491,7 @@ onMounted(async () => {
                   <option value="100-200">💴 100K - 200K</option>
                   <option value="200-400">💶 200K - 400K</option>
                   <option value="400-1000">💷 400K - 1M</option>
-                  <option value="over-1000"><i class="fas fa-gem mr-1"></i>Trên 1M</option>
+                  <option value="over-1000">💎 Trên 1M</option>
                 </select>
               </div>
 

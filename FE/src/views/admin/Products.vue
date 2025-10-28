@@ -124,16 +124,12 @@ const debouncedSearch = () => {
 const selectedCategory = ref("");
 
 // computed stats from local products array
-const activeProductsCount = computed(() =>
-  Array.isArray(products.value)
-    ? products.value.filter((p) => p.status === "active").length
-    : 0
-);
 const outOfStockCount = computed(() =>
   Array.isArray(products.value)
     ? products.value.filter((p) => (p.stock ?? p.stock_quantity ?? 0) === 0).length
     : 0
 );
+
 const lowStockCount = computed(() =>
   Array.isArray(products.value)
     ? products.value.filter((p) => {
@@ -142,9 +138,10 @@ const lowStockCount = computed(() =>
       }).length
     : 0
 );
-const draftProductsCount = computed(() =>
+
+const inStockCount = computed(() =>
   Array.isArray(products.value)
-    ? products.value.filter((p) => p.status === "draft").length
+    ? products.value.filter((p) => (p.stock ?? p.stock_quantity ?? 0) > 0).length
     : 0
 );
 
@@ -431,34 +428,30 @@ watch(
           :format="'number'"
           icon="📦"
           color="blue"
+          :loading="loading"
         />
         <ModernStatsCard
-          title="Hoạt động"
-          :value="activeProductsCount"
+          title="Còn hàng"
+          :value="inStockCount"
           :format="'number'"
           icon="✅"
           color="green"
+          :loading="loading"
         />
         <ModernStatsCard
           title="Hết hàng"
           :value="outOfStockCount"
           :format="'number'"
-          icon="⚠️"
+          icon="❌"
           color="red"
+          :loading="loading"
         />
         <ModernStatsCard
           title="Sắp hết"
           :value="lowStockCount"
           :format="'number'"
-          icon="📉"
+          icon="⚠️"
           color="yellow"
-        />
-        <ModernStatsCard
-          title="Bản nháp"
-          :value="draftProductsCount"
-          :format="'number'"
-          icon="📝"
-          color="gray"
           :loading="loading"
         />
       </div>

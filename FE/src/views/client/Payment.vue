@@ -349,8 +349,6 @@
                     value="vnpay"
                     class="mr-3 text-blue-600"
                   />
-                  v-model="form.paymentMethod" type="radio" value="vnpay"
-                  class="mr-3 text-blue-600" />
                   <div class="flex items-center">
                     <div
                       class="w-6 h-6 mr-3 bg-blue-600 rounded-full flex items-center justify-center"
@@ -523,6 +521,7 @@ import { useGlobalLoading } from "@/composables/client/useLoading";
 import { orderService } from "@api/orderService";
 import { userService } from "@api/userService";
 import { addressService } from "@api/addressService";
+import { paymentService } from "@api/paymentService";
 import { getFullImage } from "@utils/imageUtils";
 import Header from "@components/client/Header.vue";
 import Footer from "@components/client/Footer.vue";
@@ -875,22 +874,40 @@ const handleOnlinePayment = async (orderId, paymentMethod) => {
 
     switch (paymentMethod) {
       case "vnpay":
-        showSuccess("Đang chuyển đến VNPay...");
-        // Redirect to VNPay gateway
-        // window.location.href = vnpayUrl
-        showError("VNPay đang được tích hợp. Vui lòng chọn COD.");
-        break;
+        try {
+          // Gọi API tạo URL thanh toán VNPay
+          const response = await paymentService.createVNPayPayment({
+            orderId: orderId,
+            bankCode: null, // Có thể thêm chọn ngân hàng sau
+          });
 
-      case "momo":
-        showSuccess("Đang chuyển đến MoMo...");
-        // Redirect to MoMo gateway
-        showError("MoMo đang được tích hợp. Vui lòng chọn COD.");
-        break;
-
-      case "bank":
-        showSuccess("Đang chuyển đến Internet Banking...");
-        // Redirect to Bank gateway
-        showError("Internet Banking đang được tích hợp. Vui lòng chọn COD.");
+          if (response.success && response.data && response.data.paymentUrl) {
+            showSuccess("Đang chuyển đến VNPay...");
+            
+            // Clear cart if order from cart before redirecting
+            if (orderType.value === "cart") {
+              try {
+                await cartStore.fetchCart();
+                if (cartStore.cartCount > 0) {
+                  cartStore.clearCart();
+                }
+              } catch (error) {
+                console.error("Error clearing cart:", error);
+              }
+            }
+            
+            // Chuyển hướng đến URL thanh toán VNPay
+            window.location.href = response.data.paymentUrl;
+          } else {
+            throw new Error(response.message || "Không thể tạo URL thanh toán VNPay");
+          }
+        } catch (vnpayError) {
+          console.error("VNPay error:", vnpayError);
+          const errorMessage = vnpayError.response?.data?.message || 
+                              vnpayError.message || 
+                              "Không thể kết nối đến VNPay";
+          showError(errorMessage);
+        }
         break;
 
       default:
@@ -901,6 +918,7 @@ const handleOnlinePayment = async (orderId, paymentMethod) => {
   } catch (error) {
     console.error("Online payment error:", error);
     showError("Không thể kết nối đến cổng thanh toán. Vui lòng thử lại.");
+    hideLoading(loader);
   }
 };
 
@@ -1043,15 +1061,25 @@ const processCheckout = async () => {
 
     // Note: User profile is automatically updated by backend when order is created
 
+    // Clear cart if order from cart (for all payment methods)
+    if (orderType.value === "cart") {
+      try {
+        // Force refresh cart from server to ensure sync
+        await cartStore.fetchCart();
+        // If cart is not empty on server, clear it
+        if (cartStore.cartCount > 0) {
+          cartStore.clearCart();
+        }
+      } catch (error) {
+        console.error("Error clearing cart:", error);
+        // Still proceed with order success even if cart clear fails
+      }
+    }
+
     // Handle payment method
     if (form.value.paymentMethod === "cod") {
       // COD payment - redirect to success page
       showSuccess("Đặt hàng thành công! Bạn sẽ thanh toán khi nhận hàng.");
-
-      // Clear cart if order from cart
-      if (orderType.value === "cart") {
-        cartStore.clearCart();
-      }
 
       router.push({
         name: "orderSuccess",
@@ -1085,23 +1113,28 @@ const processCheckout = async () => {
 
           // Nếu có order được tạo trong vòng 2 phút qua, có thể đó là order vừa tạo
           if (timeDiff < 2 * 60 * 1000) {
-            console.log(
-              "Found recent order, redirecting to success page:",
-              recentOrder._id
-            );
-            showSuccess("Đặt hàng thành công! Đang chuyển hướng...");
+          console.log(
+            "Found recent order, redirecting to success page:",
+            recentOrder._id
+          );
+          showSuccess("Đặt hàng thành công! Đang chuyển hướng...");
 
-            // Clear cart if order from cart
-            if (orderType.value === "cart") {
-              cartStore.clearCart();
+          // Clear cart if order from cart
+          if (orderType.value === "cart") {
+            try {
+              await cartStore.fetchCart();
+              if (cartStore.cartCount > 0) {
+                cartStore.clearCart();
+              }
+            } catch (error) {
+              console.error("Error clearing cart:", error);
             }
+          }
 
-            router.push({
-              name: "orderSuccess",
-              query: { orderId: recentOrder._id },
-            });
-
-            if (loader) hideLoading(loader);
+          router.push({
+            name: "orderSuccess",
+            query: { orderId: recentOrder._id },
+          });            if (loader) hideLoading(loader);
             return;
           }
         }

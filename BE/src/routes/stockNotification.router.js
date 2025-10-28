@@ -5,7 +5,7 @@ import {
   getUserStockNotifications,
   triggerStockNotificationCheck
 } from "../controllers/stockNotification.controller.js";
-import { authMiddleware, requireAdminAuth } from "../middleware/authMiddleware.js";
+import authMiddleware, { requireAdminAuth } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 

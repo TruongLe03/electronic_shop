@@ -13,7 +13,7 @@ import {
   confirmPayment,
   getOrderStatistics
 } from "../controllers/orders.controller.js";
-import { authMiddleware, requireAdminAuth, requireOwner } from "../middleware/authMiddleware.js";
+import authMiddleware, { requireAdminAuth, requireOwner } from "../middleware/authMiddleware.js";
 
 const ordersRouter = express.Router();
 

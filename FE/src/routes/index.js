@@ -32,6 +32,16 @@ const routes = [
     component: () => import("@views/client/OrderSuccess.vue"),
   },
   {
+    path: "/payment/success",
+    name: "paymentSuccess", 
+    component: () => import("@views/client/PaymentSuccess.vue"),
+  },
+  {
+    path: "/payment/failed",
+    name: "paymentFailed",
+    component: () => import("@views/client/PaymentFailed.vue"),
+  },
+  {
     path: "/order-detail/:orderId",
     name: "orderDetail",
     component: () => import("@views/client/OrderDetail.vue"),
