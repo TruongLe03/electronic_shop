@@ -11,6 +11,20 @@ export const useAuthStore = defineStore('auth', () => {
   const token = ref(storedToken);
   const isAuthenticated = computed(() => !!user.value && !!token.value);
 
+  // Check if token is still valid
+  function checkTokenValidity() {
+    const storedToken = localStorage.getItem('token');
+    const storedUser = localStorage.getItem('user');
+    
+    if (!storedToken || !storedUser) {
+      // Clear everything if either is missing
+      logout();
+      return false;
+    }
+    
+    return true;
+  }
+
   async function login(email, password) {
     try {
       const response = await loginApi(email, password);
@@ -40,6 +54,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Clear localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('intendedRoute'); // Also clear intended route
     // Clear store
     user.value = null;
     token.value = null;
@@ -49,12 +64,22 @@ export const useAuthStore = defineStore('auth', () => {
     user.value = userData;
   }
 
+  // Silently clear expired token without redirect
+  function clearExpiredAuth() {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    user.value = null;
+    token.value = null;
+  }
+
   return {
     user,
     token,
     isAuthenticated,
     login,
     logout,
-    updateUser
+    updateUser,
+    checkTokenValidity,
+    clearExpiredAuth
   };
 });

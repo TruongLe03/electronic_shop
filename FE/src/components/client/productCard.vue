@@ -60,6 +60,10 @@ const discountPercentage = computed(() => {
   return 0;
 });
 
+const rating = computed(() => {
+  return props.product.rating || 4.5; // Default rating nếu không có
+});
+
 const stockStatus = computed(() => {
   const stock = props.product.stock || 0;
   if (stock === 0)
@@ -103,23 +107,19 @@ const handleAddToCart = async (event) => {
 
   try {
     loading.value = true;
+    
+    // Cart store sẽ tự động xử lý authentication và redirect
     const added = await cartStore.addToCart(props.product, 1);
-    if (!added) {
-      // User likely not authenticated — save intended route and redirect to login
-      // We want to return to product detail page after login
-      const currentPath = window.location.pathname + window.location.search;
-      localStorage.setItem("intendedRoute", currentPath);
-      window.location.href = "/login";
-      return;
+    
+    if (added) {
+      // Add success class for feedback
+      button.classList.add("success");
+      setTimeout(() => {
+        button.classList.remove("success");
+      }, 600);
     }
+    // Nếu không thêm được (chưa đăng nhập), cart store sẽ tự động xử lý
 
-    // Add success class for feedback
-    button.classList.add("success");
-    setTimeout(() => {
-      button.classList.remove("success");
-    }, 600);
-
-    // Thông báo sẽ hiển thị từ cart store
   } catch (error) {
     console.error("Error adding to cart:", error);
     showError("Có lỗi xảy ra khi thêm vào giỏ hàng");

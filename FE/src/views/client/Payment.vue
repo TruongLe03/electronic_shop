@@ -797,7 +797,28 @@ const loadUserProfile = async () => {
 };
 
 const initializePayment = () => {
-  // Check if coming from ProductDetail with product data
+  // Check if coming from "Buy Now" with tempOrder in localStorage
+  const tempOrder = localStorage.getItem("tempOrder");
+  if (tempOrder) {
+    try {
+      const orderData = JSON.parse(tempOrder);
+      orderType.value = "direct";
+      orderItems.value = orderData.items.map(item => ({
+        product: item.product,
+        quantity: item.quantity,
+        price: item.price
+      }));
+      console.log("Buy Now - Order data:", orderData);
+      // Clear tempOrder after using it
+      localStorage.removeItem("tempOrder");
+      return;
+    } catch (error) {
+      console.error("Error parsing temp order data:", error);
+      localStorage.removeItem("tempOrder"); // Clear invalid data
+    }
+  }
+  
+  // Check if coming from ProductDetail with product data (legacy)
   if (route.query.type === "direct" && route.query.productData) {
     try {
       const productData = JSON.parse(route.query.productData);
@@ -1000,7 +1021,8 @@ const processCheckout = async () => {
       const productInfo = orderItems.value[0]; // Single product
       console.log("Direct order - productInfo:", productInfo);
 
-      const productId = productInfo.productId || productInfo.id;
+      // Handle both old format (productId) and new format (product object)
+      const productId = productInfo.productId || productInfo.id || productInfo.product?._id;
       if (!productId) {
         showError("Không tìm thấy thông tin sản phẩm");
         hideLoading(loader);
@@ -1012,7 +1034,7 @@ const processCheckout = async () => {
           {
             productId: productId,
             quantity: productInfo.quantity,
-            price: productInfo.discount_price || productInfo.price,
+            price: productInfo.price, // Use price from tempOrder which already calculated discount
           },
         ],
         shippingAddress: shippingInfo,

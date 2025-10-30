@@ -473,6 +473,7 @@ import { useCartStore } from "@stores/cart";
 import { useAuthStore } from "@stores/auth";
 import { useNotification } from "@/composables/client/useNotification";
 import { useGlobalLoading } from "@/composables/client/useLoading";
+import { usePurchase } from "@/composables/client/usePurchase";
 import { getProductById, getRelatedProducts } from "@api/productService";
 import { orderService } from "@api/orderService";
 import ClientLayout from "@/layout/ClientLayout.vue";
@@ -490,6 +491,7 @@ const cartStore = useCartStore();
 const authStore = useAuthStore();
 const { showSuccess, showError } = useNotification();
 const { showPageLoading, showApiLoading, hideLoading } = useGlobalLoading();
+const { buyNow: purchaseBuyNow } = usePurchase();
 
 // State
 const product = ref(null);
@@ -627,44 +629,17 @@ const addToCart = async () => {
 };
 
 const buyNow = async () => {
-  if (!authStore.isAuthenticated) {
-    // Lưu trữ intended route để chuyển hướng về sau khi đăng nhập
-    localStorage.setItem("intendedRoute", router.currentRoute.value.fullPath);
-    showError("Vui lòng đăng nhập để mua hàng");
-    router.push("/login");
-    return;
-  }
-
   if (product.value.stock === 0) {
     showError("Sản phẩm đã hết hàng");
     return;
   }
 
   try {
-    // Chuẩn bị thông tin sản phẩm để truyền sang Payment
-    const productInfo = {
-      productId: product.value._id,
-      name: product.value.name,
-      price: product.value.price,
-      discount_price: product.value.discount_price,
-      image: product.value.images && product.value.images.length > 0 ? product.value.images[0] : null,
-      quantity: quantity.value,
-      stock: product.value.stock
-    };
-    
-    console.log('Product info to send to Payment:', productInfo);
-    
-    // Chuyển hướng đến trang thanh toán với thông tin sản phẩm
-    router.push({
-      name: "Payment",
-      query: {
-        type: "direct", // Đánh dấu là mua trực tiếp
-        productData: JSON.stringify(productInfo)
-      }
-    });
+    // Sử dụng composable usePurchase
+    await purchaseBuyNow(product.value, quantity.value);
   } catch (error) {
-    console.error("Error preparing product data:", error);
-    showError("Có lỗi xảy ra khi chuẩn bị thông tin sản phẩm");
+    console.error("Error in buyNow:", error);
+    showError("Có lỗi xảy ra khi thực hiện mua hàng");
   }
 };
 

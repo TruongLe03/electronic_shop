@@ -9,6 +9,7 @@ import ToastPlugin from 'vue-toast-notification';
 import 'vue-toast-notification/dist/theme-bootstrap.css';
 import { LoadingPlugin } from 'vue-loading-overlay';
 import 'vue-loading-overlay/dist/css/index.css';
+import { useAuthStore } from '@stores/auth.js';
 
 const pinia = createPinia();
 const app = createApp(App);
@@ -19,5 +20,9 @@ app.use(pinia);
 app.use(router);
 app.use(ToastPlugin);
 app.use(LoadingPlugin);
+
+// Initialize auth store and check token validity
+const authStore = useAuthStore();
+authStore.checkTokenValidity();
 
 app.mount("#app");

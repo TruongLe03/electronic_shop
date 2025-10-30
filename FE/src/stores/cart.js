@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
 import { useAuthStore } from "./auth.js";
-import { useRouter } from "vue-router";
+import router from "@/routes/index.js";
 import { useNotification } from "@/composables/client/useNotification.js";
 import {
   getCart,
@@ -15,7 +15,6 @@ import { checkStock } from "../api/inventoryService.js";
 export const useCartStore = defineStore("cart", () => {
   const cartItems = ref([]);
   const authStore = useAuthStore();
-  const router = useRouter();
   const loading = ref(false);
   const isNewItemAdded = ref(false); // Thêm để trigger animation
   const {
@@ -68,12 +67,25 @@ export const useCartStore = defineStore("cart", () => {
 
   const addToCart = async (product, quantity = 1) => {
     if (!authStore.isAuthenticated) {
+      // Lưu thông tin sản phẩm cần thêm và trang hiện tại
       localStorage.setItem(
         "pendingCartItem",
         JSON.stringify({ product, quantity })
       );
+      localStorage.setItem("intendedRoute", window.location.pathname);
 
       showWarning("Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!");
+      
+      // Redirect đến trang login sau 1.5 giây
+      setTimeout(() => {
+        try {
+          router.push("/login");
+        } catch (e) {
+          // Fallback nếu router.push không hoạt động
+          window.location.href = "/login";
+        }
+      }, 1500);
+      
       return false;
     }
 

@@ -29,9 +29,22 @@ axiosInstance.interceptors.response.use(
     console.error("Axios interceptor error:", error);
     
     if (error.response?.status === 401) {
-      // Handle unauthorized access
+      // Clear invalid token
       localStorage.removeItem("token");
-      window.location.href = '/login';
+      localStorage.removeItem("user");
+      
+      // Only redirect to login if we're on a protected route
+      // or if the user was actually trying to access protected content
+      const currentPath = window.location.pathname;
+      const protectedRoutes = ['/account', '/admin', '/orders', '/order-detail', '/notifications'];
+      const isProtectedRoute = protectedRoutes.some(route => currentPath.startsWith(route));
+      
+      if (isProtectedRoute) {
+        // Store the intended route to redirect after login
+        localStorage.setItem("intendedRoute", currentPath);
+        window.location.href = '/login';
+      }
+      // If not on protected route, let the app continue normally without redirect
     }
     
     // Log detailed error information for debugging

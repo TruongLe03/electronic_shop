@@ -173,6 +173,44 @@ const handleLogin = async () => {
       console.error("Error loading cart after login:", error);
     }
 
+    // Kiểm tra xem có đơn hàng đang chờ mua không
+    const pendingPurchase = localStorage.getItem("pendingPurchase");
+    if (pendingPurchase) {
+      try {
+        const { product, quantity } = JSON.parse(pendingPurchase);
+        localStorage.removeItem("pendingPurchase");
+        
+        // Tính giá thực tế (có thể có discount)
+        let actualPrice = product.price;
+        
+        // Ưu tiên discount_price nếu có
+        if (product.discount_price && product.discount_price > 0) {
+          actualPrice = product.discount_price;
+        }
+        // Nếu không có discount_price, dùng discount_percent
+        else if (product.discount_percent && product.discount_percent > 0) {
+          actualPrice = product.price * (1 - product.discount_percent / 100);
+        }
+        
+        // Tạo đơn hàng tạm thời
+        const orderData = {
+          items: [{
+            product: product,
+            quantity: quantity,
+            price: actualPrice
+          }],
+          total: actualPrice * quantity
+        };
+        localStorage.setItem("tempOrder", JSON.stringify(orderData));
+        
+        // Chuyển đến trang thanh toán thay vì trang chủ
+        router.push("/payment");
+        return; // Kết thúc function để không chuyển hướng khác
+      } catch (error) {
+        console.error("Error processing pending purchase:", error);
+      }
+    }
+
     // Chuyển hướng dựa trên role
     if (response.user.role === "admin") {
       // Nếu là admin thì chuyển thẳng đến dashboard

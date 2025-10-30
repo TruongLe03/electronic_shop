@@ -333,14 +333,14 @@ export const getBestSellingProducts = async (req, res) => {
 
 // Lấy sản phẩm liên quan
 export const getRelatedProducts = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const { productId } = req.params; // Sửa từ 'id' thành 'productId'
   const limit = parseInt(req.query.limit) || 4;
 
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  if (!mongoose.Types.ObjectId.isValid(productId)) {
     return ResponseUtil.error(res, "ID sản phẩm không hợp lệ", 400);
   }
 
-  const relatedProducts = await ProductService.getRelatedProducts(id, limit);
+  const relatedProducts = await ProductService.getRelatedProducts(productId, limit);
   return ResponseUtil.success(
     res,
     { products: relatedProducts },
