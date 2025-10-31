@@ -89,7 +89,7 @@ electronic_shop/
 ```bash
 cd electronic_server
 npm install
-npm start
+npm run dev
 ```
 
 ### Frontend Setup
