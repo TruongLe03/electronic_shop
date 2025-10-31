@@ -49,12 +49,12 @@ export class OrderService {
         throw new Error(`Sản phẩm "${product.name}" không đủ hàng. Số lượng còn lại: ${availableStock}, bạn đặt: ${item.quantity}`);
       }
 
-      const discountPercent = product.discount_percent || 0;
-      const discountedPrice = product.price * (1 - discountPercent / 100);
-      const itemTotal = discountedPrice * item.quantity;
+      // Sử dụng giá khuyến mãi nếu có, nếu không thì dùng giá gốc
+      const finalPrice = product.discount_price || product.price;
+      const itemTotal = finalPrice * item.quantity;
 
       // Validate numeric values before pushing
-      if (isNaN(discountedPrice) || discountedPrice < 0) {
+      if (isNaN(finalPrice) || finalPrice < 0) {
         throw new Error(`Giá sản phẩm ${product.name} không hợp lệ`);
       }
       if (isNaN(item.quantity) || item.quantity <= 0) {
@@ -64,7 +64,7 @@ export class OrderService {
       orderItems.push({
         product_id: productId,
         name: product.name,
-        price: Math.round(discountedPrice), // Round to avoid decimal issues
+        price: Math.round(finalPrice), // Sử dụng giá khuyến mãi hoặc giá gốc
         quantity: parseInt(item.quantity),
         image: product.main_image || product.images?.[0] || null,
       });
@@ -240,14 +240,18 @@ export class OrderService {
       throw new Error("Không tìm thấy đơn hàng");
     }
 
-    // Validate status transition - Updated to match order model enum
+    // Validate status transition - Updated flow
     const validTransitions = {
-      "pending": ["confirmed", "cancelled"],
+      "pending": ["payment_pending", "confirmed", "cancelled"],
+      "payment_pending": ["payment_failed", "confirmed", "cancelled"],
+      "payment_failed": ["pending", "cancelled"],
       "confirmed": ["processing", "cancelled"], 
-      "processing": ["shipping", "cancelled"],
-      "shipping": ["delivered"],
-      "delivered": [],
+      "processing": ["ready_to_ship", "cancelled"],
+      "ready_to_ship": ["shipping", "cancelled"],
+      "shipping": ["delivered", "returned"],
+      "delivered": ["returned"],
       "cancelled": [],
+      "returned": [],
     };
 
     if (!validTransitions[order.status] || !validTransitions[order.status].includes(status)) {
@@ -269,9 +273,30 @@ export class OrderService {
       }
     }
 
+    // Cập nhật status và timestamps tương ứng
     order.status = status;
-    if (status === "delivered") {
-      order.delivery_date = new Date(); // Fixed: Use delivery_date field from model
+    const now = new Date();
+    
+    switch (status) {
+      case "confirmed":
+        order.confirmed_at = now;
+        break;
+      case "processing":
+        order.processing_at = now;
+        break;
+      case "ready_to_ship":
+        // Có thể thêm ready_to_ship_at nếu cần
+        break;
+      case "shipping":
+        order.shipped_at = now;
+        break;
+      case "delivered":
+        order.delivered_at = now;
+        order.delivery_date = now;
+        break;
+      case "cancelled":
+        order.cancelled_at = now;
+        break;
     }
 
     const updatedOrder = await order.save();
@@ -455,7 +480,7 @@ export class OrderService {
     const products = cart.products.map((item) => ({
       product_id: item.product_id._id,
       name: item.product_id.name,
-      price: item.price || item.product_id.finalPrice || item.product_id.price,
+      price: item.price || item.product_id.discount_price || item.product_id.price,
       quantity: item.quantity,
       image: item.product_id.main_image,
     }));
@@ -616,5 +641,35 @@ export class OrderService {
     await Order.findByIdAndDelete(orderId);
     
     return { success: true, message: "Xóa đơn hàng thành công" };
+  }
+
+  // Helper method để get status description
+  static getStatusDescription(status) {
+    const statusMap = {
+      "pending": "Chờ xử lý",
+      "payment_pending": "Chờ thanh toán", 
+      "payment_failed": "Thanh toán thất bại",
+      "confirmed": "Đã xác nhận",
+      "processing": "Đang chuẩn bị hàng",
+      "ready_to_ship": "Sẵn sàng giao hàng", 
+      "shipping": "Đang giao hàng",
+      "delivered": "Đã giao thành công",
+      "cancelled": "Đã hủy",
+      "returned": "Đã trả hàng",
+    };
+    
+    return statusMap[status] || status;
+  }
+
+  // Helper method để get payment status description  
+  static getPaymentStatusDescription(status) {
+    const statusMap = {
+      "pending": "Chờ thanh toán",
+      "completed": "Đã thanh toán", 
+      "failed": "Thanh toán thất bại",
+      "refunded": "Đã hoàn tiền",
+    };
+    
+    return statusMap[status] || status;
   }
 }

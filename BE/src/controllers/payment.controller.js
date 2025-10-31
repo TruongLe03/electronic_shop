@@ -178,3 +178,51 @@ export const getPaymentStats = asyncHandler(async (req, res) => {
   const stats = await PaymentService.getPaymentStats(startDate, endDate);
   return ResponseUtil.success(res, stats, 'Lấy thống kê thanh toán thành công');
 });
+
+// ============= COMPATIBILITY METHODS WITH OLD VNPayService =============
+
+// Tạo payment URL (tương thích với VNPayService cũ)
+export const createPaymentUrl = asyncHandler(async (req, res) => {
+  const { orderId, bankCode } = req.body;
+  const ipAddr = req.ip || req.connection.remoteAddress || '127.0.0.1';
+
+  if (!orderId) {
+    return ResponseUtil.validationError(res, ['Mã đơn hàng là bắt buộc']);
+  }
+
+  try {
+    const result = await PaymentService.createPaymentUrl({ orderId, bankCode, ipAddr });
+    return ResponseUtil.success(res, result, 'Tạo URL thanh toán thành công');
+  } catch (error) {
+    console.error('❌ Create payment URL error:', error);
+    return ResponseUtil.error(res, error.message, 400);
+  }
+});
+
+// Xử lý VNPay callback (tương thích với VNPayService cũ)
+export const handleCallback = asyncHandler(async (req, res) => {
+  try {
+    const vnpParams = req.query;
+    const result = await PaymentService.handleCallback(vnpParams);
+    return ResponseUtil.success(res, result, 'Xử lý callback thành công');
+  } catch (error) {
+    console.error('❌ Handle callback error:', error);
+    return ResponseUtil.error(res, error.message, 400);
+  }
+});
+
+// Kiểm tra trạng thái thanh toán (tương thích với VNPayService cũ)
+export const checkPaymentStatus = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+
+  if (!orderId) {
+    return ResponseUtil.validationError(res, ['Mã đơn hàng là bắt buộc']);
+  }
+
+  try {
+    const result = await PaymentService.checkPaymentStatus(orderId);
+    return ResponseUtil.success(res, result, 'Kiểm tra trạng thái thanh toán thành công');
+  } catch (error) {
+    return ResponseUtil.error(res, error.message, 404);
+  }
+});

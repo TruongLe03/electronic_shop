@@ -83,14 +83,20 @@ export const handleReturn = asyncHandler(async (req, res) => {
 
     const result = await PaymentService.handleCallback(vnp_Params);
 
+    console.log("🎯 VNPay return result:", result);
+
     if (result.success) {
       // Redirect đến trang thành công
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      return res.redirect(`${frontendUrl}/payment/success?orderId=${result.orderId}&transactionNo=${result.transactionNo}`);
+      const successUrl = `${frontendUrl}/payment/success?orderId=${result.orderId}&transactionNo=${result.transactionNo}`;
+      console.log("✅ Redirecting to success:", successUrl);
+      return res.redirect(successUrl);
     } else {
       // Redirect đến trang thất bại
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      return res.redirect(`${frontendUrl}/payment/failed?orderId=${result.orderId}&error=${encodeURIComponent(result.message)}`);
+      const failUrl = `${frontendUrl}/payment/failed?orderId=${result.orderId}&error=${encodeURIComponent(result.message)}`;
+      console.log("❌ Redirecting to failed:", failUrl);
+      return res.redirect(failUrl);
     }
   } catch (error) {
     console.error('VNPay return error:', error);

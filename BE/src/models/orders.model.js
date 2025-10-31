@@ -48,24 +48,43 @@ const orderSchema = new mongoose.Schema(
     },
     payment_status: {
       type: String,
-      enum: ["pending", "paid", "failed"],
+      enum: ["pending", "completed", "failed", "refunded"],
       default: "pending",
     },
     tracking_number: { type: String, default: null },
     status: {
       type: String,
       enum: [
-        "pending",
-        "confirmed", 
-        "processing",
-        "shipping",
-        "delivered",
-        "cancelled",
+        "pending",          // Vừa tạo đơn, chờ thanh toán
+        "payment_pending",  // Đang chờ thanh toán (VNPay)
+        "payment_failed",   // Thanh toán thất bại
+        "confirmed",        // Đã thanh toán, chờ xử lý
+        "processing",       // Đang chuẩn bị hàng
+        "ready_to_ship",    // Sẵn sàng giao hàng
+        "shipping",         // Đang giao hàng
+        "delivered",        // Đã giao thành công
+        "cancelled",        // Đã hủy
+        "returned",         // Đã trả hàng
       ],
       default: "pending",
     },
     notes: { type: String, default: "" },
     delivery_date: { type: Date, default: null },
+    
+    // Timestamps cho từng giai đoạn
+    payment_completed_at: { type: Date, default: null },
+    confirmed_at: { type: Date, default: null },
+    processing_at: { type: Date, default: null },
+    shipped_at: { type: Date, default: null },
+    delivered_at: { type: Date, default: null },
+    cancelled_at: { type: Date, default: null },
+    
+    // Thông tin thanh toán chi tiết
+    payment_info: {
+      method: String,
+      transaction_id: String,
+      gateway_response: mongoose.Schema.Types.Mixed,
+    },
   },
   { timestamps: true }
 );

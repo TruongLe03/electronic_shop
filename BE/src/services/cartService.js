@@ -60,7 +60,8 @@ export class CartService {
       (item) => item.product_id.toString() === productId
     );
 
-    const productPrice = product.finalPrice || product.price;
+    // Sử dụng giá khuyến mãi nếu có, nếu không thì dùng giá gốc
+    const productPrice = product.discount_price || product.price;
 
     if (existingProductIndex > -1) {
       // Nếu đã có, cập nhật số lượng
@@ -124,7 +125,8 @@ export class CartService {
     const product = await Product.findById(productId);
     if (!product) throw new Error("Sản phẩm không tồn tại");
 
-    const productPrice = product.finalPrice || product.price;
+    // Sử dụng giá khuyến mãi nếu có, nếu không thì dùng giá gốc
+    const productPrice = product.discount_price || product.price;
 
     cart.products[productIndex].quantity = quantity;
     cart.products[productIndex].price = productPrice;
@@ -186,7 +188,8 @@ export class CartService {
       } else {
         const product = await Product.findById(item.product_id);
         if (product) {
-          const productPrice = product.finalPrice || product.price;
+          // Sử dụng giá khuyến mãi nếu có, nếu không thì dùng giá gốc
+          const productPrice = product.discount_price || product.price;
           total += productPrice * item.quantity;
         }
       }
