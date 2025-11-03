@@ -31,6 +31,7 @@ const notifications = ref([
   },
 ]);
 const showNotifications = ref(false);
+const showProfileMenu = ref(false);
 
 const menuItems = [
   {
@@ -95,9 +96,14 @@ const toggleSidebar = () => {
 const toggleDarkMode = () => {
   darkMode.value = !darkMode.value;
   document.documentElement.classList.toggle("dark", darkMode.value);
+  // Close profile menu after toggling
+  showProfileMenu.value = false;
 };
 
 const logout = async () => {
+  // Close profile menu
+  showProfileMenu.value = false;
+  
   // Thông báo đăng xuất
   const { notifyLogout } = useNotification();
   notifyLogout();
@@ -270,65 +276,7 @@ const navigateTo = async (path) => {
           </button>
         </nav>
 
-        <!-- User Profile Section -->
-        <div class="absolute bottom-0 left-0 right-0 p-4">
-          <div
-            :class="[
-              'rounded-xl p-4 backdrop-blur-sm border',
-              darkMode
-                ? 'bg-gray-700/50 border-gray-600'
-                : 'bg-white/60 border-white/30',
-            ]"
-          >
-            <div class="flex items-center space-x-3">
-              <img
-                class="w-12 h-12 rounded-full ring-2 ring-blue-500/50"
-                :src="`https://ui-avatars.com/api/?name=${
-                  authStore.user?.name || 'Admin'
-                }&background=6366f1&color=fff`"
-                :alt="authStore.user?.name || 'Admin'"
-              />
-              <div v-if="sidebarOpen" class="flex-1 min-w-0">
-                <p
-                  :class="[
-                    'font-medium truncate',
-                    darkMode ? 'text-white' : 'text-gray-800',
-                  ]"
-                >
-                  {{ authStore.user?.name || "Admin" }}
-                </p>
-                <p
-                  :class="[
-                    'text-sm truncate',
-                    darkMode ? 'text-gray-400' : 'text-gray-500',
-                  ]"
-                >
-                  {{ authStore.user?.email || "admin@shop.com" }}
-                </p>
-              </div>
-            </div>
 
-            <div v-if="sidebarOpen" class="flex space-x-2 mt-3">
-              <button
-                @click="toggleDarkMode"
-                :class="[
-                  'flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
-                  darkMode
-                    ? 'bg-gray-600 hover:bg-gray-500 text-white'
-                    : 'bg-gray-100 hover:bg-gray-200 text-gray-700',
-                ]"
-              >
-                {{ darkMode ? "☀️" : "🌙" }}
-              </button>
-              <button
-                @click="logout"
-                class="flex-1 px-3 py-2 rounded-lg text-sm font-medium bg-red-500 hover:bg-red-600 text-white transition-colors"
-              >
-                Đăng xuất
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
@@ -451,6 +399,107 @@ const navigateTo = async (path) => {
                             {{ notification.time }}
                           </p>
                         </div>
+                      </div>
+                    </div>
+                  </div>
+                </transition>
+              </div>
+
+              <!-- User Profile Section (moved from sidebar) -->
+              <div class="relative">
+                <button
+                  @click="showProfileMenu = !showProfileMenu"
+                  class="flex items-center space-x-3 p-2 rounded-xl transition-all duration-200 hover:bg-white/60 hover:shadow-md"
+                >
+                  <img
+                    class="w-10 h-10 rounded-full ring-2 ring-blue-500/50"
+                    :src="`https://ui-avatars.com/api/?name=${
+                      authStore.user?.name || 'Admin'
+                    }&background=6366f1&color=fff`"
+                    :alt="authStore.user?.name || 'Admin'"
+                  />
+                  <div class="text-left">
+                    <p
+                      :class="[
+                        'font-medium text-sm',
+                        darkMode ? 'text-white' : 'text-gray-800',
+                      ]"
+                    >
+                      {{ authStore.user?.name || "Admin" }}
+                    </p>
+                    <p
+                      :class="[
+                        'text-xs',
+                        darkMode ? 'text-gray-400' : 'text-gray-500',
+                      ]"
+                    >
+                      {{ authStore.user?.email || "admin@shop.com" }}
+                    </p>
+                  </div>
+                  <i class="fas fa-chevron-down text-sm text-gray-400"></i>
+                </button>
+
+                <!-- Profile Dropdown -->
+                <transition name="dropdown">
+                  <div
+                    v-if="showProfileMenu"
+                    :class="[
+                      'absolute right-0 mt-2 w-64 rounded-xl shadow-2xl border backdrop-blur-lg z-50',
+                      darkMode
+                        ? 'bg-gray-800/95 border-gray-700'
+                        : 'bg-white/95 border-white/20',
+                    ]"
+                  >
+                    <div class="p-4">
+                      <div class="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-600">
+                        <img
+                          class="w-12 h-12 rounded-full ring-2 ring-blue-500/50"
+                          :src="`https://ui-avatars.com/api/?name=${
+                            authStore.user?.name || 'Admin'
+                          }&background=6366f1&color=fff`"
+                          :alt="authStore.user?.name || 'Admin'"
+                        />
+                        <div>
+                          <p
+                            :class="[
+                              'font-medium',
+                              darkMode ? 'text-white' : 'text-gray-800',
+                            ]"
+                          >
+                            {{ authStore.user?.name || "Admin" }}
+                          </p>
+                          <p
+                            :class="[
+                              'text-sm',
+                              darkMode ? 'text-gray-400' : 'text-gray-500',
+                            ]"
+                          >
+                            {{ authStore.user?.email || "admin@shop.com" }}
+                          </p>
+                        </div>
+                      </div>
+                      
+                      <div class="space-y-2">
+                        <button
+                          @click="toggleDarkMode"
+                          :class="[
+                            'w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left',
+                            darkMode
+                              ? 'hover:bg-gray-700 text-gray-300'
+                              : 'hover:bg-gray-100 text-gray-700',
+                          ]"
+                        >
+                          <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                          <span>{{ darkMode ? "Chế độ sáng" : "Chế độ tối" }}</span>
+                        </button>
+                        
+                        <button
+                          @click="logout"
+                          class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium bg-red-500 hover:bg-red-600 text-white transition-colors text-left"
+                        >
+                          <i class="fas fa-sign-out-alt"></i>
+                          <span>Đăng xuất</span>
+                        </button>
                       </div>
                     </div>
                   </div>

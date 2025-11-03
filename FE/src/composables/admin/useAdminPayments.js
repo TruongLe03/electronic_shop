@@ -75,6 +75,17 @@ export function useAdminPayments() {
     }
   };
 
+  // Xử lý hoàn tiền
+  const processRefund = async (paymentId, refundData) => {
+    try {
+      const response = await adminService.processRefund(paymentId, refundData);
+      return response.data;
+    } catch (err) {
+      const message = err.response?.data?.message || 'Có lỗi xảy ra khi xử lý hoàn tiền';
+      throw new Error(message);
+    }
+  };
+
   // Utility functions
   const formatCurrency = (amount) => {
     if (!amount) return '0 ₫';
@@ -102,7 +113,8 @@ export function useAdminPayments() {
     const colors = {
       pending: 'bg-yellow-100 text-yellow-800',
       processing: 'bg-blue-100 text-blue-800',
-      success: 'bg-green-100 text-green-800',
+      completed: 'bg-green-100 text-green-800',
+      success: 'bg-green-100 text-green-800', // For backward compatibility
       failed: 'bg-red-100 text-red-800',
       cancelled: 'bg-gray-100 text-gray-800',
       refunded: 'bg-purple-100 text-purple-800',
@@ -115,7 +127,8 @@ export function useAdminPayments() {
     const labels = {
       pending: 'Chờ xử lý',
       processing: 'Đang xử lý',
-      success: 'Thành công',
+      completed: 'Thành công',
+      success: 'Thành công', // For backward compatibility
       failed: 'Thất bại',
       cancelled: 'Đã hủy',
       refunded: 'Đã hoàn tiền',
@@ -174,6 +187,7 @@ export function useAdminPayments() {
     fetchPaymentStats,
     getPaymentById,
     updatePaymentStatus,
+    processRefund,
     
     // Computed
     totalPayments,

@@ -72,7 +72,6 @@
                         clip-rule="evenodd"
                       ></path>
                     </svg>
-                    Thành viên VIP
                   </div>
                 </div>
               </div>
@@ -1081,25 +1080,37 @@
 
   <!-- Cancel Order Modal -->
   <Teleport to="body">
-    <div v-if="showCancelModal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4" @click="showCancelModal = false">
+    <div
+      v-if="showCancelModal"
+      class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
+      @click="showCancelModal = false"
+    >
       <div class="bg-white rounded-lg shadow-xl w-full max-w-md" @click.stop>
         <div class="p-6">
           <h3 class="text-lg font-semibold text-gray-900 mb-4">Hủy đơn hàng</h3>
-          
+
           <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Vui lòng chọn lý do hủy đơn hàng:
             </label>
-            <select 
-              v-model="cancelReason" 
+            <select
+              v-model="cancelReason"
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="">-- Chọn lý do --</option>
-              <option value="Thay đổi ý định mua hàng">Thay đổi ý định mua hàng</option>
-              <option value="Tìm được sản phẩm rẻ hơn">Tìm được sản phẩm rẻ hơn</option>
+              <option value="Thay đổi ý định mua hàng">
+                Thay đổi ý định mua hàng
+              </option>
+              <option value="Tìm được sản phẩm rẻ hơn">
+                Tìm được sản phẩm rẻ hơn
+              </option>
               <option value="Không cần thiết nữa">Không cần thiết nữa</option>
-              <option value="Sai thông tin đặt hàng">Sai thông tin đặt hàng</option>
-              <option value="Thời gian giao hàng quá lâu">Thời gian giao hàng quá lâu</option>
+              <option value="Sai thông tin đặt hàng">
+                Sai thông tin đặt hàng
+              </option>
+              <option value="Thời gian giao hàng quá lâu">
+                Thời gian giao hàng quá lâu
+              </option>
               <option value="Khác">Khác</option>
             </select>
           </div>
@@ -1108,7 +1119,7 @@
             <label class="block text-sm font-medium text-gray-700 mb-2">
               Lý do khác:
             </label>
-            <textarea 
+            <textarea
               v-model="customCancelReason"
               placeholder="Nhập lý do hủy..."
               class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -1117,18 +1128,18 @@
           </div>
 
           <div class="flex space-x-3">
-            <button 
+            <button
               @click="showCancelModal = false"
               class="flex-1 px-4 py-2 text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md font-medium transition-colors"
             >
               Hủy bỏ
             </button>
-            <button 
+            <button
               @click="confirmCancelOrder"
               :disabled="!cancelReason || loading"
               class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white rounded-md font-medium transition-colors"
             >
-              {{ loading ? 'Đang hủy...' : 'Xác nhận hủy' }}
+              {{ loading ? "Đang hủy..." : "Xác nhận hủy" }}
             </button>
           </div>
         </div>
@@ -1167,13 +1178,20 @@ const {
   notifyPasswordChange,
 } = useNotification();
 
-const activeTab = ref("profile");
+const props = defineProps({
+  defaultTab: {
+    type: String,
+    default: "profile"
+  }
+});
+
+const activeTab = ref(props.defaultTab);
 const loading = ref(false);
 
 // Cancel modal state
 const showCancelModal = ref(false);
-const cancelReason = ref('');
-const customCancelReason = ref('');
+const cancelReason = ref("");
+const customCancelReason = ref("");
 const orderToCancel = ref(null);
 
 // Password strength tracking
@@ -1269,21 +1287,27 @@ const loadUserOrders = async () => {
 const cancelOrder = (orderId) => {
   orderToCancel.value = orderId;
   showCancelModal.value = true;
-  cancelReason.value = '';
-  customCancelReason.value = '';
+  cancelReason.value = "";
+  customCancelReason.value = "";
 };
 
 const confirmCancelOrder = async () => {
-  const finalReason = cancelReason.value === 'Khác' ? customCancelReason.value : cancelReason.value;
-  
+  const finalReason =
+    cancelReason.value === "Khác"
+      ? customCancelReason.value
+      : cancelReason.value;
+
   if (!finalReason.trim()) {
-    showError('Vui lòng chọn hoặc nhập lý do hủy đơn hàng');
+    showError("Vui lòng chọn hoặc nhập lý do hủy đơn hàng");
     return;
   }
 
   try {
     loading.value = true;
-    const response = await orderService.cancelOrder(orderToCancel.value, finalReason);
+    const response = await orderService.cancelOrder(
+      orderToCancel.value,
+      finalReason
+    );
 
     if (response.success) {
       showSuccess("Đơn hàng đã được hủy thành công");

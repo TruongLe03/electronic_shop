@@ -63,9 +63,9 @@
             </div>
           </div>
 
-          <!-- Shipping Info -->
+          <!-- Shipping & Payment Info -->
           <div class="bg-white rounded-lg shadow-md p-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Thông tin giao hàng</h3>
+            <h3 class="text-lg font-bold text-gray-800 mb-4">Thông tin giao hàng & thanh toán</h3>
             <div class="space-y-3">
               <div>
                 <span class="text-sm text-gray-600">Địa chỉ:</span>
@@ -78,6 +78,20 @@
               <div>
                 <span class="text-sm text-gray-600">Phương thức thanh toán:</span>
                 <p class="font-semibold">{{ getPaymentMethodText(order.payment_method) }}</p>
+              </div>
+              <div>
+                <span class="text-sm text-gray-600">Trạng thái thanh toán:</span>
+                <span :class="getPaymentStatusBadgeClass(order.payment_status)" class="inline-block px-3 py-1 rounded-full text-sm font-semibold ml-2">
+                  {{ getPaymentStatusText(order.payment_status) }}
+                </span>
+              </div>
+              <div v-if="order.payment_info?.transaction_id">
+                <span class="text-sm text-gray-600">Mã giao dịch:</span>
+                <p class="font-semibold">{{ order.payment_info.transaction_id }}</p>
+              </div>
+              <div v-if="order.payment_completed_at">
+                <span class="text-sm text-gray-600">Thời gian thanh toán:</span>
+                <p class="font-semibold">{{ formatDate(order.payment_completed_at) }}</p>
               </div>
             </div>
           </div>
@@ -383,6 +397,26 @@ const getPaymentMethodText = (method) => {
     'bank': 'Chuyển khoản ngân hàng'
   }
   return methodMap[method] || method
+}
+
+const getPaymentStatusText = (status) => {
+  const statusMap = {
+    'pending': 'Chờ thanh toán',
+    'completed': 'Đã thanh toán',
+    'failed': 'Thanh toán thất bại',
+    'refunded': 'Đã hoàn tiền'
+  }
+  return statusMap[status] || status
+}
+
+const getPaymentStatusBadgeClass = (status) => {
+  const classMap = {
+    'pending': 'bg-yellow-100 text-yellow-800',
+    'completed': 'bg-green-100 text-green-800',
+    'failed': 'bg-red-100 text-red-800',
+    'refunded': 'bg-blue-100 text-blue-800'
+  }
+  return classMap[status] || 'bg-gray-100 text-gray-800'
 }
 
 // Lifecycle

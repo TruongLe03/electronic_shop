@@ -4,6 +4,7 @@ import * as productService from "./productService";
 import * as orderService from "./orderService";
 import * as categoryService from "./categoryService";
 import * as inventoryService from "./inventoryService";
+import * as paymentService from "./paymentService";
 import * as dashboardService from "./dashboardService";
 
 // Export các functions cần thiết
@@ -56,6 +57,18 @@ export {
 } from "./inventoryService";
 
 export {
+  // Payment Management
+  getPayments,
+  getPaymentStats,
+  getPaymentById,
+  updatePaymentStatus,
+  processRefund,
+  getPaymentRefunds,
+  exportPayments,
+  getPaymentMethodStats,
+} from "./paymentService";
+
+export {
   // Dashboard & Statistics
   getDashboardStats,
   getRecentActivities,
@@ -77,8 +90,11 @@ export default {
   // Order management
   ...orderService,
 
-  // Inventory management (Tồn kho)
+  // Inventory management (Tồ kho)
   ...inventoryService,
+
+  // Payment management
+  ...paymentService,
 
   // Dashboard & Statistics
   ...dashboardService,

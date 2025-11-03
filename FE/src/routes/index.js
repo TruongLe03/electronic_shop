@@ -60,6 +60,13 @@ const routes = [
     meta: { requiresAuth: true },
   },
   {
+    path: "/my-orders",
+    name: "myOrders",
+    component: () => import("@views/client/Account.vue"),
+    meta: { requiresAuth: true },
+    props: { defaultTab: 'orders' },
+  },
+  {
     path: "/forgot-password",
     name: "forgotPassword",
     component: () => import("@views/client/ForgotPassword.vue"),

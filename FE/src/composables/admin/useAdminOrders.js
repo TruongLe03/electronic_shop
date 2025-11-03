@@ -30,14 +30,18 @@ export function useAdminOrders() {
     sortOrder: "desc",
   });
 
-  // Order statuses based on actual BE model
+  // Order statuses based on actual BE model (updated for VNPay integration)
   const orderStatuses = [
-    "pending",
-    "confirmed", 
-    "processing",
-    "shipping",
-    "delivered",
-    "cancelled"
+    "pending",          // Vừa tạo đơn, chờ thanh toán
+    "payment_pending",  // Đang chờ thanh toán (VNPay)
+    "payment_failed",   // Thanh toán thất bại
+    "confirmed",        // Đã thanh toán, chờ xử lý
+    "processing",       // Đang chuẩn bị hàng
+    "ready_to_ship",    // Sẵn sàng giao hàng
+    "shipping",         // Đang giao hàng
+    "delivered",        // Đã giao thành công
+    "cancelled",        // Đã hủy
+    "returned",         // Đã trả hàng
   ];
 
   // Methods
@@ -217,24 +221,32 @@ export function useAdminOrders() {
   // Utility methods
   const getStatusColor = (status) => {
     const colors = {
-      pending: "bg-yellow-100 text-yellow-800",
-      confirmed: "bg-blue-100 text-blue-800",
-      processing: "bg-purple-100 text-purple-800",
-      shipping: "bg-indigo-100 text-indigo-800",
-      delivered: "bg-green-100 text-green-800",
-      cancelled: "bg-red-100 text-red-800",
+      pending: "bg-yellow-100 text-yellow-800",           // Chờ xác nhận
+      payment_pending: "bg-orange-100 text-orange-800",   // Chờ thanh toán
+      payment_failed: "bg-red-100 text-red-800",          // Thanh toán thất bại
+      confirmed: "bg-blue-100 text-blue-800",             // Đã xác nhận
+      processing: "bg-purple-100 text-purple-800",        // Đang xử lý
+      ready_to_ship: "bg-cyan-100 text-cyan-800",         // Sẵn sàng giao hàng
+      shipping: "bg-indigo-100 text-indigo-800",          // Đang giao
+      delivered: "bg-green-100 text-green-800",           // Đã giao
+      cancelled: "bg-red-100 text-red-800",               // Đã hủy
+      returned: "bg-gray-100 text-gray-800",              // Đã trả hàng
     };
     return colors[status] || "bg-gray-100 text-gray-800";
   };
 
   const getStatusText = (status) => {
     const statusLabels = {
-      pending: "Chờ xác nhận",
+      pending: "Chờ thanh toán",
+      payment_pending: "Đang chờ thanh toán",
+      payment_failed: "Thanh toán thất bại",
       confirmed: "Đã xác nhận",
-      processing: "Đang xử lý",
-      shipping: "Đang giao",
-      delivered: "Đã giao",
+      processing: "Đang chuẩn bị hàng",
+      ready_to_ship: "Sẵn sàng giao hàng",
+      shipping: "Đang giao hàng",
+      delivered: "Đã giao thành công",
       cancelled: "Đã hủy",
+      returned: "Đã trả hàng",
     };
     return statusLabels[status] || "Không xác định";
   };
@@ -260,6 +272,37 @@ export function useAdminOrders() {
     });
   };
 
+  // Payment status utilities
+  const getPaymentStatusColor = (paymentStatus) => {
+    const colors = {
+      pending: "bg-yellow-100 text-yellow-800",       // Chờ thanh toán
+      completed: "bg-green-100 text-green-800",       // Đã thanh toán
+      failed: "bg-red-100 text-red-800",              // Thanh toán thất bại
+      refunded: "bg-purple-100 text-purple-800",      // Đã hoàn tiền
+    };
+    return colors[paymentStatus] || "bg-gray-100 text-gray-800";
+  };
+
+  const getPaymentStatusText = (paymentStatus) => {
+    const statusLabels = {
+      pending: "Chờ thanh toán",
+      completed: "Đã thanh toán",
+      failed: "Thanh toán thất bại",
+      refunded: "Đã hoàn tiền",
+    };
+    return statusLabels[paymentStatus] || "Không xác định";
+  };
+
+  const getPaymentMethodText = (paymentMethod) => {
+    const methodLabels = {
+      COD: "Thanh toán khi nhận hàng",
+      cod: "Thanh toán khi nhận hàng",
+      VNPay: "VNPay",
+      vnpay: "VNPay",
+    };
+    return methodLabels[paymentMethod] || paymentMethod;
+  };
+
   return {
     // State
     orders,
@@ -282,6 +325,9 @@ export function useAdminOrders() {
     getStatusColor,
     getStatusText,
     getStatusLabel,
+    getPaymentStatusColor,
+    getPaymentStatusText,
+    getPaymentMethodText,
     formatCurrency,
     formatDate,
   };

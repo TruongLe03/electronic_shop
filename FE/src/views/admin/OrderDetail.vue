@@ -102,6 +102,81 @@
           </div>
         </div>
 
+        <!-- Payment Information -->
+        <div class="bg-white rounded-lg shadow-sm border p-6">
+          <h2 class="text-xl font-bold text-gray-900 mb-4">
+            Thông tin thanh toán
+          </h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="space-y-4">
+              <div>
+                <h3 class="text-sm font-medium text-gray-500 mb-1">
+                  Trạng thái thanh toán
+                </h3>
+                <span
+                  :class="getPaymentStatusColor(order.payment_status)"
+                  class="px-3 py-1 rounded-full text-sm font-medium"
+                >
+                  {{ getPaymentStatusText(order.payment_status) }}
+                </span>
+              </div>
+              <div>
+                <h3 class="text-sm font-medium text-gray-500 mb-1">
+                  Phương thức thanh toán
+                </h3>
+                <p class="text-gray-900">
+                  {{ getPaymentMethodText(order.payment_method) }}
+                </p>
+              </div>
+              <div v-if="order.payment_completed_at">
+                <h3 class="text-sm font-medium text-gray-500 mb-1">
+                  Thời gian thanh toán
+                </h3>
+                <p class="text-gray-900">
+                  {{ formatDate(order.payment_completed_at) }}
+                </p>
+              </div>
+            </div>
+            <div class="space-y-4" v-if="order.payment_info">
+              <div v-if="order.payment_info.transaction_id">
+                <h3 class="text-sm font-medium text-gray-500 mb-1">
+                  Mã giao dịch
+                </h3>
+                <p class="text-gray-900 font-mono text-sm">
+                  {{ order.payment_info.transaction_id }}
+                </p>
+              </div>
+              <div v-if="order.payment_info.vnpay_transaction_no">
+                <h3 class="text-sm font-medium text-gray-500 mb-1">
+                  Mã giao dịch VNPay
+                </h3>
+                <p class="text-gray-900 font-mono text-sm">
+                  {{ order.payment_info.vnpay_transaction_no }}
+                </p>
+              </div>
+              <div v-if="order.payment_info.vnpay_bank_code">
+                <h3 class="text-sm font-medium text-gray-500 mb-1">
+                  Ngân hàng
+                </h3>
+                <p class="text-gray-900">
+                  {{ getBankName(order.payment_info.vnpay_bank_code) }}
+                </p>
+              </div>
+              <div v-if="order.payment_info.vnpay_response_code">
+                <h3 class="text-sm font-medium text-gray-500 mb-1">
+                  Mã phản hồi VNPay
+                </h3>
+                <span
+                  :class="order.payment_info.vnpay_response_code === '00' ? 'text-green-600 bg-green-50' : 'text-red-600 bg-red-50'"
+                  class="px-2 py-1 rounded text-sm font-mono"
+                >
+                  {{ order.payment_info.vnpay_response_code }}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Customer Information -->
         <div class="bg-white rounded-lg shadow-sm border p-6">
           <h2 class="text-xl font-bold text-gray-900 mb-4">
@@ -493,14 +568,62 @@ const getPaymentMethodText = (method) => {
   const methodMap = {
     COD: "Thanh toán khi nhận hàng (COD)",
     cod: "Thanh toán khi nhận hàng (COD)",
-    VNPay: "VNPay",
-    vnpay: "VNPay",
+    VNPay: "VNPay - Ví điện tử",
+    vnpay: "VNPay - Ví điện tử",
     MoMo: "MoMo",
     momo: "MoMo",
     Bank: "Chuyển khoản ngân hàng",
     bank: "Chuyển khoản ngân hàng",
   };
   return methodMap[method] || method || "Không xác định";
+};
+
+const getPaymentStatusColor = (paymentStatus) => {
+  const colors = {
+    pending: "bg-yellow-100 text-yellow-800",
+    completed: "bg-green-100 text-green-800", 
+    failed: "bg-red-100 text-red-800",
+    refunded: "bg-purple-100 text-purple-800",
+  };
+  return colors[paymentStatus] || "bg-gray-100 text-gray-800";
+};
+
+const getPaymentStatusText = (paymentStatus) => {
+  const statusLabels = {
+    pending: "Chờ thanh toán",
+    completed: "Đã thanh toán",
+    failed: "Thanh toán thất bại", 
+    refunded: "Đã hoàn tiền",
+  };
+  return statusLabels[paymentStatus] || "Không xác định";
+};
+
+const getBankName = (bankCode) => {
+  const bankNames = {
+    'VNPAYQR': 'VNPay QR',
+    'VNBANK': 'VNBank',
+    'INTCARD': 'Thẻ quốc tế',
+    'VISA': 'Visa',
+    'MASTERCARD': 'Mastercard',
+    'JCB': 'JCB',
+    'UPI': 'UnionPay',
+    'VCB': 'Vietcombank',
+    'TCB': 'Techcombank',
+    'MB': 'MB Bank',
+    'VIB': 'VIB',
+    'ICB': 'ICB',
+    'BIDV': 'BIDV',
+    'VBA': 'Agribank',
+    'OCB': 'OCB',
+    'SHB': 'SHB',
+    'ACB': 'ACB',
+    'MSB': 'MSB',
+    'SACOMBANK': 'Sacombank',
+    'EXIMBANK': 'Eximbank',
+    'SCB': 'SCB',
+    'VPB': 'VPBank',
+  };
+  return bankNames[bankCode] || bankCode;
 };
 
 // Lifecycle

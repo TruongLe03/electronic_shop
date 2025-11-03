@@ -138,7 +138,10 @@
             </button>
 
             <!-- Cart - Second on mobile -->
-            <router-link to="/cart" class="flex flex-col items-center group order-2">
+            <router-link
+              to="/cart"
+              class="flex flex-col items-center group order-2"
+            >
               <div class="relative">
                 <i
                   class="fas fa-shopping-cart text-lg md:text-xl text-gray-600 group-hover:text-blue-600 transition-colors"
@@ -210,7 +213,7 @@
                     Thông tin tài khoản
                   </router-link>
                   <router-link
-                    to="/orders"
+                    to="/my-orders"
                     class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     @click="showUserMenu = false"
                   >

@@ -29,6 +29,9 @@ const {
   clearFilters,
   getStatusColor,
   getStatusText,
+  getPaymentStatusColor,
+  getPaymentStatusText,
+  getPaymentMethodText,
   formatCurrency,
   formatDate,
 } = useAdminOrders();
@@ -422,7 +425,12 @@ onMounted(async () => {
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                   >
-                    Trạng thái
+                    Trạng thái đơn hàng
+                  </th>
+                  <th
+                    class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    Trạng thái thanh toán
                   </th>
                   <th
                     class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
@@ -477,6 +485,17 @@ onMounted(async () => {
                     >
                       {{ getStatusText(order.status) }}
                     </span>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <span
+                      :class="getPaymentStatusColor(order.payment_status)"
+                      class="px-2 py-1 text-xs font-medium rounded-full"
+                    >
+                      {{ getPaymentStatusText(order.payment_status) }}
+                    </span>
+                    <div v-if="order.payment_method" class="text-xs text-gray-500 mt-1">
+                      {{ getPaymentMethodText(order.payment_method) }}
+                    </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex space-x-2">
