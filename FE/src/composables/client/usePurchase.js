@@ -31,33 +31,21 @@ export function usePurchase() {
 
     // Nếu đã đăng nhập, thực hiện mua ngay
     try {
-      // Tính giá thực tế (có thể có discount)
-      let actualPrice = product.price;
-      
-      // Ưu tiên discount_price nếu có
-      if (product.discount_price && product.discount_price > 0) {
-        actualPrice = product.discount_price;
-      }
-      // Nếu không có discount_price, dùng discount_percent
-      else if (product.discount_percent && product.discount_percent > 0) {
-        actualPrice = product.price * (1 - product.discount_percent / 100);
-      }
-      
-      // Tạo đơn hàng tạm thời với sản phẩm này
-      const orderData = {
+      // Gọi API để tạo đơn hàng trực tiếp
+      const { orderService } = await import("@/api/orderService"); 
+
+      // Save order data to localStorage first
+      const tempOrderData = {
         items: [{
           product: product,
           quantity: quantity,
-          price: actualPrice
-        }],
-        total: actualPrice * quantity
+          price: product.discount_price || product.price
+        }]
       };
+      localStorage.setItem('tempOrder', JSON.stringify(tempOrderData));
 
-      // Lưu vào localStorage để sử dụng ở trang payment
-      localStorage.setItem("tempOrder", JSON.stringify(orderData));
-      
-      // Chuyển đến trang thanh toán
-      router.push("/payment");
+      // Navigate to payment page which will handle the full order creation
+      await router.push('/payment');
       return true;
     } catch (error) {
       console.error("Error in buyNow:", error);

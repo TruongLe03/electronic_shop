@@ -1,7 +1,7 @@
-import axiosConfig from '@utils/axiosConfig';
+import axiosConfig from "@utils/axiosConfig";
 
 // Vietnam address data API
-const PROVINCES_API = "https://provinces.open-api.vn/api";
+const PROVINCES_API = "https://provinces.open-api.vn/api/";
 
 class AddressService {
   // Get all provinces
@@ -11,18 +11,18 @@ class AddressService {
       const data = await response.json();
       return {
         success: true,
-        data: data.map(province => ({
+        data: data.map((province) => ({
           code: province.code,
           name: province.name,
-          codename: province.codename
-        }))
+          codename: province.codename,
+        })),
       };
     } catch (error) {
-      console.error('Error fetching provinces:', error);
+      console.error("Error fetching provinces:", error);
       return {
         success: false,
-        message: 'Không thể tải danh sách tỉnh/thành phố',
-        data: []
+        message: "Không thể tải danh sách tỉnh/thành phố",
+        data: [],
       };
     }
   }
@@ -30,22 +30,24 @@ class AddressService {
   // Get districts by province code
   async getDistricts(provinceCode) {
     try {
-      const response = await fetch(`${PROVINCES_API}/p/${provinceCode}?depth=2`);
+      const response = await fetch(
+        `${PROVINCES_API}/p/${provinceCode}?depth=2`
+      );
       const data = await response.json();
       return {
         success: true,
-        data: data.districts.map(district => ({
+        data: data.districts.map((district) => ({
           code: district.code,
           name: district.name,
-          codename: district.codename
-        }))
+          codename: district.codename,
+        })),
       };
     } catch (error) {
-      console.error('Error fetching districts:', error);
+      console.error("Error fetching districts:", error);
       return {
         success: false,
-        message: 'Không thể tải danh sách quận/huyện',
-        data: []
+        message: "Không thể tải danh sách quận/huyện",
+        data: [],
       };
     }
   }
@@ -53,22 +55,24 @@ class AddressService {
   // Get wards by district code
   async getWards(districtCode) {
     try {
-      const response = await fetch(`${PROVINCES_API}/d/${districtCode}?depth=2`);
+      const response = await fetch(
+        `${PROVINCES_API}/d/${districtCode}?depth=2`
+      );
       const data = await response.json();
       return {
         success: true,
-        data: data.wards.map(ward => ({
+        data: data.wards.map((ward) => ({
           code: ward.code,
           name: ward.name,
-          codename: ward.codename
-        }))
+          codename: ward.codename,
+        })),
       };
     } catch (error) {
-      console.error('Error fetching wards:', error);
+      console.error("Error fetching wards:", error);
       return {
         success: false,
-        message: 'Không thể tải danh sách phường/xã',
-        data: []
+        message: "Không thể tải danh sách phường/xã",
+        data: [],
       };
     }
   }
@@ -80,8 +84,8 @@ class AddressService {
       const data = await response.json();
       return data.name;
     } catch (error) {
-      console.error('Error fetching province name:', error);
-      return '';
+      console.error("Error fetching province name:", error);
+      return "";
     }
   }
 
@@ -92,8 +96,8 @@ class AddressService {
       const data = await response.json();
       return data.name;
     } catch (error) {
-      console.error('Error fetching district name:', error);
-      return '';
+      console.error("Error fetching district name:", error);
+      return "";
     }
   }
 
@@ -104,8 +108,8 @@ class AddressService {
       const data = await response.json();
       return data.name;
     } catch (error) {
-      console.error('Error fetching ward name:', error);
-      return '';
+      console.error("Error fetching ward name:", error);
+      return "";
     }
   }
 }

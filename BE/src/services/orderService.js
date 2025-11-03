@@ -441,7 +441,7 @@ export class OrderService {
     }
 
     // Cập nhật trạng thái và lý do hủy
-    order.status = "Đã hủy";
+    order.status = "cancelled";
     order.cancelled_at = new Date();
     if (cancelData.reason) {
       order.cancel_reason = cancelData.reason;

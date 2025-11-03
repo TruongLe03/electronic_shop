@@ -744,12 +744,19 @@
                           Xem chi tiết
                         </router-link>
                         <button
-                          v-if="order.status === 'pending'"
+                          v-if="['pending', 'payment_pending', 'payment_failed'].includes(order.status)"
                           @click="cancelOrder(order.id)"
                           class="bg-red-100 text-red-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-red-200 transition-colors"
                         >
                           Hủy đơn
                         </button>
+                        <router-link
+                          v-if="['payment_pending', 'payment_failed'].includes(order.status)"
+                          :to="`/payment/${order.id}`"
+                          class="bg-orange-100 text-orange-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-orange-200 transition-colors inline-block"
+                        >
+                          Tiếp tục thanh toán
+                        </router-link>
                       </div>
                     </div>
                   </div>
@@ -1225,10 +1232,15 @@ const selectedOrderStatus = ref("all");
 const orderStatuses = [
   { value: "all", label: "Tất cả" },
   { value: "pending", label: "Chờ xác nhận" },
+  { value: "payment_pending", label: "Chờ thanh toán" },
+  { value: "payment_failed", label: "Thanh toán thất bại" },
   { value: "confirmed", label: "Đã xác nhận" },
+  { value: "processing", label: "Đang xử lý" },
+  { value: "ready_to_ship", label: "Sẵn sàng giao" },
   { value: "shipping", label: "Đang giao" },
   { value: "delivered", label: "Đã giao" },
   { value: "cancelled", label: "Đã hủy" },
+  { value: "returned", label: "Đã trả hàng" },
 ];
 
 const orders = ref([]);
@@ -1506,10 +1518,15 @@ const checkPasswordStrength = () => {
 const getOrderStatusClass = (status) => {
   const classes = {
     pending: "bg-yellow-100 text-yellow-800",
+    payment_pending: "bg-orange-100 text-orange-800",
+    payment_failed: "bg-red-100 text-red-800",
     confirmed: "bg-blue-100 text-blue-800",
+    processing: "bg-indigo-100 text-indigo-800",
+    ready_to_ship: "bg-cyan-100 text-cyan-800",
     shipping: "bg-purple-100 text-purple-800",
     delivered: "bg-green-100 text-green-800",
     cancelled: "bg-red-100 text-red-800",
+    returned: "bg-gray-100 text-gray-800"
   };
   return classes[status] || "bg-gray-100 text-gray-800";
 };
@@ -1517,10 +1534,15 @@ const getOrderStatusClass = (status) => {
 const getOrderStatusText = (status) => {
   const texts = {
     pending: "Chờ xác nhận",
+    payment_pending: "Chờ thanh toán",
+    payment_failed: "Thanh toán thất bại",
     confirmed: "Đã xác nhận",
+    processing: "Đang xử lý",
+    ready_to_ship: "Sẵn sàng giao",
     shipping: "Đang giao",
     delivered: "Đã giao",
     cancelled: "Đã hủy",
+    returned: "Đã trả hàng"
   };
   return texts[status] || status;
 };
