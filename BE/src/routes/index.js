@@ -10,6 +10,7 @@ import paymentRouter from "./payment.router.js";
 import vnpayRouter from "./vnpay.router.js";
 import adminRouter from "./admin.router.js";
 import stockNotificationRouter from "./stockNotification.router.js";
+import commentsRouter from "./comments.router.js";
 
 const appRouter = express();
 
@@ -38,5 +39,8 @@ appRouter.use("/admin", adminRouter);
 
 // Stock Notifications
 appRouter.use("/stock-notifications", stockNotificationRouter);
+
+// Comments & Reviews
+appRouter.use("/comments", commentsRouter);
 
 export default appRouter;
