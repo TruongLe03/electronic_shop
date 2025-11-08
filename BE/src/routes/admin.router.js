@@ -2,6 +2,7 @@ import express from "express";
 import {
   // Dashboard Analytics
   getDashboardStats,
+  getRevenueChartData,
   
   // User Management
   getAllUsers,
@@ -63,6 +64,7 @@ const adminRouter = express.Router();
 
 // ============= DASHBOARD & ANALYTICS - Admin Only =============
 adminRouter.get("/dashboard/overview", requireAdminAuth, getDashboardStats);
+adminRouter.get("/dashboard/revenue-chart", requireAdminAuth, getRevenueChartData);
 adminRouter.get("/dashboard/growth", requireAdminAuth, getGrowthAnalytics);
 
 // ============= USER MANAGEMENT - Admin Only =============

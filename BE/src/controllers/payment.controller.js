@@ -158,13 +158,25 @@ export const updatePaymentStatus = asyncHandler(async (req, res) => {
     return ResponseUtil.validationError(res, ['ID thanh toán không hợp lệ']);
   }
 
-  const validStatuses = ["pending", "processing", "success", "failed", "cancelled", "refunded"];
+  // Accept statuses used by frontend and legacy values
+  const validStatuses = [
+    "pending",
+    "processing",
+    "completed", // frontend uses 'completed'
+    "success", // legacy
+    "failed",
+    "cancelled",
+    "refunded",
+    "partially_refunded",
+  ];
+
   if (!status || !validStatuses.includes(status)) {
     return ResponseUtil.validationError(res, ['Trạng thái thanh toán không hợp lệ']);
   }
 
   try {
-    const updatedPayment = await PaymentService.updatePaymentStatus(paymentId, { status, adminNote });
+    // Use the manual update method for admin actions (COD / bank transfer, manual confirmations)
+    const updatedPayment = await PaymentService.updatePaymentStatusManual(paymentId, { status, adminNote });
     return ResponseUtil.success(res, updatedPayment, 'Cập nhật trạng thái thanh toán thành công');
   } catch (error) {
     return ResponseUtil.error(res, error.message, 400);

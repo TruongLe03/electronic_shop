@@ -452,11 +452,21 @@ export class PaymentService {
     // Filter out payments where order is null (not belonging to user)
     const userPayments = payments.filter((payment) => payment.order_id);
 
+    // Normalize keys to camelCase
+    const userPaymentsTransformed = userPayments.map((p) => {
+      const obj = typeof p.toObject === 'function' ? p.toObject() : { ...p };
+      if (obj.order_id) {
+        obj.orderId = obj.order_id;
+        if (obj.orderId.user_id) obj.orderId.userId = obj.orderId.user_id;
+      }
+      return obj;
+    });
+
     return {
-      payments: userPayments,
-      total: userPayments.length,
+      payments: userPaymentsTransformed,
+      total: userPaymentsTransformed.length,
       page,
-      totalPages: Math.ceil(userPayments.length / limit),
+      totalPages: Math.ceil(userPaymentsTransformed.length / limit),
     };
   }
 
@@ -918,8 +928,20 @@ export class PaymentService {
       Payment.countDocuments(query),
     ]);
 
+    // Normalize populated fields to camelCase for frontend (orderId, userId)
+    const paymentsTransformed = payments.map((p) => {
+      const obj = typeof p.toObject === "function" ? p.toObject() : { ...p };
+      if (obj.order_id) {
+        obj.orderId = obj.order_id;
+        if (obj.orderId.user_id) {
+          obj.orderId.userId = obj.orderId.user_id;
+        }
+      }
+      return obj;
+    });
+
     return {
-      payments,
+      payments: paymentsTransformed,
       pagination: {
         total,
         page: parseInt(page),
@@ -946,7 +968,14 @@ export class PaymentService {
       throw new Error("Không tìm thấy payment");
     }
 
-    return payment;
+    // Normalize to camelCase keys for frontend
+    const obj = typeof payment.toObject === "function" ? payment.toObject() : { ...payment };
+    if (obj.order_id) {
+      obj.orderId = obj.order_id;
+      if (obj.orderId.user_id) obj.orderId.userId = obj.orderId.user_id;
+    }
+
+    return obj;
   }
 
   // Cập nhật trạng thái payment (cho COD, bank transfer manual)
@@ -961,8 +990,10 @@ export class PaymentService {
       throw new Error("Không tìm thấy payment");
     }
 
-    // Không cho phép thay đổi trạng thái của payment gateway tự động
-    if (["vnpay"].includes(payment.method) && payment.status === "success") {
+    // Không cho phép thay đổi trạng thái của payment gateway tự động (treat 'completed' and 'success' as same)
+    const isAutoCompleted =
+      payment.status === "success" || payment.status === "completed";
+    if (["vnpay"].includes(payment.method) && isAutoCompleted) {
       throw new Error(
         "Không thể thay đổi trạng thái payment đã được xử lý tự động"
       );
@@ -986,15 +1017,13 @@ export class PaymentService {
     });
 
     // Cập nhật trạng thái order tương ứng nếu cần
-    if (updateData.status === "success") {
+    const newStatus = updateData.status;
+    if (newStatus === "success" || newStatus === "completed") {
       await Order.findByIdAndUpdate(payment.order_id, {
         payment_status: "completed",
         payment_method: payment.method,
       });
-    } else if (
-      updateData.status === "failed" ||
-      updateData.status === "cancelled"
-    ) {
+    } else if (newStatus === "failed" || newStatus === "cancelled") {
       await Order.findByIdAndUpdate(payment.order_id, {
         payment_status: "failed",
       });
@@ -1067,9 +1096,9 @@ export class PaymentService {
               count: { $sum: 1 },
               totalAmount: { $sum: "$amount" },
               successCount: {
-                $sum: {
-                  $cond: [{ $eq: ["$status", "success"] }, 1, 0],
-                },
+                    $sum: {
+                      $cond: [ { $in: ["$status", ["success", "completed"]] }, 1, 0 ],
+                    },
               },
             },
           },

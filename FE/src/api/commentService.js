@@ -22,4 +22,15 @@ export const commentService = {
   deleteComment(commentId) {
     return axiosClient.delete(`/comments/${commentId}`);
   }
+,
+
+  // Like a comment
+  likeComment(commentId) {
+    return axiosClient.post(`/comments/${commentId}/like`);
+  },
+
+  // Unlike a comment
+  unlikeComment(commentId) {
+    return axiosClient.post(`/comments/${commentId}/unlike`);
+  }
 };

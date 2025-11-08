@@ -76,19 +76,27 @@ const stats = computed(() => ({
 
 // Chart data
 const salesData = computed(() => {
-  if (!dashboardStats.value?.monthlyRevenue) return [];
+  const monthlyRevenue =
+    dashboardStats.value?.data?.monthlyRevenue ||
+    dashboardStats.value?.monthlyRevenue;
 
-  return dashboardStats.value.monthlyRevenue.map((item) => ({
+  if (!monthlyRevenue || !monthlyRevenue.length) return [];
+
+  return monthlyRevenue.map((item) => ({
     month: `${item._id.month}/${item._id.year}`,
-    revenue: item.revenue,
-    orders: item.orders,
+    revenue: Number.isFinite(Number(item.revenue)) ? Number(item.revenue) : 0,
+    orders: Number.isFinite(Number(item.orders)) ? Number(item.orders) : 0,
   }));
 });
 
 const ordersData = computed(() => {
-  if (!dashboardStats.value?.ordersByStatus) return [];
+  const ordersByStatus =
+    dashboardStats.value?.data?.ordersByStatus ||
+    dashboardStats.value?.ordersByStatus;
 
-  return dashboardStats.value.ordersByStatus.map((item) => ({
+  if (!ordersByStatus || !ordersByStatus.length) return [];
+
+  return ordersByStatus.map((item) => ({
     status: getStatusLabel(item._id),
     count: item.count,
     color: getStatusColor(item._id),
@@ -97,9 +105,13 @@ const ordersData = computed(() => {
 
 // Recent activities (top products)
 const recentActivities = computed(() => {
-  if (!dashboardStats.value?.topProducts) return [];
+  const topProducts =
+    dashboardStats.value?.data?.topProducts ||
+    dashboardStats.value?.topProducts;
 
-  return dashboardStats.value.topProducts.map((item) => ({
+  if (!topProducts || !topProducts.length) return [];
+
+  return topProducts.map((item) => ({
     id: item._id,
     type: "product_sale",
     title: `Bán ${item.totalSold} ${item.product.name}`,

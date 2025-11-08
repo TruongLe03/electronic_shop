@@ -20,7 +20,7 @@ export function useAdminDashboard() {
       loading.value = true;
       error.value = null;
       const response = await getDashboardStats();
-      dashboardStats.value = response.data;
+      dashboardStats.value = response.data || response;
     } catch (err) {
       error.value = err.message || "Lỗi khi lấy thống kê dashboard";
       console.error("Dashboard stats error:", err);
@@ -68,19 +68,23 @@ export function useAdminDashboard() {
 
   // Computed properties
   const totalRevenue = computed(() => {
-    return dashboardStats.value?.overview?.totalRevenue || 0;
+    const overview = dashboardStats.value?.data?.overview || dashboardStats.value?.overview;
+    return overview?.totalRevenue || 0;
   });
 
   const totalOrders = computed(() => {
-    return dashboardStats.value?.overview?.totalOrders || 0;
+    const overview = dashboardStats.value?.data?.overview || dashboardStats.value?.overview;
+    return overview?.totalOrders || 0;
   });
 
   const totalUsers = computed(() => {
-    return dashboardStats.value?.overview?.totalUsers || 0;
+    const overview = dashboardStats.value?.data?.overview || dashboardStats.value?.overview;
+    return overview?.totalUsers || 0;
   });
 
   const totalProducts = computed(() => {
-    return dashboardStats.value?.overview?.totalProducts || 0;
+    const overview = dashboardStats.value?.data?.overview || dashboardStats.value?.overview;
+    return overview?.totalProducts || 0;
   });
 
   return {

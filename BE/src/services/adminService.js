@@ -7,93 +7,11 @@ import Category from "../models/categories.model.js";
  * Service để tính toán các thống kê cho admin dashboard
  */
 export class AdminAnalyticsService {
-
   /**
-   * Lấy thống kê tổng quan cho dashboard
+   * Lấy thống kê tổng quan cho dashboard - Use AdminReportService for consistency
    */
   static async getDashboardStats() {
-    // Thống kê tổng số
-    const totalUsers = await User.countDocuments();
-    const totalProducts = await Product.countDocuments();
-    const totalOrders = await Order.countDocuments();
-    const totalCategories = await Category.countDocuments();
-
-    // Thống kê doanh thu
-    const totalRevenue = await Order.aggregate([
-      { $match: { status: "completed" } },
-      { $group: { _id: null, total: { $sum: "$totalAmount" } } }
-    ]);
-
-
-
-    // Thống kê đơn hàng theo trạng thái
-    const ordersByStatus = await Order.aggregate([
-      {
-        $group: {
-          _id: "$status",
-          count: { $sum: 1 }
-        }
-      }
-    ]);
-
-    // Sản phẩm bán chạy nhất (top 5)
-    const topProducts = await Order.aggregate([
-      { $unwind: "$items" },
-      {
-        $group: {
-          _id: "$items.productId",
-          totalSold: { $sum: "$items.quantity" },
-          revenue: { $sum: { $multiply: ["$items.quantity", "$items.price"] } }
-        }
-      },
-      { $sort: { totalSold: -1 } },
-      { $limit: 5 },
-      {
-        $lookup: {
-          from: "products",
-          localField: "_id",
-          foreignField: "_id",
-          as: "product"
-        }
-      },
-      { $unwind: "$product" }
-    ]);
-
-    // Doanh thu theo tháng (12 tháng gần nhất)
-    const monthlyRevenue = await Order.aggregate([
-      {
-        $match: {
-          status: "completed",
-          createdAt: {
-            $gte: new Date(new Date().setMonth(new Date().getMonth() - 12))
-          }
-        }
-      },
-      {
-        $group: {
-          _id: {
-            year: { $year: "$createdAt" },
-            month: { $month: "$createdAt" }
-          },
-          revenue: { $sum: "$totalAmount" },
-          orders: { $sum: 1 }
-        }
-      },
-      { $sort: { "_id.year": 1, "_id.month": 1 } }
-    ]);
-
-    return {
-      overview: {
-        totalUsers,
-        totalProducts,
-        totalOrders,
-        totalCategories,
-        totalRevenue: totalRevenue[0]?.total || 0
-      },
-      ordersByStatus,
-      topProducts,
-      monthlyRevenue
-    };
+    return await AdminReportService.getDashboardStats();
   }
 
   /**
@@ -105,18 +23,18 @@ export class AdminAnalyticsService {
         nodeVersion: process.version,
         platform: process.platform,
         uptime: process.uptime(),
-        memoryUsage: process.memoryUsage()
+        memoryUsage: process.memoryUsage(),
       },
       database: {
-        connected: true // Có thể thêm logic check database connection
+        connected: true, // Có thể thêm logic check database connection
       },
       api: {
         version: "1.0.0",
-        lastDeployment: new Date().toISOString()
-      }
+        lastDeployment: new Date().toISOString(),
+      },
     };
   }
-  
+
   /**
    * Lấy thống kê tăng trưởng so với tháng trước
    */
@@ -127,44 +45,46 @@ export class AdminAnalyticsService {
     const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
     // Thống kê tháng này
-    const [usersThisMonth, ordersThisMonth, revenueThisMonth] = await Promise.all([
-      User.countDocuments({ 
-        createdAt: { $gte: startOfThisMonth },
-        role: "customer" 
-      }),
-      Order.countDocuments({ 
-        createdAt: { $gte: startOfThisMonth } 
-      }),
-      Order.aggregate([
-        { 
-          $match: { 
-            createdAt: { $gte: startOfThisMonth },
-            status: "completed"
-          } 
-        },
-        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
-      ])
-    ]);
+    const [usersThisMonth, ordersThisMonth, revenueThisMonth] =
+      await Promise.all([
+        User.countDocuments({
+          createdAt: { $gte: startOfThisMonth },
+          role: "customer",
+        }),
+        Order.countDocuments({
+          createdAt: { $gte: startOfThisMonth },
+        }),
+        Order.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: startOfThisMonth },
+              status: "completed",
+            },
+          },
+          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+        ]),
+      ]);
 
     // Thống kê tháng trước
-    const [usersLastMonth, ordersLastMonth, revenueLastMonth] = await Promise.all([
-      User.countDocuments({ 
-        createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-        role: "customer" 
-      }),
-      Order.countDocuments({ 
-        createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth } 
-      }),
-      Order.aggregate([
-        { 
-          $match: { 
-            createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
-            status: "completed"
-          } 
-        },
-        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
-      ])
-    ]);
+    const [usersLastMonth, ordersLastMonth, revenueLastMonth] =
+      await Promise.all([
+        User.countDocuments({
+          createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+          role: "customer",
+        }),
+        Order.countDocuments({
+          createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+        }),
+        Order.aggregate([
+          {
+            $match: {
+              createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth },
+              status: "completed",
+            },
+          },
+          { $group: { _id: null, total: { $sum: "$totalAmount" } } },
+        ]),
+      ]);
 
     // Tính phần trăm tăng trưởng
     const calculateGrowth = (current, previous) => {
@@ -176,21 +96,21 @@ export class AdminAnalyticsService {
       users: {
         current: usersThisMonth,
         previous: usersLastMonth,
-        growth: calculateGrowth(usersThisMonth, usersLastMonth)
+        growth: calculateGrowth(usersThisMonth, usersLastMonth),
       },
       orders: {
         current: ordersThisMonth,
         previous: ordersLastMonth,
-        growth: calculateGrowth(ordersThisMonth, ordersLastMonth)
+        growth: calculateGrowth(ordersThisMonth, ordersLastMonth),
       },
       revenue: {
         current: revenueThisMonth[0]?.total || 0,
         previous: revenueLastMonth[0]?.total || 0,
         growth: calculateGrowth(
-          revenueThisMonth[0]?.total || 0, 
+          revenueThisMonth[0]?.total || 0,
           revenueLastMonth[0]?.total || 0
-        )
-      }
+        ),
+      },
     };
   }
 
@@ -204,8 +124,8 @@ export class AdminAnalyticsService {
           from: "categories",
           localField: "categoryId",
           foreignField: "_id",
-          as: "category"
-        }
+          as: "category",
+        },
       },
       { $unwind: "$category" },
       {
@@ -215,12 +135,12 @@ export class AdminAnalyticsService {
           totalProducts: { $sum: 1 },
           activeProducts: {
             $sum: {
-              $cond: [{ $eq: ["$status", "active"] }, 1, 0]
-            }
-          }
-        }
+              $cond: [{ $eq: ["$status", "active"] }, 1, 0],
+            },
+          },
+        },
       },
-      { $sort: { totalProducts: -1 } }
+      { $sort: { totalProducts: -1 } },
     ]);
   }
 
@@ -234,25 +154,21 @@ export class AdminAnalyticsService {
     return await Order.aggregate([
       {
         $match: {
-          createdAt: { $gte: sevenDaysAgo }
-        }
+          createdAt: { $gte: sevenDaysAgo },
+        },
       },
       {
         $group: {
           _id: { $dayOfWeek: "$createdAt" },
           count: { $sum: 1 },
-          revenue: { 
+          revenue: {
             $sum: {
-              $cond: [
-                { $eq: ["$status", "completed"] },
-                "$totalAmount",
-                0
-              ]
-            }
-          }
-        }
+              $cond: [{ $eq: ["$status", "completed"] }, "$totalAmount", 0],
+            },
+          },
+        },
       },
-      { $sort: { "_id": 1 } }
+      { $sort: { _id: 1 } },
     ]);
   }
 
@@ -268,8 +184,8 @@ export class AdminAnalyticsService {
           totalSpent: { $sum: "$totalAmount" },
           totalOrders: { $sum: 1 },
           avgOrderValue: { $avg: "$totalAmount" },
-          lastOrderDate: { $max: "$createdAt" }
-        }
+          lastOrderDate: { $max: "$createdAt" },
+        },
       },
       { $sort: { totalSpent: -1 } },
       { $limit: limit },
@@ -278,8 +194,8 @@ export class AdminAnalyticsService {
           from: "users",
           localField: "_id",
           foreignField: "_id",
-          as: "user"
-        }
+          as: "user",
+        },
       },
       { $unwind: "$user" },
       {
@@ -291,10 +207,82 @@ export class AdminAnalyticsService {
           lastOrderDate: 1,
           "user.name": 1,
           "user.email": 1,
-          "user.phone_number": 1
-        }
-      }
+          "user.phone_number": 1,
+        },
+      },
     ]);
+  }
+
+  /**
+   * Lấy dữ liệu biểu đồ doanh thu
+   */
+  static async getRevenueChartData(period = "month") {
+    let monthsCount;
+
+    // Xác định khoảng thời gian
+    switch (period) {
+      case "week":
+        monthsCount = 7;
+        break;
+      case "quarter":
+        monthsCount = 3;
+        break;
+      case "year":
+        monthsCount = 12;
+        break;
+      case "month":
+      default:
+        monthsCount = 7;
+        break;
+    }
+
+    // Tính startDate dựa trên monthsCount
+    const now = new Date();
+    const startDate = new Date(now.getFullYear(), now.getMonth() - monthsCount + 1, 1);
+
+    // Lấy dữ liệu doanh thu từ đơn hàng đã hoàn thành hoặc đã giao
+    const revenueData = await Order.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+          status: { $in: ["completed", "delivered"] },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            year: { $year: "$createdAt" },
+            month: { $month: "$createdAt" },
+          },
+          revenue: { $sum: "$totalAmount" },
+          orders: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.month": 1 } },
+    ]);
+
+    // Tạo mảng đầy đủ các tháng
+    const chartData = [];
+    const currentDate = new Date();
+    
+    for (let i = monthsCount - 1; i >= 0; i--) {
+      const targetDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - i, 1);
+      const year = targetDate.getFullYear();
+      const month = targetDate.getMonth() + 1;
+      
+      // Tìm dữ liệu tương ứng
+      const dataPoint = revenueData.find(
+        (d) => d._id.year === year && d._id.month === month
+      );
+      
+      chartData.push({
+        month: `${month}/${year}`,
+        revenue: dataPoint ? Number(dataPoint.revenue) || 0 : 0,
+        orders: dataPoint ? Number(dataPoint.orders) || 0 : 0,
+      });
+    }
+
+    return chartData;
   }
 
   /**
@@ -307,25 +295,25 @@ export class AdminAnalyticsService {
           from: "inventories",
           localField: "_id",
           foreignField: "productId",
-          as: "inventory"
-        }
+          as: "inventory",
+        },
       },
       { $unwind: { path: "$inventory", preserveNullAndEmptyArrays: true } },
       {
         $match: {
           $or: [
             { "inventory.quantity": { $lt: threshold } },
-            { "inventory": { $exists: false } }
-          ]
-        }
+            { inventory: { $exists: false } },
+          ],
+        },
       },
       {
         $lookup: {
           from: "categories",
           localField: "categoryId",
           foreignField: "_id",
-          as: "category"
-        }
+          as: "category",
+        },
       },
       { $unwind: "$category" },
       {
@@ -335,10 +323,10 @@ export class AdminAnalyticsService {
           price: 1,
           "category.name": 1,
           quantity: { $ifNull: ["$inventory.quantity", 0] },
-          status: 1
-        }
+          status: 1,
+        },
       },
-      { $sort: { quantity: 1 } }
+      { $sort: { quantity: 1 } },
     ]);
   }
 
@@ -356,8 +344,8 @@ export class AdminAnalyticsService {
         2: 0,
         3: 0,
         4: 0,
-        5: 0
-      }
+        5: 0,
+      },
     };
   }
 }
@@ -366,7 +354,6 @@ export class AdminAnalyticsService {
  * Service để xuất báo cáo admin
  */
 export class AdminReportService {
-  
   /**
    * Tạo báo cáo doanh thu theo khoảng thời gian
    */
@@ -378,24 +365,27 @@ export class AdminReportService {
       {
         $match: {
           createdAt: { $gte: start, $lte: end },
-          status: "completed"
-        }
+          status: "completed",
+        },
       },
       {
         $group: {
           _id: {
             year: { $year: "$createdAt" },
             month: { $month: "$createdAt" },
-            day: { $dayOfMonth: "$createdAt" }
+            day: { $dayOfMonth: "$createdAt" },
           },
           revenue: { $sum: "$totalAmount" },
-          orders: { $sum: 1 }
-        }
+          orders: { $sum: 1 },
+        },
       },
-      { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } }
+      { $sort: { "_id.year": 1, "_id.month": 1, "_id.day": 1 } },
     ]);
 
-    const totalRevenue = revenueData.reduce((sum, item) => sum + item.revenue, 0);
+    const totalRevenue = revenueData.reduce(
+      (sum, item) => sum + item.revenue,
+      0
+    );
     const totalOrders = revenueData.reduce((sum, item) => sum + item.orders, 0);
 
     return {
@@ -403,9 +393,9 @@ export class AdminReportService {
       summary: {
         totalRevenue,
         totalOrders,
-        averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0
+        averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
       },
-      dailyData: revenueData
+      dailyData: revenueData,
     };
   }
 
@@ -420,11 +410,11 @@ export class AdminReportService {
         $group: {
           _id: "$items.productId",
           totalSold: { $sum: "$items.quantity" },
-          totalRevenue: { 
-            $sum: { $multiply: ["$items.quantity", "$items.price"] } 
+          totalRevenue: {
+            $sum: { $multiply: ["$items.quantity", "$items.price"] },
           },
-          avgPrice: { $avg: "$items.price" }
-        }
+          avgPrice: { $avg: "$items.price" },
+        },
       },
       { $sort: { totalSold: -1 } },
       { $limit: limit },
@@ -433,8 +423,8 @@ export class AdminReportService {
           from: "products",
           localField: "_id",
           foreignField: "_id",
-          as: "product"
-        }
+          as: "product",
+        },
       },
       { $unwind: "$product" },
       {
@@ -442,8 +432,8 @@ export class AdminReportService {
           from: "categories",
           localField: "product.categoryId",
           foreignField: "_id",
-          as: "category"
-        }
+          as: "category",
+        },
       },
       { $unwind: "$category" },
       {
@@ -454,9 +444,9 @@ export class AdminReportService {
           avgPrice: 1,
           "product.name": 1,
           "product.images": 1,
-          "category.name": 1
-        }
-      }
+          "category.name": 1,
+        },
+      },
     ]);
   }
 
@@ -472,7 +462,7 @@ export class AdminReportService {
       totalRevenue,
       ordersByStatus,
       topProducts,
-      monthlyRevenue
+      monthlyRevenue,
     ] = await Promise.all([
       // Thống kê tổng số
       User.countDocuments({ role: "customer" }),
@@ -480,10 +470,10 @@ export class AdminReportService {
       Order.countDocuments(),
       Category.countDocuments(),
 
-      // Thống kê doanh thu
+      // Thống kê doanh thu (từ đơn hàng đã hoàn thành hoặc đã giao)
       Order.aggregate([
-        { $match: { status: "completed" } },
-        { $group: { _id: null, total: { $sum: "$totalAmount" } } }
+        { $match: { status: { $in: ["completed", "delivered"] } } },
+        { $group: { _id: null, total: { $sum: "$totalAmount" } } },
       ]),
 
       // Thống kê đơn hàng theo trạng thái
@@ -491,9 +481,9 @@ export class AdminReportService {
         {
           $group: {
             _id: "$status",
-            count: { $sum: 1 }
-          }
-        }
+            count: { $sum: 1 },
+          },
+        },
       ]),
 
       // Sản phẩm bán chạy nhất (top 5)
@@ -503,8 +493,10 @@ export class AdminReportService {
           $group: {
             _id: "$items.productId",
             totalSold: { $sum: "$items.quantity" },
-            revenue: { $sum: { $multiply: ["$items.quantity", "$items.price"] } }
-          }
+            revenue: {
+              $sum: { $multiply: ["$items.quantity", "$items.price"] },
+            },
+          },
         },
         { $sort: { totalSold: -1 } },
         { $limit: 5 },
@@ -513,34 +505,34 @@ export class AdminReportService {
             from: "products",
             localField: "_id",
             foreignField: "_id",
-            as: "product"
-          }
+            as: "product",
+          },
         },
-        { $unwind: "$product" }
+        { $unwind: "$product" },
       ]),
 
       // Doanh thu theo tháng (12 tháng gần nhất)
       Order.aggregate([
         {
           $match: {
-            status: "completed",
+            status: { $in: ["completed", "delivered"] },
             createdAt: {
-              $gte: new Date(new Date().setMonth(new Date().getMonth() - 12))
-            }
-          }
+              $gte: new Date(new Date().setMonth(new Date().getMonth() - 12)),
+            },
+          },
         },
         {
           $group: {
             _id: {
               year: { $year: "$createdAt" },
-              month: { $month: "$createdAt" }
+              month: { $month: "$createdAt" },
             },
             revenue: { $sum: "$totalAmount" },
-            orders: { $sum: 1 }
-          }
+            orders: { $sum: 1 },
+          },
         },
-        { $sort: { "_id.year": 1, "_id.month": 1 } }
-      ])
+        { $sort: { "_id.year": 1, "_id.month": 1 } },
+      ]),
     ]);
 
     return {
@@ -549,11 +541,11 @@ export class AdminReportService {
         totalProducts,
         totalOrders,
         totalCategories,
-        totalRevenue: totalRevenue[0]?.total || 0
+        totalRevenue: Number(totalRevenue[0]?.total) || 0,
       },
       ordersByStatus,
       topProducts,
-      monthlyRevenue
+      monthlyRevenue,
     };
   }
 
@@ -566,7 +558,7 @@ export class AdminReportService {
         nodeVersion: process.version,
         platform: process.platform,
         uptime: Math.floor(process.uptime()), // seconds
-        memoryUsage: process.memoryUsage()
+        memoryUsage: process.memoryUsage(),
       },
       database: {
         connected: true,
@@ -575,8 +567,8 @@ export class AdminReportService {
       api: {
         version: "1.0.0",
         environment: process.env.NODE_ENV || "development",
-        lastDeployment: new Date().toISOString()
-      }
+        lastDeployment: new Date().toISOString(),
+      },
     };
   }
 }

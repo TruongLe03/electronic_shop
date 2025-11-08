@@ -174,13 +174,14 @@ const handleSubmit = async () => {
 
     const response = await register(userData);
 
-    // Check if we have a user in the response
-    if (!response.user) {
+    // Check if we have a user and token in the response
+    if (!response.user || !response.token) {
       throw new Error("Invalid response from server");
     }
 
-    // Cập nhật store
-    authStore.updateUser(response.user);
+    // Tự động đăng nhập sau khi đăng ký thành công
+    // Token đã được lưu trong authService, giờ cập nhật store với token
+    authStore.updateUser(response.user, response.token);
 
     // Show success message
     notifyRegister(true);

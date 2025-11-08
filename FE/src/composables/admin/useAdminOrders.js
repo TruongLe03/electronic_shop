@@ -255,10 +255,13 @@ export function useAdminOrders() {
   const getStatusLabel = getStatusText;
 
   const formatCurrency = (amount) => {
+    // Coerce to number safely. If value is not a finite number, fall back to 0.
+    const n = Number(amount);
+    const safe = Number.isFinite(n) ? n : 0;
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(amount || 0);
+    }).format(safe);
   };
 
   const formatDate = (date) => {

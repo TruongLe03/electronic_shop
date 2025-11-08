@@ -10,7 +10,8 @@ const commentSchema = new mongoose.Schema(
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      // Optional: allow anonymous comments (not all comments are reviews)
+      required: false,
     },
     orderId: {
       type: mongoose.Schema.Types.ObjectId,
@@ -37,6 +38,14 @@ const commentSchema = new mongoose.Schema(
       enum: ["active", "hidden", "deleted"],
       default: "active",
     },
+    likes: {
+      type: Number,
+      default: 0,
+    },
+    likedBy: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
   },
   {
     timestamps: true,

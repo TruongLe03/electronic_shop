@@ -1,6 +1,8 @@
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
+import http from "http";
+import { Server as SocketIO } from "socket.io";
 import connectDB from "./config/db.js";
 import appRouter from "./routes/index.js";
 import { ResponseUtil } from "./utils/response.util.js";
@@ -45,4 +47,28 @@ app.use((err, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server http://localhost:${PORT}`));
+
+// Create HTTP server and attach Socket.IO
+const server = http.createServer(app);
+const io = new SocketIO(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"],
+  },
+});
+
+// Make io accessible via app.locals and app.get
+app.set("io", io);
+
+io.on("connection", (socket) => {
+  // Join product rooms for scoped broadcasts
+  socket.on("joinProduct", (productId) => {
+    if (productId) socket.join(`product_${productId}`);
+  });
+
+  socket.on("leaveProduct", (productId) => {
+    if (productId) socket.leave(`product_${productId}`);
+  });
+});
+
+server.listen(PORT, () => console.log(`Server http://localhost:${PORT}`));

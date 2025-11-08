@@ -11,5 +11,7 @@ router.get("/product/:productId", commentController.getByProduct);
 router.post("/", authMiddleware, commentController.create);
 router.put("/:commentId", authMiddleware, commentController.update);
 router.delete("/:commentId", authMiddleware, commentController.delete);
+router.post("/:commentId/like", authMiddleware, commentController.like);
+router.post("/:commentId/unlike", authMiddleware, commentController.unlike);
 
 export default router;

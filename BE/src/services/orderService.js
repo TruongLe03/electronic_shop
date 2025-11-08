@@ -246,7 +246,8 @@ export class OrderService {
       "payment_pending": ["payment_failed", "confirmed", "cancelled"],
       "payment_failed": ["pending", "cancelled"],
       "confirmed": ["processing", "cancelled"], 
-      "processing": ["ready_to_ship", "cancelled"],
+      // Allow admin to move directly from processing to shipping in some workflows
+      "processing": ["ready_to_ship", "shipping", "cancelled"],
       "ready_to_ship": ["shipping", "cancelled"],
       "shipping": ["delivered", "returned"],
       "delivered": ["returned"],
@@ -350,7 +351,7 @@ export class OrderService {
             $sum: { $cond: [{ $eq: ["$status", "pending"] }, 1, 0] },
           },
           completedOrders: {
-            $sum: { $cond: [{ $eq: ["$status", "Đã giao"] }, 1, 0] },
+            $sum: { $cond: [{ $eq: ["$status", "delivered"] }, 1, 0] },
           },
           cancelledOrders: {
             $sum: { $cond: [{ $eq: ["$status", "cancelled"] }, 1, 0] },

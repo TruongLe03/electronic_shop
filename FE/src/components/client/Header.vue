@@ -471,7 +471,7 @@
 
           <div v-else class="space-y-2 pt-4 border-t border-gray-200">
             <div class="px-4 py-2 text-sm text-gray-500">
-              Xin chào, {{ user?.name || user?.email }}
+              Xin chào, {{ user?.username || user?.name || user?.email }}
             </div>
             <router-link
               to="/account"

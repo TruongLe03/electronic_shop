@@ -24,8 +24,11 @@ export const authMiddleware = async (req, res, next) => {
       return ResponseUtil.unauthorized(res, "Tài khoản đã bị vô hiệu hóa");
     }
 
+    // Provide both `id` and `_id` for backward compatibility across controllers
     req.user = {
       id: user._id,
+      _id: user._id,
+      name: user.name,
       email: user.email,
       role: user.role,
       status: user.status,

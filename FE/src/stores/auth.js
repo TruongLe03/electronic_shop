@@ -60,8 +60,17 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null;
   }
 
-  function updateUser(userData) {
+  function updateUser(userData, authToken = null) {
     user.value = userData;
+    // Cập nhật token nếu được cung cấp
+    if (authToken) {
+      token.value = authToken;
+      localStorage.setItem('token', authToken);
+    }
+    // Cập nhật user trong localStorage
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(userData));
+    }
   }
 
   // Silently clear expired token without redirect

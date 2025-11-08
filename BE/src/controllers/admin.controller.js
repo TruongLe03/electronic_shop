@@ -16,6 +16,13 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
   return ResponseUtil.success(res, dashboardData, 'Lấy thống kê dashboard thành công');
 });
 
+// Lấy dữ liệu biểu đồ doanh thu
+export const getRevenueChartData = asyncHandler(async (req, res) => {
+  const { period = "month" } = req.query;
+  const chartData = await AdminAnalyticsService.getRevenueChartData(period);
+  return ResponseUtil.success(res, chartData, 'Lấy dữ liệu biểu đồ doanh thu thành công');
+});
+
 // ============= USER MANAGEMENT =============
 
 // Lấy danh sách tất cả người dùng
@@ -332,8 +339,21 @@ export const updateOrderStatus = asyncHandler(async (req, res) => {
     return ResponseUtil.validationError(res, ['Order ID không hợp lệ']);
   }
 
-  const validStatuses = ["pending", "confirmed", "processing", "shipping", "delivered", "cancelled"];
-  
+  // Allow the full set of statuses defined in the Order model so admin UI can set any of them;
+  // OrderService.updateOrderStatus will still validate allowed transitions.
+  const validStatuses = [
+    "pending",
+    "payment_pending",
+    "payment_failed",
+    "confirmed",
+    "processing",
+    "ready_to_ship",
+    "shipping",
+    "delivered",
+    "cancelled",
+    "returned",
+  ];
+
   if (!status || !validStatuses.includes(status)) {
     return ResponseUtil.validationError(res, ['Trạng thái đơn hàng không hợp lệ']);
   }

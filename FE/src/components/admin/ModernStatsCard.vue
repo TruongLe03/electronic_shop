@@ -54,13 +54,18 @@ const computedGradient = computed(() => {
 
 const formatValue = (value) => {
   if (props.loading) return '---'
+  
+  // Convert to number and check if valid
+  const numValue = Number(value)
+  if (!Number.isFinite(numValue)) return '0'
+  
   if (props.isCurrency) {
     return new Intl.NumberFormat('vi-VN', {
       style: 'currency',
       currency: 'VND'
-    }).format(value)
+    }).format(numValue)
   }
-  return value.toLocaleString()
+  return numValue.toLocaleString('vi-VN')
 }
 
 const getTrendColor = (trend) => {

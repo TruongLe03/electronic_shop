@@ -71,6 +71,12 @@ const menuItems = [
     gradient: "from-indigo-500 to-purple-500",
   },
   {
+    name: "Thanh toán",
+    icon: "fas fa-credit-card",
+    path: "/admin/payments",
+    gradient: "from-pink-500 to-red-500",
+  },
+  {
     name: "Thống kê",
     icon: "fas fa-chart-bar",
     path: "/admin/statistics",
@@ -103,7 +109,7 @@ const toggleDarkMode = () => {
 const logout = async () => {
   // Close profile menu
   showProfileMenu.value = false;
-  
+
   // Thông báo đăng xuất
   const { notifyLogout } = useNotification();
   notifyLogout();
@@ -275,8 +281,6 @@ const navigateTo = async (path) => {
             ></div>
           </button>
         </nav>
-
-
       </div>
     </div>
 
@@ -451,7 +455,9 @@ const navigateTo = async (path) => {
                     ]"
                   >
                     <div class="p-4">
-                      <div class="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-600">
+                      <div
+                        class="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-200 dark:border-gray-600"
+                      >
                         <img
                           class="w-12 h-12 rounded-full ring-2 ring-blue-500/50"
                           :src="`https://ui-avatars.com/api/?name=${
@@ -478,7 +484,7 @@ const navigateTo = async (path) => {
                           </p>
                         </div>
                       </div>
-                      
+
                       <div class="space-y-2">
                         <button
                           @click="toggleDarkMode"
@@ -489,10 +495,14 @@ const navigateTo = async (path) => {
                               : 'hover:bg-gray-100 text-gray-700',
                           ]"
                         >
-                          <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'"></i>
-                          <span>{{ darkMode ? "Chế độ sáng" : "Chế độ tối" }}</span>
+                          <i
+                            :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'"
+                          ></i>
+                          <span>{{
+                            darkMode ? "Chế độ sáng" : "Chế độ tối"
+                          }}</span>
                         </button>
-                        
+
                         <button
                           @click="logout"
                           class="w-full flex items-center space-x-3 px-3 py-2 rounded-lg text-sm font-medium bg-red-500 hover:bg-red-600 text-white transition-colors text-left"

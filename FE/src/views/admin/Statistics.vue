@@ -1,17 +1,13 @@
 <script setup>
-import { ref, onMounted, computed } from "vue";
+import { ref, onMounted } from "vue";
 import AdminLayout from "@/layout/AdminLayout.vue";
+import RevenueChart from "@/components/admin/RevenueChart.vue";
 import {
   getDashboardStats,
   getRevenueChartData,
-  getDashboardTopProducts,
 } from "@/api/admin/dashboardService";
 import { getAllProductsAdmin } from "@/api/admin/productService";
-import {
-  getAllOrdersAdmin,
-  getOrdersByDayStats,
-} from "@/api/admin/orderService";
-import { getCategoriesAdmin } from "@/api/admin/categoryService";
+import { getAllOrdersAdmin } from "@/api/admin/orderService";
 
 // 🟢 Dữ liệu thống kê
 const loading = ref(false);
@@ -21,11 +17,8 @@ const timeRange = ref("month"); // week, month, quarter, year
 // 🟢 Dữ liệu từ API
 const dashboardStats = ref(null);
 const revenueData = ref(null);
-const topProducts = ref([]);
 const products = ref([]);
 const orders = ref([]);
-const orderStats = ref(null);
-const categories = ref([]);
 
 // 🟢 Thống kê tổng hợp
 const overviewStats = ref({
@@ -88,22 +81,18 @@ async function loadAllData() {
 
   try {
     // Tải đồng thời tất cả API
+    // Chỉ cần load một phần products/orders để hiển thị chi tiết
+    // Thống kê tổng quan lấy từ dashboardStats
     const [
       dashboardResponse,
       revenueResponse,
-      topProductsResponse,
       productsResponse,
       ordersResponse,
-      orderStatsResponse,
-      categoriesResponse,
     ] = await Promise.allSettled([
       getDashboardStats(),
       getRevenueChartData(timeRange.value),
-      getDashboardTopProducts(10),
-      getAllProductsAdmin({ limit: 1000 }),
-      getAllOrdersAdmin({ limit: 1000 }),
-      getOrdersByDayStats(),
-      getCategoriesAdmin(),
+      getAllProductsAdmin({ limit: 100, page: 1 }), // Chỉ lấy 100 để tính inventory stats
+      getAllOrdersAdmin({ limit: 100, page: 1 }), // Chỉ lấy 100 để phân tích chi tiết
     ]);
 
     // Xử lý dữ liệu dashboard
@@ -113,12 +102,16 @@ async function loadAllData() {
 
     // Xử lý dữ liệu revenue
     if (revenueResponse.status === "fulfilled") {
-      revenueData.value = revenueResponse.value;
-    }
-
-    // Xử lý top products
-    if (topProductsResponse.status === "fulfilled") {
-      topProducts.value = topProductsResponse.value?.data || [];
+      const responseData = revenueResponse.value;
+      const rawData = responseData?.data || responseData || [];
+      
+      revenueData.value = Array.isArray(rawData) 
+        ? rawData.map(item => ({
+            month: item?.month || '',
+            revenue: Number(item?.revenue) || 0,
+            orders: Number(item?.orders) || 0
+          }))
+        : [];
     }
 
     // Xử lý products
@@ -137,17 +130,6 @@ async function loadAllData() {
         [];
     }
 
-    // Xử lý order stats
-    if (orderStatsResponse.status === "fulfilled") {
-      orderStats.value = orderStatsResponse.value;
-    }
-
-    // Xử lý categories
-    if (categoriesResponse.status === "fulfilled") {
-      categories.value =
-        categoriesResponse.value?.data || categoriesResponse.value || [];
-    }
-
     // Tính toán thống kê
     calculateOverviewStats();
     calculateInventoryStats();
@@ -162,16 +144,15 @@ async function loadAllData() {
 
 // 🟢 Tính toán thống kê tổng quan
 function calculateOverviewStats() {
-  const totalRevenue = orders.value.reduce(
-    (sum, order) => sum + (order.totalAmount || 0),
-    0
-  );
-  const totalOrders = orders.value.length;
-  const totalProducts = products.value.length;
-  const uniqueCustomers = new Set(
-    orders.value.map((o) => o.userId || o.customerId)
-  ).size;
-  const avgOrderValue = totalOrders ? totalRevenue / totalOrders : 0;
+  // Sử dụng dữ liệu từ dashboardStats API (tổng số thực từ database)
+  const overview = dashboardStats.value?.data?.overview || dashboardStats.value?.overview || {};
+  
+  const totalRevenue = Number(overview.totalRevenue) || 0;
+  const totalOrders = Number(overview.totalOrders) || 0;
+  const totalProducts = Number(overview.totalProducts) || 0;
+  const totalUsers = Number(overview.totalUsers) || 0;
+  
+  const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
   // Tính conversion rate (giả định)
   const totalVisits = totalOrders * 10; // Giả sử 1 order có 10 visits
@@ -180,17 +161,17 @@ function calculateOverviewStats() {
   // Tính growth rate từ dashboard hoặc tính toán
   const growthRate = dashboardStats.value?.growthRate || 0;
 
-  // Tính return rate
+  // Tính return rate từ orders hiện tại (chỉ để tham khảo vì có giới hạn)
   const returnedOrders = orders.value.filter(
     (o) => o.status === "returned" || o.status === "cancelled"
   ).length;
-  const returnRate = totalOrders ? (returnedOrders / totalOrders) * 100 : 0;
+  const returnRate = orders.value.length > 0 ? (returnedOrders / orders.value.length) * 100 : 0;
 
   overviewStats.value = {
     totalRevenue,
     totalOrders,
     totalProducts,
-    totalCustomers: uniqueCustomers,
+    totalCustomers: totalUsers,
     avgOrderValue,
     conversionRate,
     growthRate,
@@ -200,18 +181,26 @@ function calculateOverviewStats() {
 
 // 🟢 Tính toán thống kê kho hàng
 function calculateInventoryStats() {
-  const totalValue = products.value.reduce(
-    (sum, p) => sum + p.price * (p.stock || 0),
-    0
-  );
+  // Lưu ý: products.value có giới hạn 1000 items do pagination
+  // Để có số liệu chính xác 100%, nên tạo API riêng cho inventory stats
+  // Hiện tại tính toán dựa trên products.value để hiển thị
+  
+  const totalValue = products.value.reduce((sum, p) => {
+    const price = Number(p.price ?? 0);
+    const stock = Number(p.stock ?? 0);
+    const item = (Number.isFinite(price) ? price : 0) * (Number.isFinite(stock) ? stock : 0);
+    return sum + item;
+  }, 0);
   const inStock = products.value.filter((p) => (p.stock || 0) > 5).length;
   const lowStock = products.value.filter(
     (p) => (p.stock || 0) > 0 && (p.stock || 0) <= 5
   ).length;
   const outOfStock = products.value.filter((p) => (p.stock || 0) === 0).length;
   const avgPrice = products.value.length
-    ? products.value.reduce((sum, p) => sum + p.price, 0) /
-      products.value.length
+    ? products.value.reduce((sum, p) => {
+        const price = Number(p.price ?? 0);
+        return sum + (Number.isFinite(price) ? price : 0);
+      }, 0) / products.value.length
     : 0;
 
   // Thống kê theo danh mục
@@ -228,7 +217,7 @@ function calculateInventoryStats() {
     }
     categoryStats[categoryName].count++;
     categoryStats[categoryName].totalStock += p.stock || 0;
-    categoryStats[categoryName].totalValue += p.price * (p.stock || 0);
+    categoryStats[categoryName].totalValue += (p.price || 0) * (p.stock || 0);
   });
 
   const topCategory =
@@ -263,7 +252,10 @@ function calculateSalesStats() {
     return {
       date,
       orders: dayOrders.length,
-      revenue: dayOrders.reduce((sum, o) => sum + (o.totalAmount || 0), 0),
+      revenue: dayOrders.reduce((sum, o) => {
+        const amt = Number(o.totalAmount ?? o.total ?? 0);
+        return sum + (Number.isFinite(amt) ? amt : 0);
+      }, 0),
     };
   });
 
@@ -283,13 +275,14 @@ function calculateSalesStats() {
 
   const topSellingProducts = Object.entries(productSales)
     .map(([productId, quantity]) => {
-      const product = products.value.find((p) => p._id === productId);
-      return {
-        id: productId,
-        name: product?.name || "Unknown Product",
-        quantity,
-        revenue: quantity * (product?.price || 0),
-      };
+          const product = products.value.find((p) => p._id === productId);
+          const price = Number(product?.price ?? 0);
+          return {
+            id: productId,
+            name: product?.name || "Unknown Product",
+            quantity,
+            revenue: quantity * (Number.isFinite(price) ? price : 0),
+          };
     })
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 5);
@@ -304,9 +297,10 @@ function calculateSalesStats() {
         );
         const categoryName =
           product?.category?.name || product?.categoryName || "Khác";
-        salesByCategory[categoryName] =
-          (salesByCategory[categoryName] || 0) +
-          (item.quantity || 0) * (product?.price || 0);
+        const price = Number(product?.price ?? 0);
+        const qty = Number(item.quantity ?? 0);
+        const add = (Number.isFinite(price) ? price : 0) * (Number.isFinite(qty) ? qty : 0);
+        salesByCategory[categoryName] = (salesByCategory[categoryName] || 0) + add;
       });
     }
   });
@@ -806,6 +800,12 @@ onMounted(() => {
           </div>
         </div>
 
+        <!-- Biểu đồ doanh thu theo tháng -->
+        <RevenueChart 
+          :data="revenueData || []" 
+          :loading="loading"
+        />
+
         <!-- Biểu đồ và phân tích -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Doanh số theo ngày -->
@@ -837,11 +837,14 @@ onMounted(() => {
                       :style="{
                         width: `${Math.min(
                           100,
-                          (day.revenue /
-                            Math.max(
-                              ...salesStats.dailySales.map((d) => d.revenue)
-                            )) *
-                            100
+                          Math.max(0,
+                            (day.revenue /
+                              Math.max(
+                                1,
+                                ...salesStats.dailySales.map((d) => Number(d?.revenue ?? 0) || 0)
+                              )) *
+                              100
+                          )
                         )}%`,
                       }"
                     ></div>
@@ -913,11 +916,14 @@ onMounted(() => {
                       :style="{
                         width: `${Math.min(
                           100,
-                          (category.value /
-                            Math.max(
-                              ...salesStats.salesByCategory.map((c) => c.value)
-                            )) *
-                            100
+                          Math.max(0,
+                            (category.value /
+                              Math.max(
+                                1,
+                                ...salesStats.salesByCategory.map((c) => Number(c?.value ?? 0) || 0)
+                              )) *
+                              100
+                          )
                         )}%`,
                       }"
                     ></div>
