@@ -127,10 +127,7 @@
               </h3>
 
               <!-- Address Display Mode -->
-              <div
-                v-if="hasCompleteAddress && !isEditingAddress"
-                class="space-y-4"
-              >
+              <div v-if="showSavedAddress" class="space-y-4">
                 <div class="bg-green-50 border border-green-200 rounded-lg p-4">
                   <div class="flex items-start">
                     <svg
@@ -158,7 +155,6 @@
                       </p>
                       <p class="text-gray-700 mb-3">{{ fullAddressText }}</p>
                       <button
-                        @click="isEditingAddress = true"
                         type="button"
                         class="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
                       >
@@ -183,30 +179,7 @@
               </div>
 
               <!-- Address Form Mode -->
-              <div
-                v-if="!hasCompleteAddress || isEditingAddress"
-                class="space-y-4"
-              >
-                <div
-                  v-if="isEditingAddress"
-                  class="flex justify-end space-x-2 mb-4"
-                >
-                  <button
-                    @click="cancelAddressEdit"
-                    type="button"
-                    class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg transition-colors"
-                  >
-                    Hủy thay đổi
-                  </button>
-                  <button
-                    @click="saveAddressChanges"
-                    type="button"
-                    class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors"
-                  >
-                    Lưu địa chỉ
-                  </button>
-                </div>
-
+              <div v-if="showAddressForm" class="space-y-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -538,7 +511,7 @@ const order = ref(null);
 const loading = ref(false);
 const orderItems = ref([]); // Items to be ordered
 const orderType = ref(""); // 'direct' or 'cart'
-const isEditingAddress = ref(false); // To control address display mode
+
 const isProcessingOrder = ref(false); // Prevent double submission
 
 // Address data
@@ -625,24 +598,27 @@ const buttonText = computed(() => {
   }
 });
 
-// Check if address is complete
+// Check if address is complete (for validation when submitting order)
 const hasCompleteAddress = computed(() => {
-  // If user has a full address text (from previous orders) with commas, consider it complete
-  if (
-    form.value.address &&
-    form.value.address.includes(",") &&
-    form.value.address.split(",").length >= 3
-  ) {
-    return true;
-  }
+  // Check if all address fields are filled with meaningful data
+  const hasProvince = !!form.value.province;
+  const hasDistrict = !!form.value.district;
+  const hasWard = !!form.value.ward;
+  // Require at least 5 characters for detailed address
+  const hasDetailedAddress =
+    form.value.address && form.value.address.trim().length >= 5;
 
-  // Otherwise, check if all fields are filled for new address
-  return (
-    form.value.province &&
-    form.value.district &&
-    form.value.ward &&
-    form.value.address
-  );
+  return hasProvince && hasDistrict && hasWard && hasDetailedAddress;
+});
+
+// Always show address form (no auto-hide behavior)
+const showAddressForm = computed(() => {
+  return true; // Always show the form
+});
+
+// Don't show saved address display - keep form always visible
+const showSavedAddress = computed(() => {
+  return false; // Never show saved address view - always allow editing
 });
 
 // Full address text for display
@@ -728,67 +704,59 @@ const onDistrictChange = async () => {
   }
 };
 
-const cancelAddressEdit = () => {
-  isEditingAddress.value = false;
-  // Optionally reload user profile to restore original values
-  // loadUserProfile();
-};
-
-const saveAddressChanges = () => {
-  // Validate that all address fields are filled
-  if (
-    !form.value.province ||
-    !form.value.district ||
-    !form.value.ward ||
-    !form.value.address
-  ) {
-    showError("Vui lòng điền đầy đủ thông tin địa chỉ");
-    return;
-  }
-
-  // Just exit edit mode without changing the data structure
-  // Keep both individual fields and the street address as they are
-  // The fullAddressText computed will handle displaying the full address
-  isEditingAddress.value = false;
-  showSuccess("Đã lưu địa chỉ thành công");
-};
-
 const loadUserProfile = async () => {
   if (!authStore.isAuthenticated) return;
 
   try {
+    // Lấy thông tin user
     const response = await userService.getProfile();
     if (response.success && response.data) {
       const userData = response.data;
 
-      // Auto-fill form with user data
+      // Auto-fill form với thông tin cơ bản
       form.value.fullName = userData.name || "";
-      form.value.phone = userData.phone_number || ""; // Use phone_number from model
+      form.value.phone = userData.phone_number || "";
       form.value.email = userData.email || "";
+    }
 
-      // Auto-fill address if available
-      if (userData.address) {
-        form.value.address = userData.address;
-      }
+    // Lấy đơn hàng gần nhất để lấy địa chỉ
+    const ordersResponse = await orderService.getUserOrders(1, 1); // Lấy 1 đơn hàng gần nhất
+    if (ordersResponse.success && ordersResponse.data.orders && ordersResponse.data.orders.length > 0) {
+      const lastOrder = ordersResponse.data.orders[0];
+      const shippingAddress = lastOrder.shipping_address;
 
-      // Auto-fill province and load dependent data
-      if (userData.province) {
-        form.value.province = userData.province;
-        await onProvinceChange(); // Load districts for this province
+      if (shippingAddress) {
+        // Parse địa chỉ từ đơn hàng gần nhất
+        // Format: "Số nhà, đường, Phường/Xã, Quận/Huyện, Tỉnh/TP"
+        const addressParts = shippingAddress.address.split(', ');
+        
+        if (addressParts.length >= 4) {
+          // Lấy tỉnh (phần cuối)
+          const province = addressParts[addressParts.length - 1];
+          form.value.province = province;
+          await onProvinceChange();
 
-        // Auto-fill district and load dependent data
-        if (userData.district) {
-          form.value.district = userData.district;
-          await onDistrictChange(); // Load wards for this district
+          // Lấy quận (phần gần cuối)
+          const district = addressParts[addressParts.length - 2];
+          form.value.district = district;
+          await onDistrictChange();
 
-          // Auto-fill ward
-          if (userData.ward) {
-            form.value.ward = userData.ward;
-          }
+          // Lấy phường (phần gần cuối nữa)
+          const ward = addressParts[addressParts.length - 3];
+          form.value.ward = ward;
+
+          // Lấy địa chỉ chi tiết (các phần đầu)
+          const detailedAddress = addressParts.slice(0, addressParts.length - 3).join(', ');
+          form.value.address = detailedAddress;
+
+          console.log("Địa chỉ từ đơn hàng gần nhất đã được tải:", {
+            province,
+            district,
+            ward,
+            address: detailedAddress
+          });
         }
       }
-
-      console.log("User profile loaded and form auto-filled:", userData);
     }
   } catch (error) {
     console.error("Error loading user profile:", error);
@@ -803,10 +771,10 @@ const initializePayment = () => {
     try {
       const orderData = JSON.parse(tempOrder);
       orderType.value = "direct";
-      orderItems.value = orderData.items.map(item => ({
+      orderItems.value = orderData.items.map((item) => ({
         product: item.product,
         quantity: item.quantity,
-        price: item.price
+        price: item.price,
       }));
       console.log("Buy Now - Order data:", orderData);
       // Clear tempOrder after using it
@@ -817,7 +785,7 @@ const initializePayment = () => {
       localStorage.removeItem("tempOrder"); // Clear invalid data
     }
   }
-  
+
   // Check if coming from ProductDetail with product data (legacy)
   if (route.query.type === "direct" && route.query.productData) {
     try {
@@ -904,7 +872,7 @@ const handleOnlinePayment = async (orderId, paymentMethod) => {
 
           if (response.success && response.data && response.data.paymentUrl) {
             showSuccess("Đang chuyển đến VNPay...");
-            
+
             // Clear cart if order from cart before redirecting
             if (orderType.value === "cart") {
               try {
@@ -916,17 +884,20 @@ const handleOnlinePayment = async (orderId, paymentMethod) => {
                 console.error("Error clearing cart:", error);
               }
             }
-            
+
             // Chuyển hướng đến URL thanh toán VNPay
             window.location.href = response.data.paymentUrl;
           } else {
-            throw new Error(response.message || "Không thể tạo URL thanh toán VNPay");
+            throw new Error(
+              response.message || "Không thể tạo URL thanh toán VNPay"
+            );
           }
         } catch (vnpayError) {
           console.error("VNPay error:", vnpayError);
-          const errorMessage = vnpayError.response?.data?.message || 
-                              vnpayError.message || 
-                              "Không thể kết nối đến VNPay";
+          const errorMessage =
+            vnpayError.response?.data?.message ||
+            vnpayError.message ||
+            "Không thể kết nối đến VNPay";
           showError(errorMessage);
         }
         break;
@@ -1022,7 +993,8 @@ const processCheckout = async () => {
       console.log("Direct order - productInfo:", productInfo);
 
       // Handle both old format (productId) and new format (product object)
-      const productId = productInfo.productId || productInfo.id || productInfo.product?._id;
+      const productId =
+        productInfo.productId || productInfo.id || productInfo.product?._id;
       if (!productId) {
         showError("Không tìm thấy thông tin sản phẩm");
         hideLoading(loader);
@@ -1135,28 +1107,29 @@ const processCheckout = async () => {
 
           // Nếu có order được tạo trong vòng 2 phút qua, có thể đó là order vừa tạo
           if (timeDiff < 2 * 60 * 1000) {
-          console.log(
-            "Found recent order, redirecting to success page:",
-            recentOrder._id
-          );
-          showSuccess("Đặt hàng thành công! Đang chuyển hướng...");
+            console.log(
+              "Found recent order, redirecting to success page:",
+              recentOrder._id
+            );
+            showSuccess("Đặt hàng thành công! Đang chuyển hướng...");
 
-          // Clear cart if order from cart
-          if (orderType.value === "cart") {
-            try {
-              await cartStore.fetchCart();
-              if (cartStore.cartCount > 0) {
-                cartStore.clearCart();
+            // Clear cart if order from cart
+            if (orderType.value === "cart") {
+              try {
+                await cartStore.fetchCart();
+                if (cartStore.cartCount > 0) {
+                  cartStore.clearCart();
+                }
+              } catch (error) {
+                console.error("Error clearing cart:", error);
               }
-            } catch (error) {
-              console.error("Error clearing cart:", error);
             }
-          }
 
-          router.push({
-            name: "orderSuccess",
-            query: { orderId: recentOrder._id },
-          });            if (loader) hideLoading(loader);
+            router.push({
+              name: "orderSuccess",
+              query: { orderId: recentOrder._id },
+            });
+            if (loader) hideLoading(loader);
             return;
           }
         }

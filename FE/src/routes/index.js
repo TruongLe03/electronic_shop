@@ -67,6 +67,12 @@ const routes = [
     props: { defaultTab: 'orders' },
   },
   {
+    path: "/notifications",
+    name: "notifications",
+    component: () => import("@views/client/Notifications.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/forgot-password",
     name: "forgotPassword",
     component: () => import("@views/client/ForgotPassword.vue"),

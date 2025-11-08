@@ -32,6 +32,9 @@ export const handleLogin = asyncHandler(async (req, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      phone_number: user.phone_number,
+      address: user.address,
+      avatar: user.avatar,
       role: user.role,
     }
   }, "Đăng nhập thành công");
@@ -54,6 +57,9 @@ export const register = asyncHandler(async (req, res) => {
       id: user._id,
       name: user.name,
       email: user.email,
+      phone_number: user.phone_number,
+      address: user.address,
+      avatar: user.avatar,
       role: user.role,
     }
   }, "Đăng ký thành công", 201);
@@ -69,7 +75,7 @@ export const getProfile = async (req, res) => {
         id: user._id,
         name: user.name,
         email: user.email,
-        phone: user.phone_number,
+        phone_number: user.phone_number,
         address: user.address,
         avatar: user.avatar,
         role: user.role,

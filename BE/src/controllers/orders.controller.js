@@ -56,6 +56,21 @@ export const getOrderById = asyncHandler(async (req, res) => {
   }
 
   const order = await OrderService.getOrderById(orderId);
+  
+  // Kiểm tra ownership nếu không phải admin
+  if (req.user && req.user.role !== "admin") {
+    // user_id có thể là ObjectId hoặc populated object
+    const orderUserId = order.user_id?._id || order.user_id;
+    
+    if (!orderUserId) {
+      return ResponseUtil.forbidden(res, "Đơn hàng không có thông tin người dùng");
+    }
+    
+    if (orderUserId.toString() !== req.user.id.toString()) {
+      return ResponseUtil.forbidden(res, "Bạn không có quyền xem đơn hàng này");
+    }
+  }
+  
   return ResponseUtil.success(res, order, "Lấy chi tiết đơn hàng thành công");
 });
 

@@ -137,10 +137,13 @@
               <i class="fas fa-bars text-xl"></i>
             </button>
 
-            <!-- Cart - Second on mobile -->
+            <!-- Notification Bell - Show only when logged in -->
+            <NotificationBell class="order-2" />
+
+            <!-- Cart - Third on mobile -->
             <router-link
               to="/cart"
-              class="flex flex-col items-center group order-2"
+              class="flex flex-col items-center group order-3"
             >
               <div class="relative">
                 <i
@@ -519,6 +522,7 @@ import { useAuthStore } from "../../stores/auth";
 import { useCartStore } from "../../stores/cart";
 import { useSearch } from "../../composables/client/useSearch";
 import { useNotification } from "../../composables/client/useNotification";
+import NotificationBell from "./NotificationBell.vue";
 
 const router = useRouter();
 const route = useRoute();

@@ -12,17 +12,6 @@ export const orderService = {
     }
   },
 
-  // Test API connection
-  async testAPI() {
-    try {
-      const response = await apiClient.get("/orders/test");
-      return response.data;
-    } catch (error) {
-      console.error("Test API error:", error);
-      throw error;
-    }
-  },
-
   // Lấy danh sách đơn hàng của user
   async getUserOrders() {
     try {

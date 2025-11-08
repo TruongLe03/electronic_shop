@@ -1,6 +1,7 @@
 import Order from "../models/orders.model.js";
 import { CartService } from "./cartService.js";
 import { ProductService } from "./productService.js";
+import NotificationService from "./notificationService.js";
 
 export class OrderService {
   // Tạo đơn hàng mới
@@ -302,6 +303,42 @@ export class OrderService {
 
     const updatedOrder = await order.save();
     
+    // Tạo thông báo theo trạng thái
+    const notificationTypes = {
+      confirmed: "order_confirmed",
+      processing: "order_processing",
+      shipping: "order_shipping",
+      delivered: "order_delivered",
+      cancelled: "order_cancelled",
+    };
+
+    if (notificationTypes[status]) {
+      // Thông báo cho khách hàng
+      await NotificationService.createOrderNotification(
+        order.user_id,
+        order._id,
+        notificationTypes[status],
+        {
+          orderId: order.orderId,
+          total: order.total,
+        }
+      );
+
+      // Thông báo cho admin (chỉ cho confirmed và cancelled)
+      if (status === "confirmed" || status === "cancelled") {
+        await NotificationService.createAdminNotification(
+          order._id,
+          notificationTypes[status],
+          {
+            orderId: order.orderId,
+            total: order.total,
+            customerName: order.shipping_address?.name,
+            cancelledBy: status === "cancelled" ? "admin" : null,
+          }
+        );
+      }
+    }
+    
     // Return populated order for better response
     return await Order.findById(updatedOrder._id)
       .populate("products.product_id")
@@ -453,6 +490,18 @@ export class OrderService {
     // Hoàn trả stock cho các sản phẩm (nếu cần)
     // Có thể implement sau nếu có inventory management
 
+    // Tạo thông báo hủy đơn hàng (không await để không block)
+    NotificationService.createOrderNotification(
+      order.user_id,
+      order._id,
+      "order_cancelled",
+      {
+        orderId: order.orderId,
+        total: order.total,
+        cancelReason: cancelData.reason,
+      }
+    ).catch(err => console.error("Error creating cancel notification:", err));
+
     return { success: true, order };
   }
 
@@ -523,9 +572,41 @@ export class OrderService {
     // Xóa giỏ hàng sau khi tạo đơn hàng thành công
     await CartService.clearCart(userId);
 
-    return await Order.findById(savedOrder._id)
+    const populatedOrder = await Order.findById(savedOrder._id)
       .populate("products.product_id")
       .populate("user_id", "name email phone_number");
+
+    // Tạo thông báo (không throw error nếu fail)
+    try {
+      // Thông báo cho khách hàng
+      await NotificationService.createOrderNotification(
+        userId,
+        savedOrder._id,
+        "order_created",
+        {
+          orderId: savedOrder.orderId,
+          total: savedOrder.total,
+        }
+      );
+      
+      // Thông báo cho admin
+      await NotificationService.createAdminNotification(
+        savedOrder._id,
+        "order_created",
+        {
+          orderId: savedOrder.orderId,
+          total: savedOrder.total,
+          customerName: shippingAddress.name,
+        }
+      );
+      
+      console.log("✅ Notifications created for order:", savedOrder.orderId);
+    } catch (notifError) {
+      console.error("❌ Error creating notification:", notifError);
+      // Don't throw - order creation should succeed even if notification fails
+    }
+
+    return populatedOrder;
   }
 
   // Tạo đơn hàng trực tiếp (mua ngay)
@@ -609,6 +690,33 @@ export class OrderService {
     }
 
     await order.save();
+
+    // Tạo thông báo thanh toán thành công
+    try {
+      // Thông báo cho khách hàng
+      await NotificationService.createOrderNotification(
+        order.user_id,
+        order._id,
+        "payment_success",
+        {
+          orderId: order.orderId,
+          total: order.total,
+        }
+      );
+
+      // Thông báo cho admin
+      await NotificationService.createAdminNotification(
+        order._id,
+        "payment_success",
+        {
+          orderId: order.orderId,
+          total: order.total,
+          customerName: order.shipping_address?.name,
+        }
+      );
+    } catch (notifError) {
+      console.error("❌ Error creating payment notification:", notifError);
+    }
 
     return { success: true, order };
   }

@@ -24,12 +24,12 @@ ordersRouter.post("/direct", authMiddleware, createDirectOrder); // Mua ngay
 
 // ==== USER ORDERS ====
 ordersRouter.get("/my-orders", authMiddleware, getUserOrders); // Đơn hàng của tôi
-ordersRouter.get("/my-orders/:orderId/details", authMiddleware, requireOwner("userId"), getOrderById); // Chi tiết đơn hàng
+ordersRouter.get("/my-orders/:orderId/details", authMiddleware, getOrderById); // Chi tiết đơn hàng
 
 // ==== ORDER MANAGEMENT ====
-ordersRouter.put("/:id/info", authMiddleware, requireOwner("userId"), updateOrderInfo); // Cập nhật thông tin
-ordersRouter.put("/:id/payment", authMiddleware, requireOwner("userId"), confirmPayment); // Xác nhận thanh toán
-ordersRouter.patch("/my-orders/:orderId/cancel", authMiddleware, requireOwner("userId"), cancelOrder); // Hủy đơn hàng
+ordersRouter.put("/:id/info", authMiddleware, updateOrderInfo); // Cập nhật thông tin
+ordersRouter.put("/:id/payment", authMiddleware, confirmPayment); // Xác nhận thanh toán
+ordersRouter.patch("/my-orders/:orderId/cancel", authMiddleware, cancelOrder); // Hủy đơn hàng
 
 // ==== ADMIN MANAGEMENT ====
 ordersRouter.get("/management/all", requireAdminAuth, getAllOrders); // Tất cả đơn hàng (admin)

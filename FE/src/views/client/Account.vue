@@ -1,8 +1,32 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <!-- Header -->
-      <div class="mb-8">
+  <ClientLayout>
+    <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Back Button -->
+        <div class="mb-6">
+          <button
+            @click="$router.back()"
+            class="inline-flex items-center px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:text-blue-600 transition-colors duration-200 shadow-sm"
+          >
+            <svg
+              class="w-4 h-4 mr-2"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M10 19l-7-7m0 0l7-7m-7 7h18"
+              />
+            </svg>
+            Quay lại
+          </button>
+        </div>
+
+        <!-- Header -->
+        <div class="mb-8">
         <div class="flex items-center justify-between">
           <div>
             <h1 class="text-4xl font-bold text-gray-900 mb-2">
@@ -1083,12 +1107,12 @@
         </div>
       </div>
     </div>
-  </div>
+    </div>
 
-  <!-- Cancel Order Modal -->
-  <Teleport to="body">
-    <div
-      v-if="showCancelModal"
+    <!-- Cancel Order Modal -->
+    <Teleport to="body">
+      <div
+        v-if="showCancelModal"
       class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4"
       @click="showCancelModal = false"
     >
@@ -1152,7 +1176,8 @@
         </div>
       </div>
     </div>
-  </Teleport>
+    </Teleport>
+  </ClientLayout>
 </template>
 
 <style scoped>
@@ -1174,6 +1199,7 @@ import { useNotification } from "@/composables/client/useNotification";
 import { userService } from "@api/userService";
 import { orderService } from "@api/orderService";
 import { getFullImage } from "@utils/imageUtils";
+import ClientLayout from "@/layout/ClientLayout.vue";
 
 const authStore = useAuthStore();
 const { user } = authStore;
@@ -1250,14 +1276,6 @@ const loadUserOrders = async () => {
     console.log("=== LOADING USER ORDERS ===");
     console.log("Auth store user:", authStore.user);
     console.log("Is authenticated:", authStore.isAuthenticated);
-
-    // Test API connection first
-    try {
-      const testResponse = await orderService.testAPI();
-      console.log("Test API successful:", testResponse);
-    } catch (testError) {
-      console.error("Test API failed:", testError);
-    }
 
     loading.value = true;
     const response = await orderService.getUserOrders();
@@ -1554,9 +1572,29 @@ const formatPrice = (price) => {
   }).format(price);
 };
 
+const loadUserProfile = async () => {
+  try {
+    const response = await userService.getProfile();
+    if (response.success && response.data) {
+      // Update profileForm with fresh data from server
+      profileForm.name = response.data.name || "";
+      profileForm.email = response.data.email || "";
+      profileForm.phone_number = response.data.phone_number || "";
+      profileForm.address = response.data.address || "";
+      profileForm.birthDate = response.data.birthDate || "";
+      
+      // Also update authStore
+      authStore.updateUser(response.data);
+    }
+  } catch (error) {
+    console.error("Error loading user profile:", error);
+  }
+};
+
 onMounted(async () => {
   // Only load orders if user is authenticated
   if (authStore.isAuthenticated) {
+    await loadUserProfile(); // Load fresh profile data
     await loadUserOrders();
   } else {
     console.warn("User not authenticated, skipping order load");
