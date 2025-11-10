@@ -86,7 +86,7 @@ export const userService = {
   // Lấy danh sách địa chỉ
   getAddresses: async () => {
     try {
-      const response = await axiosInstance.get("/users/addresses/all");
+      const response = await axiosInstance.get("/users/addresses");
       return response.data;
     } catch (error) {
       throw error.response?.data || error.message;

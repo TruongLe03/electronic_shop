@@ -20,18 +20,29 @@ class NotificationService {
   }
 
   // Lấy danh sách thông báo của user
-  static async getUserNotifications(userId, page = 1, limit = 20) {
+  static async getUserNotifications(userId, page = 1, limit = 20, userRole = null) {
     const skip = (page - 1) * limit;
 
+    // Admin lấy tất cả thông báo, user thường chỉ lấy của mình
+    let query = {};
+    if (userRole === "admin") {
+      // Admin: Lấy tất cả thông báo
+      query = {};
+    } else {
+      // User thường: Chỉ lấy thông báo của mình
+      query = { user_id: userId };
+    }
+
     const [notifications, total, unreadCount] = await Promise.all([
-      Notification.find({ user_id: userId })
+      Notification.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .populate("order_id", "orderId status total")
+        .populate("user_id", "username email") // Populate để hiển thị tên user
         .lean(),
-      Notification.countDocuments({ user_id: userId }),
-      Notification.countDocuments({ user_id: userId, is_read: false }),
+      Notification.countDocuments(query),
+      Notification.countDocuments({ ...query, is_read: false }),
     ]);
 
     return {
@@ -86,54 +97,75 @@ class NotificationService {
   }
 
   // Lấy số lượng thông báo chưa đọc
-  static async getUnreadCount(userId) {
-    const count = await Notification.countDocuments({
-      user_id: userId,
-      is_read: false,
-    });
+  static async getUnreadCount(userId, userRole = null) {
+    let query = { is_read: false };
+    
+    if (userRole !== "admin") {
+      // User thường chỉ đếm thông báo của mình
+      query.user_id = userId;
+    }
+    // Admin: Đếm tất cả thông báo chưa đọc
+    
+    const count = await Notification.countDocuments(query);
     return count;
   }
 
   // Helper: Tạo thông báo cho đơn hàng
   static async createOrderNotification(userId, orderId, type, orderData = {}) {
+    // Kiểm tra xem đã có thông báo tương tự chưa (trong vòng 1 phút gần đây)
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    const existingNotification = await Notification.findOne({
+      user_id: userId,
+      order_id: orderId,
+      type,
+      createdAt: { $gte: oneMinuteAgo },
+    });
+
+    if (existingNotification) {
+      console.log(
+        `⚠️ Notification already exists for user ${userId}, order ${orderId}, type ${type}`
+      );
+      return existingNotification;
+    }
+
     const notificationConfigs = {
       order_created: {
-        title: "Đơn hàng đã được tạo",
-        message: `Đơn hàng #${
+        title: "🎉 Đặt hàng thành công",
+        message: `Bạn vừa đặt đơn hàng #${
           orderData.orderId
-        } của bạn đã được tạo thành công. Tổng giá trị: ${this.formatPrice(
+        } thành công. Tổng giá trị: ${this.formatPrice(
           orderData.total
-        )}`,
+        )}. Chúng tôi sẽ xác nhận và xử lý đơn hàng của bạn trong thời gian sớm nhất.`,
       },
       order_confirmed: {
-        title: "Đơn hàng đã được xác nhận",
-        message: `Đơn hàng #${orderData.orderId} đã được xác nhận và đang được xử lý`,
+        title: "✅ Đơn hàng đã xác nhận",
+        message: `Đơn hàng #${orderData.orderId} của bạn đã được xác nhận và đang trong quá trình chuẩn bị hàng`,
       },
       order_processing: {
-        title: "Đơn hàng đang được chuẩn bị",
-        message: `Đơn hàng #${orderData.orderId} đang được chuẩn bị và sẽ sớm được giao`,
+        title: "📦 Đang chuẩn bị hàng",
+        message: `Đơn hàng #${orderData.orderId} của bạn đang được đóng gói và chuẩn bị giao đến bạn`,
       },
       order_shipping: {
-        title: "Đơn hàng đang được giao",
-        message: `Đơn hàng #${orderData.orderId} đang trên đường giao đến bạn`,
+        title: "🚚 Đơn hàng đang giao",
+        message: `Đơn hàng #${orderData.orderId} của bạn đang trên đường giao đến địa chỉ của bạn`,
       },
       order_delivered: {
-        title: "Đơn hàng đã giao thành công",
-        message: `Đơn hàng #${orderData.orderId} đã được giao thành công. Cảm ơn bạn đã mua hàng!`,
+        title: "🎊 Giao hàng thành công",
+        message: `Đơn hàng #${orderData.orderId} đã được giao thành công đến bạn. Cảm ơn bạn đã tin tưởng và mua hàng!`,
       },
       order_cancelled: {
-        title: "Đơn hàng đã bị hủy",
-        message: `Đơn hàng #${orderData.orderId} đã bị hủy. ${
-          orderData.cancelReason || ""
+        title: "❌ Đơn hàng đã hủy",
+        message: `Đơn hàng #${orderData.orderId} của bạn đã bị hủy. ${
+          orderData.cancelReason ? `Lý do: ${orderData.cancelReason}` : ""
         }`,
       },
       payment_success: {
-        title: "Thanh toán thành công",
-        message: `Thanh toán cho đơn hàng #${orderData.orderId} đã được xác nhận thành công`,
+        title: "💳 Thanh toán thành công",
+        message: `Bạn đã thanh toán thành công đơn hàng #${orderData.orderId}. Chúng tôi đang xử lý đơn hàng của bạn.`,
       },
       payment_failed: {
-        title: "Thanh toán thất bại",
-        message: `Thanh toán cho đơn hàng #${orderData.orderId} không thành công. Vui lòng thử lại`,
+        title: "⚠️ Thanh toán thất bại",
+        message: `Thanh toán cho đơn hàng #${orderData.orderId} không thành công. Vui lòng thử lại hoặc chọn phương thức thanh toán khác.`,
       },
     };
 
@@ -168,34 +200,39 @@ class NotificationService {
     // Lấy tất cả admin users
     const adminUsers = await User.find({ role: "admin" }).select("_id");
 
+    if (adminUsers.length === 0) {
+      console.log("⚠️ No admin users found to send notification");
+      return [];
+    }
+
     const notificationConfigs = {
       order_created: {
-        title: "Đơn hàng mới",
-        message: `Khách hàng ${
+        title: "🔔 Đơn hàng mới từ khách",
+        message: `Khách hàng "${
           orderData.customerName || "Ẩn danh"
-        } vừa đặt đơn hàng #${orderData.orderId}. Giá trị: ${this.formatPrice(
+        }" vừa đặt đơn hàng #${orderData.orderId}. Giá trị: ${this.formatPrice(
           orderData.total
-        )}`,
+        )}. Vui lòng xác nhận và xử lý đơn hàng.`,
       },
       order_confirmed: {
-        title: "Đơn hàng đã xác nhận",
-        message: `Đơn hàng #${orderData.orderId} của ${
-          orderData.customerName || "khách hàng"
-        } đã được xác nhận`,
+        title: "✅ Đã xác nhận đơn hàng",
+        message: `Đơn hàng #${orderData.orderId} của khách hàng "${
+          orderData.customerName || "Ẩn danh"
+        }" đã được xác nhận thành công`,
       },
       order_cancelled: {
-        title: "Đơn hàng đã hủy",
-        message: `Đơn hàng #${orderData.orderId} của ${
-          orderData.customerName || "khách hàng"
-        } đã bị hủy ${
+        title: "❌ Đơn hàng bị hủy",
+        message: `Đơn hàng #${orderData.orderId} của khách hàng "${
+          orderData.customerName || "Ẩn danh"
+        }" đã bị hủy ${
           orderData.cancelledBy ? `bởi ${orderData.cancelledBy}` : ""
         }`,
       },
       payment_success: {
-        title: "Thanh toán thành công",
-        message: `${
-          orderData.customerName || "Khách hàng"
-        } đã thanh toán thành công đơn hàng #${
+        title: "💰 Thanh toán mới",
+        message: `Khách hàng "${
+          orderData.customerName || "Ẩn danh"
+        }" đã thanh toán thành công đơn hàng #${
           orderData.orderId
         }. Số tiền: ${this.formatPrice(orderData.total)}`,
       },
@@ -203,22 +240,40 @@ class NotificationService {
 
     const config = notificationConfigs[type];
     if (!config) {
-      return; // Không tạo thông báo admin cho các loại khác
+      return []; // Không tạo thông báo admin cho các loại khác
     }
 
+    // Kiểm tra xem đã có thông báo cho admin chưa (trong vòng 1 phút gần đây)
+    const oneMinuteAgo = new Date(Date.now() - 60 * 1000);
+    
     // Tạo thông báo cho từng admin
-    const notifications = await Promise.all(
-      adminUsers.map((admin) =>
-        this.createNotification({
+    const notifications = [];
+    for (const admin of adminUsers) {
+      // Kiểm tra thông báo đã tồn tại
+      const existingNotification = await Notification.findOne({
+        user_id: admin._id,
+        order_id: orderId,
+        type,
+        createdAt: { $gte: oneMinuteAgo },
+      });
+
+      if (existingNotification) {
+        console.log(
+          `⚠️ Admin notification already exists for admin ${admin._id}, order ${orderId}, type ${type}`
+        );
+        notifications.push(existingNotification);
+      } else {
+        const notification = await this.createNotification({
           userId: admin._id,
           type,
           title: config.title,
           message: config.message,
           orderId,
           metadata: orderData,
-        })
-      )
-    );
+        });
+        notifications.push(notification);
+      }
+    }
 
     return notifications;
   }

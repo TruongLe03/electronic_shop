@@ -63,11 +63,9 @@ const handleNotificationClick = async (notification) => {
       await notificationStore.markAsRead(notification._id);
     }
 
-    // Điều hướng đến trang chi tiết đơn hàng
-    if (notification.order_id) {
-      closeDropdown();
-      router.push(`/orders/${notification.order_id}`);
-    }
+    // Điều hướng đến trang chi tiết thông báo
+    closeDropdown();
+    router.push(`/notifications/${notification._id}`);
   } catch (error) {
     console.error("Error handling notification click:", error);
   }

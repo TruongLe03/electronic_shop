@@ -12,9 +12,8 @@
           <div
             v-for="notification in notifications"
             :key="notification._id"
-            class="p-6 hover:bg-gray-50 transition-colors duration-200 cursor-pointer"
+            class="p-6 hover:bg-gray-50 transition-colors duration-200"
             :class="{ 'bg-blue-50': !notification.is_read }"
-            @click="handleAction(notification)"
           >
             <div class="flex items-start">
               <div class="flex-shrink-0">
@@ -39,7 +38,7 @@
                 </div>
               </div>
               
-              <div class="ml-4 flex-1">
+              <div class="ml-4 flex-1 cursor-pointer" @click="viewDetail(notification._id)">
                 <div class="flex items-center justify-between">
                   <h3 class="text-sm font-medium text-gray-900">
                     {{ notification.title }}
@@ -54,22 +53,32 @@
                     ></div>
                   </div>
                 </div>
-                <p class="mt-1 text-sm text-gray-600">
+                <p class="mt-1 text-sm text-gray-600 line-clamp-2">
                   {{ notification.message }}
                 </p>
                 <div class="mt-2 flex space-x-2">
                   <button
+                    @click.stop="viewDetail(notification._id)"
+                    class="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                  >
+                    <i class="fas fa-eye"></i>
+                    Xem chi tiết
+                  </button>
+                  <button
                     v-if="!notification.is_read"
                     @click.stop="markAsRead(notification._id)"
-                    class="text-xs text-blue-600 hover:text-blue-800"
+                    class="text-xs text-green-600 hover:text-green-800"
                   >
+                    <i class="fas fa-check"></i>
                     Đánh dấu đã đọc
                   </button>
                   <button
                     v-if="notification.order_id"
-                    class="text-xs text-blue-600 hover:text-blue-800 font-medium"
+                    @click.stop="viewOrder(notification.order_id)"
+                    class="text-xs text-purple-600 hover:text-purple-800 font-medium"
                   >
-                    Xem chi tiết đơn hàng
+                    <i class="fas fa-shopping-cart"></i>
+                    Xem đơn hàng
                   </button>
                 </div>
               </div>
@@ -179,19 +188,39 @@ const clearAll = async () => {
   }
 }
 
-const handleAction = (notification) => {
-  // Mark as read when clicking
-  if (!notification.is_read) {
-    markAsRead(notification._id)
+const viewDetail = (id) => {
+  router.push(`/notifications/${id}`)
+}
+
+const viewOrder = (orderId) => {
+  // Convert ObjectId to string if needed
+  let id = orderId
+  
+  if (typeof orderId === 'object') {
+    // Nếu là object (được populate), lấy _id
+    id = orderId._id || orderId.id || String(orderId)
   }
   
-  // Navigate to order detail if order_id exists
-  if (notification.order_id) {
-    router.push(`/orders/${notification.order_id}`)
-  }
+  console.log('Navigating to order:', id, 'from:', orderId)
+  router.push(`/order-detail/${id}`)
+}
+
+const handleAction = (notification) => {
+  // Click vào thông báo sẽ xem chi tiết
+  viewDetail(notification._id)
 }
 
 onMounted(async () => {
   await notificationStore.fetchNotifications()
 })
 </script>
+
+<style scoped>
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+</style>

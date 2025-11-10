@@ -156,6 +156,7 @@
                       <p class="text-gray-700 mb-3">{{ fullAddressText }}</p>
                       <button
                         type="button"
+                        @click="toggleEditAddress"
                         class="flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
                       >
                         <svg
@@ -180,6 +181,85 @@
 
               <!-- Address Form Mode -->
               <div v-if="showAddressForm" class="space-y-4">
+                <!-- Nút hủy và chọn địa chỉ cũ -->
+                <div
+                  v-if="isEditingAddress && hasSavedAddress"
+                  class="flex justify-between items-center"
+                >
+                  <p class="text-sm text-gray-600">
+                    <svg
+                      class="w-4 h-4 inline mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    Nhập địa chỉ mới hoặc chọn địa chỉ đã lưu
+                  </p>
+                  <button
+                    type="button"
+                    @click="toggleEditAddress"
+                    class="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1"
+                  >
+                    <svg
+                      class="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                    Hủy
+                  </button>
+                </div>
+
+                <!-- Dropdown chọn địa chỉ đã lưu -->
+                <div v-if="savedAddressList.length > 0 && isEditingAddress">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <svg
+                      class="w-4 h-4 inline mr-1"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                      />
+                    </svg>
+                    Chọn từ địa chỉ đã lưu
+                  </label>
+                  <select
+                    @change="selectSavedAddress($event)"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-blue-50"
+                  >
+                    <option value="">-- Chọn địa chỉ có sẵn --</option>
+                    <option
+                      v-for="(addr, index) in savedAddressList"
+                      :key="index"
+                      :value="index"
+                    >
+                      {{ addr }}
+                    </option>
+                  </select>
+                  <p class="text-xs text-gray-500 mt-1">
+                    Hoặc nhập địa chỉ mới bên dưới
+                  </p>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -255,6 +335,31 @@
                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                     placeholder="Số nhà, tên đường..."
                   />
+                </div>
+
+                <!-- Nút lưu địa chỉ mới -->
+                <div v-if="isEditingAddress" class="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    @click="saveNewAddress"
+                    :disabled="!hasCompleteAddress"
+                    class="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white py-2 px-6 rounded-lg font-semibold transition-colors flex items-center gap-2"
+                  >
+                    <svg
+                      class="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    Lưu địa chỉ
+                  </button>
                 </div>
               </div>
 
@@ -489,6 +594,7 @@ import { ref, computed, onMounted, watch } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useCartStore } from "@stores/cart";
 import { useAuthStore } from "@stores/auth";
+import { useNotificationStore } from "@stores/notificationStore";
 import { useNotification } from "@/composables/client/useNotification";
 import { useGlobalLoading } from "@/composables/client/useLoading";
 import { orderService } from "@api/orderService";
@@ -503,6 +609,7 @@ const router = useRouter();
 const route = useRoute();
 const cartStore = useCartStore();
 const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
 const { showSuccess, showError, showWarning } = useNotification();
 const { showPageLoading, hideLoading } = useGlobalLoading();
 
@@ -598,6 +705,13 @@ const buttonText = computed(() => {
   }
 });
 
+// State để quản lý hiển thị form hay địa chỉ đã lưu
+const isEditingAddress = ref(false);
+const hasSavedAddress = ref(false); // Track if user has saved address
+const savedAddressData = ref(null); // Store original address data for cancel
+const savedAddressList = ref([]); // Store all saved addresses
+const showAddressSelector = ref(false); // Show address selection dropdown
+
 // Check if address is complete (for validation when submitting order)
 const hasCompleteAddress = computed(() => {
   // Check if all address fields are filled with meaningful data
@@ -606,19 +720,19 @@ const hasCompleteAddress = computed(() => {
   const hasWard = !!form.value.ward;
   // Require at least 5 characters for detailed address
   const hasDetailedAddress =
-    form.value.address && form.value.address.trim().length >= 5;
+    form.value.address && form.value.address.trim().length;
 
   return hasProvince && hasDistrict && hasWard && hasDetailedAddress;
 });
 
-// Always show address form (no auto-hide behavior)
+// Show address form when: editing OR no saved address
 const showAddressForm = computed(() => {
-  return true; // Always show the form
+  return isEditingAddress.value || !hasCompleteAddress.value;
 });
 
-// Don't show saved address display - keep form always visible
+// Show saved address when: has complete address AND not editing
 const showSavedAddress = computed(() => {
-  return false; // Never show saved address view - always allow editing
+  return hasCompleteAddress.value && !isEditingAddress.value;
 });
 
 // Full address text for display
@@ -648,6 +762,199 @@ const fullAddressText = computed(() => {
 });
 
 // Methods
+const parseAddressString = (addressString) => {
+  // Parse address string: "Khu 1, Xã Bắc Sơn, Huyện Tam Nông, Tỉnh Phú Thọ"
+  const parts = addressString.split(", ");
+  
+  let detailedAddress = "";
+  let wardName = "";
+  let districtName = "";
+  let provinceName = "";
+
+  if (parts.length >= 4) {
+    detailedAddress = parts[0];
+    wardName = parts[1].replace("Xã ", "").replace("Phường ", "").trim();
+    districtName = parts[2].replace("Huyện ", "").replace("Quận ", "").trim();
+    provinceName = parts[3].replace("Tỉnh ", "").replace("TP ", "").trim();
+  } else if (parts.length >= 2) {
+    detailedAddress = parts[0];
+    provinceName = parts[parts.length - 1];
+  }
+
+  return { detailedAddress, wardName, districtName, provinceName };
+};
+
+const selectSavedAddress = async (event) => {
+  const index = event.target.value;
+  if (index === "") return;
+
+  const selectedAddressString = savedAddressList.value[index];
+  console.log("Selected saved address:", selectedAddressString);
+
+  try {
+    const { detailedAddress, wardName, districtName, provinceName } = parseAddressString(selectedAddressString);
+
+    // Tìm province code
+    const provinceItem = provinces.value.find(p => p.name === provinceName);
+    if (provinceItem) {
+      form.value.province = provinceItem.code;
+      await onProvinceChange();
+
+      // Tìm district code
+      if (districtName && districts.value.length > 0) {
+        const districtItem = districts.value.find(d => d.name === districtName);
+        if (districtItem) {
+          form.value.district = districtItem.code;
+          await onDistrictChange();
+
+          // Tìm ward code
+          if (wardName && wards.value.length > 0) {
+            const wardItem = wards.value.find(w => w.name === wardName);
+            if (wardItem) {
+              form.value.ward = wardItem.code;
+            }
+          }
+        }
+      }
+    }
+
+    // Set detailed address
+    form.value.address = detailedAddress;
+
+    showSuccess("Đã chọn địa chỉ từ danh sách");
+    
+    // Reset dropdown
+    event.target.value = "";
+  } catch (error) {
+    console.error("Error selecting saved address:", error);
+    showError("Không thể load địa chỉ đã chọn");
+  }
+};
+
+const saveNewAddress = () => {
+  if (!hasCompleteAddress.value) {
+    showError("Vui lòng điền đầy đủ thông tin địa chỉ");
+    return;
+  }
+
+  console.log("Saving new address:", {
+    province: form.value.province,
+    district: form.value.district,
+    ward: form.value.ward,
+    address: form.value.address,
+  });
+
+  // Lưu địa chỉ mới vào savedAddressData
+  savedAddressData.value = {
+    province: form.value.province,
+    district: form.value.district,
+    ward: form.value.ward,
+    address: form.value.address,
+  };
+
+  // Đánh dấu có địa chỉ đã lưu
+  hasSavedAddress.value = true;
+
+  // Thoát khỏi chế độ edit
+  isEditingAddress.value = false;
+
+  showSuccess("Đã lưu địa chỉ mới!");
+  console.log(
+    "Address saved successfully, isEditingAddress:",
+    isEditingAddress.value
+  );
+};
+
+const toggleEditAddress = async () => {
+  console.log(
+    "toggleEditAddress called, isEditingAddress:",
+    isEditingAddress.value
+  );
+
+  if (isEditingAddress.value) {
+    // Đang edit -> Hủy thay đổi -> Restore địa chỉ cũ
+    console.log("Canceling edit, restoring address:", savedAddressData.value);
+
+    if (savedAddressData.value) {
+      // Restore address data
+      const savedWard = savedAddressData.value.ward;
+
+      form.value.province = savedAddressData.value.province;
+      form.value.district = savedAddressData.value.district;
+      form.value.ward = savedAddressData.value.ward;
+      form.value.address = savedAddressData.value.address;
+
+      // Load lại dropdowns, nhưng lưu ward để khôi phục sau khi load xong
+      if (form.value.province) {
+        try {
+          const provinceResp = await addressService.getDistricts(
+            form.value.province
+          );
+          if (provinceResp.success) {
+            districts.value = provinceResp.data;
+          }
+        } catch (error) {
+          console.error("Error loading districts on restore:", error);
+        }
+      }
+
+      if (form.value.district) {
+        try {
+          const districtResp = await addressService.getWards(
+            form.value.district
+          );
+          if (districtResp.success) {
+            wards.value = districtResp.data;
+          }
+        } catch (error) {
+          console.error("Error loading wards on restore:", error);
+        }
+      }
+
+      // Restore ward sau khi dropdowns đã load
+      form.value.ward = savedWard;
+
+      console.log("Address restored successfully");
+      console.log("Form after restore:", form.value);
+      console.log("hasCompleteAddress:", hasCompleteAddress.value);
+    }
+
+    // Đặt về chế độ xem
+    isEditingAddress.value = false;
+    console.log(
+      "isEditingAddress set to false, showSavedAddress should be:",
+      hasCompleteAddress.value && !isEditingAddress.value
+    );
+  } else {
+    // Không edit -> Bắt đầu edit -> Lưu địa chỉ hiện tại và clear form (show form trống)
+    console.log("Starting edit, current address:", {
+      province: form.value.province,
+      district: form.value.district,
+      ward: form.value.ward,
+      address: form.value.address,
+    });
+
+    // Luôn lưu địa chỉ hiện tại để restore khi hủy
+    savedAddressData.value = {
+      province: form.value.province,
+      district: form.value.district,
+      ward: form.value.ward,
+      address: form.value.address,
+    };
+
+    // Clear form để nhập địa chỉ mới
+    form.value.province = "";
+    form.value.district = "";
+    form.value.ward = "";
+    form.value.address = "";
+    districts.value = [];
+    wards.value = [];
+
+    console.log("Cleared form for new address entry");
+    isEditingAddress.value = true;
+  }
+};
+
 const loadProvinces = async () => {
   try {
     const response = await addressService.getProvinces();
@@ -669,11 +976,15 @@ const onProvinceChange = async () => {
   districts.value = [];
   wards.value = [];
 
+  console.log("Province changed:", form.value.province);
+
   if (form.value.province) {
     try {
       const response = await addressService.getDistricts(form.value.province);
+      console.log("Districts response:", response);
       if (response.success) {
         districts.value = response.data;
+        console.log("Districts loaded:", districts.value);
       } else {
         showError(response.message);
       }
@@ -714,53 +1025,104 @@ const loadUserProfile = async () => {
       const userData = response.data;
 
       // Auto-fill form với thông tin cơ bản
-      form.value.fullName = userData.name || "";
+      form.value.fullName = userData.username || "";
       form.value.phone = userData.phone_number || "";
       form.value.email = userData.email || "";
     }
 
-    // Lấy đơn hàng gần nhất để lấy địa chỉ
-    const ordersResponse = await orderService.getUserOrders(1, 1); // Lấy 1 đơn hàng gần nhất
-    if (ordersResponse.success && ordersResponse.data.orders && ordersResponse.data.orders.length > 0) {
-      const lastOrder = ordersResponse.data.orders[0];
-      const shippingAddress = lastOrder.shipping_address;
+    // Lấy danh sách địa chỉ của user (là array các string)
+    const addressesResponse = await userService.getAddresses();
+    if (
+      addressesResponse.success &&
+      addressesResponse.data &&
+      addressesResponse.data.length > 0
+    ) {
+      // Lưu tất cả địa chỉ vào savedAddressList
+      savedAddressList.value = addressesResponse.data;
+      console.log("Loaded saved addresses:", savedAddressList.value);
 
-      if (shippingAddress) {
-        // Parse địa chỉ từ đơn hàng gần nhất
-        // Format: "Số nhà, đường, Phường/Xã, Quận/Huyện, Tỉnh/TP"
-        const addressParts = shippingAddress.address.split(', ');
-        
-        if (addressParts.length >= 4) {
-          // Lấy tỉnh (phần cuối)
-          const province = addressParts[addressParts.length - 1];
-          form.value.province = province;
-          await onProvinceChange();
+      // Lấy địa chỉ đầu tiên từ array để hiển thị mặc định
+      const savedAddressString = addressesResponse.data[0];
 
-          // Lấy quận (phần gần cuối)
-          const district = addressParts[addressParts.length - 2];
-          form.value.district = district;
-          await onDistrictChange();
+      if (savedAddressString) {
+        // Backend lưu address dạng: "Khu 1, Xã Bắc Sơn, Huyện Tam Nông, Tỉnh Phú Thọ"
+        // Parse để lấy địa chỉ chi tiết và tỉnh/huyện/xã
+        const { detailedAddress, wardName, districtName, provinceName } = parseAddressString(savedAddressString);
 
-          // Lấy phường (phần gần cuối nữa)
-          const ward = addressParts[addressParts.length - 3];
-          form.value.ward = ward;
+        console.log("Parsed address:", {
+          detailedAddress,
+          wardName,
+          districtName,
+          provinceName,
+        });
 
-          // Lấy địa chỉ chi tiết (các phần đầu)
-          const detailedAddress = addressParts.slice(0, addressParts.length - 3).join(', ');
-          form.value.address = detailedAddress;
+        // Tìm code từ tên
+        if (provinceName) {
+          const provinceItem = provinces.value.find(
+            (p) => p.name === provinceName
+          );
+          if (provinceItem) {
+            form.value.province = provinceItem.code;
+            await onProvinceChange();
 
-          console.log("Địa chỉ từ đơn hàng gần nhất đã được tải:", {
-            province,
-            district,
-            ward,
-            address: detailedAddress
-          });
+            if (districtName && districts.value.length > 0) {
+              const districtItem = districts.value.find(
+                (d) => d.name === districtName
+              );
+              if (districtItem) {
+                form.value.district = districtItem.code;
+                await onDistrictChange();
+
+                if (wardName && wards.value.length > 0) {
+                  const wardItem = wards.value.find((w) => w.name === wardName);
+                  if (wardItem) {
+                    form.value.ward = wardItem.code;
+                  }
+                }
+              }
+            }
+          }
         }
+
+        // Lưu địa chỉ chi tiết
+        form.value.address = detailedAddress;
+
+        console.log("Địa chỉ đã lưu được tải:", savedAddressString);
+        console.log("Form values after load:", {
+          province: form.value.province,
+          district: form.value.district,
+          ward: form.value.ward,
+          address: form.value.address,
+        });
+
+        // Lưu lại địa chỉ gốc để có thể restore khi hủy thay đổi
+        savedAddressData.value = {
+          province: form.value.province,
+          district: form.value.district,
+          ward: form.value.ward,
+          address: form.value.address,
+          originalString: savedAddressString, // Lưu string gốc
+        };
+
+        // Đánh dấu là có địa chỉ đã lưu
+        hasSavedAddress.value = true;
+
+        // Đặt không ở chế độ edit vì đã có địa chỉ
+        isEditingAddress.value = false;
+
+        console.log("Saved address data:", savedAddressData.value);
+        console.log("hasSavedAddress:", hasSavedAddress.value);
+        console.log("isEditingAddress:", isEditingAddress.value);
       }
+    } else {
+      // Nếu chưa có địa chỉ, hiển thị form để nhập
+      hasSavedAddress.value = false;
+      isEditingAddress.value = true;
     }
   } catch (error) {
     console.error("Error loading user profile:", error);
-    // Don't show error to user, just keep form empty
+    // Mặc định show form nếu có lỗi
+    isEditingAddress.value = true;
   }
 };
 
@@ -1053,7 +1415,32 @@ const processCheckout = async () => {
     orderCreated = true; // Mark order as created successfully
     console.log("Order created successfully:", { orderId, orderResponse });
 
-    // Note: User profile is automatically updated by backend when order is created
+    // Save address to user if authenticated (for future use)
+    if (authStore.isAuthenticated) {
+      try {
+        const provinceName =
+          provinces.value.find((p) => p.code == form.value.province)?.name ||
+          form.value.province;
+        const districtName =
+          districts.value.find((d) => d.code == form.value.district)?.name ||
+          form.value.district;
+        const wardName =
+          wards.value.find((w) => w.code == form.value.ward)?.name ||
+          form.value.ward;
+
+        // Tạo address string đầy đủ: "Khu 1, Xã Bắc Sơn, Huyện Tam Nông, Tỉnh Phú Thọ"
+        const fullAddressString = `${form.value.address}, Xã ${wardName}, Huyện ${districtName}, Tỉnh ${provinceName}`;
+
+        // Lưu địa chỉ vào user profile
+        await userService.addAddress({
+          address: fullAddressString, // Backend chỉ nhận address string
+        });
+        console.log("Address saved to user profile:", fullAddressString);
+      } catch (error) {
+        console.error("Error saving address:", error);
+        // Don't show error to user, address saving is optional
+      }
+    }
 
     // Clear cart if order from cart (for all payment methods)
     if (orderType.value === "cart") {
@@ -1067,6 +1454,17 @@ const processCheckout = async () => {
       } catch (error) {
         console.error("Error clearing cart:", error);
         // Still proceed with order success even if cart clear fails
+      }
+    }
+
+    // Fetch notifications để cập nhật badge thông báo mới
+    if (authStore.isAuthenticated) {
+      try {
+        await notificationStore.fetchUnreadCount();
+        console.log("✅ Notification count updated after order creation");
+      } catch (notifError) {
+        console.error("❌ Error fetching notification count:", notifError);
+        // Don't block the order success flow
       }
     }
 
@@ -1122,6 +1520,16 @@ const processCheckout = async () => {
                 }
               } catch (error) {
                 console.error("Error clearing cart:", error);
+              }
+            }
+
+            // Fetch notifications để cập nhật badge
+            if (authStore.isAuthenticated) {
+              try {
+                await notificationStore.fetchUnreadCount();
+                console.log("✅ Notification count updated (recovery flow)");
+              } catch (notifError) {
+                console.error("❌ Error fetching notification count:", notifError);
               }
             }
 

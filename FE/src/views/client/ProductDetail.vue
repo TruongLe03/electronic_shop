@@ -484,7 +484,7 @@
                 </button>
 
                 <button
-                  @click="buyNow"
+                  @click.stop="buyNow"
                   :disabled="product.stock === 0"
                   class="group bg-red-600 text-white py-4 px-6 rounded-xl font-semibold hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                 >
@@ -980,14 +980,22 @@ const addToCart = async () => {
 };
 
 const buyNow = async () => {
+  console.log('Buy Now clicked');
+  
   if (product.value.stock === 0) {
     showError("Sản phẩm đã hết hàng");
     return;
   }
 
   try {
+    console.log('Executing purchaseBuyNow with:', {
+      product: product.value.name,
+      quantity: quantity.value
+    });
+    
     // Sử dụng composable usePurchase
-    await purchaseBuyNow(product.value, quantity.value);
+    const result = await purchaseBuyNow(product.value, quantity.value);
+    console.log('purchaseBuyNow result:', result);
   } catch (error) {
     console.error("Error in buyNow:", error);
     showError("Có lỗi xảy ra khi thực hiện mua hàng");

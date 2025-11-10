@@ -6,13 +6,15 @@ import asyncHandler from "express-async-handler";
 // Lấy danh sách thông báo
 export const getUserNotifications = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  const userRole = req.user.role;
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 20;
 
   const result = await NotificationService.getUserNotifications(
     userId,
     page,
-    limit
+    limit,
+    userRole
   );
 
   return ResponseUtil.success(
@@ -70,8 +72,9 @@ export const deleteNotification = asyncHandler(async (req, res) => {
 // Lấy số lượng thông báo chưa đọc
 export const getUnreadCount = asyncHandler(async (req, res) => {
   const userId = req.user.id;
+  const userRole = req.user.role;
 
-  const count = await NotificationService.getUnreadCount(userId);
+  const count = await NotificationService.getUnreadCount(userId, userRole);
 
   return ResponseUtil.success(
     res,

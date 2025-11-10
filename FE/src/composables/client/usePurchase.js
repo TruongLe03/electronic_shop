@@ -1,8 +1,9 @@
-import router from "@/routes/index.js";
+import { useRouter } from "vue-router";
 import { useAuthStore } from "@stores/auth";
 import { useNotification } from "@/composables/client/useNotification";
 
 export function usePurchase() {
+  const router = useRouter();
   const authStore = useAuthStore();
   const { showWarning } = useNotification();
 
@@ -31,9 +32,6 @@ export function usePurchase() {
 
     // Nếu đã đăng nhập, thực hiện mua ngay
     try {
-      // Gọi API để tạo đơn hàng trực tiếp
-      const { orderService } = await import("@/api/orderService"); 
-
       // Save order data to localStorage first
       const tempOrderData = {
         items: [{
@@ -43,10 +41,19 @@ export function usePurchase() {
         }]
       };
       localStorage.setItem('tempOrder', JSON.stringify(tempOrderData));
+      
+      console.log('Buy Now - Navigating to payment with data:', tempOrderData);
 
       // Navigate to payment page which will handle the full order creation
-      await router.push('/payment');
-      return true;
+      return router.push('/payment').then(() => {
+        console.log('Navigation to payment successful');
+        return true;
+      }).catch(err => {
+        console.error('Navigation error:', err);
+        // Fallback to window.location if router fails
+        window.location.href = '/payment';
+        return true;
+      });
     } catch (error) {
       console.error("Error in buyNow:", error);
       return false;

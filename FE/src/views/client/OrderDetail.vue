@@ -411,8 +411,6 @@ const fetchOrderDetail = async () => {
     const response = await orderService.getOrderById(orderId);
     if (response.success) {
       order.value = response.data;
-      console.log("Order data:", order.value);
-      console.log("Products:", order.value.products);
     } else {
       error.value = response.message || "Không thể tải thông tin đơn hàng";
     }

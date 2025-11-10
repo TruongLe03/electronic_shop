@@ -140,6 +140,46 @@ export class OrderService {
       finalOrder._doc.confirmation_message = "Đơn hàng đã được tự động xác nhận do đủ tồn kho";
     }
     
+    // Tạo thông báo cho đơn hàng mới (không throw error nếu fail)
+    try {
+      // Lấy thông tin user để kiểm tra role
+      const User = (await import("../models/user.model.js")).default;
+      const user = await User.findById(userId).select("role");
+      const isAdmin = user?.role === "admin";
+
+      // Thông báo cho khách hàng (client hoặc admin đều nhận)
+      await NotificationService.createOrderNotification(
+        userId,
+        savedOrder._id,
+        "order_created",
+        {
+          orderId: savedOrder.orderId,
+          total: savedOrder.total,
+        }
+      );
+      
+      // Chỉ tạo thông báo cho admin khi KHÁCH HÀNG (không phải admin) đặt hàng
+      if (!isAdmin) {
+        await NotificationService.createAdminNotification(
+          savedOrder._id,
+          "order_created",
+          {
+            orderId: savedOrder.orderId,
+            total: savedOrder.total,
+            customerName: shipping_address.name,
+          }
+        );
+        console.log("✅ Admin notification created for customer order:", savedOrder.orderId);
+      } else {
+        console.log("ℹ️ Skipped admin notification (order by admin):", savedOrder.orderId);
+      }
+      
+      console.log("✅ Notifications created for order:", savedOrder.orderId);
+    } catch (notifError) {
+      console.error("❌ Error creating notification:", notifError);
+      // Don't throw - order creation should succeed even if notification fails
+    }
+    
     return finalOrder;
   }
 
@@ -578,7 +618,12 @@ export class OrderService {
 
     // Tạo thông báo (không throw error nếu fail)
     try {
-      // Thông báo cho khách hàng
+      // Lấy thông tin user để kiểm tra role
+      const User = (await import("../models/user.model.js")).default;
+      const user = await User.findById(userId).select("role");
+      const isAdmin = user?.role === "admin";
+
+      // Thông báo cho khách hàng (client hoặc admin đều nhận)
       await NotificationService.createOrderNotification(
         userId,
         savedOrder._id,
@@ -589,16 +634,21 @@ export class OrderService {
         }
       );
       
-      // Thông báo cho admin
-      await NotificationService.createAdminNotification(
-        savedOrder._id,
-        "order_created",
-        {
-          orderId: savedOrder.orderId,
-          total: savedOrder.total,
-          customerName: shippingAddress.name,
-        }
-      );
+      // Chỉ tạo thông báo cho admin khi KHÁCH HÀNG (không phải admin) đặt hàng
+      if (!isAdmin) {
+        await NotificationService.createAdminNotification(
+          savedOrder._id,
+          "order_created",
+          {
+            orderId: savedOrder.orderId,
+            total: savedOrder.total,
+            customerName: shippingAddress.name,
+          }
+        );
+        console.log("✅ Admin notification created for customer order:", savedOrder.orderId);
+      } else {
+        console.log("ℹ️ Skipped admin notification (order by admin):", savedOrder.orderId);
+      }
       
       console.log("✅ Notifications created for order:", savedOrder.orderId);
     } catch (notifError) {

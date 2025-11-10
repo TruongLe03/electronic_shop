@@ -16,17 +16,20 @@ export const updateProfile = asyncHandler(async (req, res) => {
   const userId = req.user.id;
 
   // Validate phone number if provided
-  if (updateData.phone_number && !ValidationUtil.isValidPhoneNumber(updateData.phone_number)) {
-    return ResponseUtil.validationError(res, ['Số điện thoại không hợp lệ']);
+  if (
+    updateData.phone_number &&
+    !ValidationUtil.isValidPhoneNumber(updateData.phone_number)
+  ) {
+    return ResponseUtil.validationError(res, ["Số điện thoại không hợp lệ"]);
   }
 
   // Validate email if provided
   if (updateData.email && !ValidationUtil.isValidEmail(updateData.email)) {
-    return ResponseUtil.validationError(res, ['Email không hợp lệ']);
+    return ResponseUtil.validationError(res, ["Email không hợp lệ"]);
   }
 
   const updatedUser = await UserService.updateUser(userId, updateData);
-  
+
   return ResponseUtil.success(res, updatedUser, "Cập nhật profile thành công");
 });
 
@@ -37,19 +40,25 @@ export const changePassword = asyncHandler(async (req, res) => {
 
   // Validate input
   if (!currentPassword || !newPassword) {
-    return ResponseUtil.validationError(res, ["Vui lòng nhập đầy đủ thông tin"]);
+    return ResponseUtil.validationError(res, [
+      "Vui lòng nhập đầy đủ thông tin",
+    ]);
   }
 
   if (newPassword.length < 6) {
-    return ResponseUtil.validationError(res, ["Mật khẩu mới phải có ít nhất 6 ký tự"]);
+    return ResponseUtil.validationError(res, [
+      "Mật khẩu mới phải có ít nhất 6 ký tự",
+    ]);
   }
 
   if (currentPassword === newPassword) {
-    return ResponseUtil.validationError(res, ["Mật khẩu mới phải khác mật khẩu hiện tại"]);
+    return ResponseUtil.validationError(res, [
+      "Mật khẩu mới phải khác mật khẩu hiện tại",
+    ]);
   }
 
   // Lấy user với password
-  const user = await User.findById(userId).select('+password');
+  const user = await User.findById(userId).select("+password");
   if (!user) {
     return ResponseUtil.notFound(res, "Không tìm thấy người dùng");
   }
@@ -59,7 +68,7 @@ export const changePassword = asyncHandler(async (req, res) => {
     currentPassword,
     user.password
   );
-  
+
   if (!isCurrentPasswordValid) {
     return ResponseUtil.validationError(res, ["Mật khẩu hiện tại không đúng"]);
   }
@@ -70,7 +79,7 @@ export const changePassword = asyncHandler(async (req, res) => {
 
   // Cập nhật mật khẩu
   await User.findByIdAndUpdate(
-    userId, 
+    userId,
     {
       password: hashedNewPassword,
       updatedAt: new Date(),
@@ -99,13 +108,14 @@ export const uploadAvatar = async (req, res) => {
 };
 
 // Quản lý địa chỉ
+// Lấy danh sách địa chỉ đã lưu của user
 export const getAddresses = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("addresses");
+    const user = await User.findById(req.user.id).select("address");
 
     res.json({
       success: true,
-      data: user.addresses || [],
+      data: user.address || [], // Trả về array các address string
     });
   } catch (error) {
     console.error("Get addresses error:", error);
@@ -113,42 +123,37 @@ export const getAddresses = async (req, res) => {
   }
 };
 
+// Thêm địa chỉ mới (sau khi đặt hàng thành công)
 export const addAddress = async (req, res) => {
   try {
-    const { name, phone, address, city, district, ward, isDefault } = req.body;
+    const { address } = req.body; // Chỉ nhận address string đầy đủ
     const userId = req.user.id;
+
+    if (!address) {
+      return res.status(400).json({ message: "Địa chỉ không được để trống" });
+    }
 
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Không tìm thấy người dùng" });
     }
 
-    // Tạo địa chỉ mới
-    const newAddress = {
-      name,
-      phone,
-      address,
-      city,
-      district,
-      ward,
-      isDefault: isDefault || false,
-    };
-
-    // Nếu địa chỉ này là mặc định, set các địa chỉ khác thành false
-    if (newAddress.isDefault) {
-      user.addresses = user.addresses.map((addr) => ({
-        ...addr,
-        isDefault: false,
-      }));
+    // Khởi tạo address array nếu chưa có
+    if (!user.address) {
+      user.address = [];
     }
 
-    user.addresses.push(newAddress);
+    // Kiểm tra địa chỉ đã tồn tại chưa để tránh trùng lặp
+    if (!user.address.includes(address)) {
+      user.address.push(address);
+    }
+
     await user.save();
 
     res.json({
       success: true,
       message: "Thêm địa chỉ thành công",
-      data: user.addresses,
+      data: user.address, // Trả về array các address
     });
   } catch (error) {
     console.error("Add address error:", error);
