@@ -1,7 +1,7 @@
 import axios from "axios";
-
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 const axiosInstance = axios.create({
-  baseURL: "http://localhost:6789/api",
+  baseURL: API_URL,
   timeout: 15000, // Tăng timeout lên 15s cho các request tạo order
   headers: {
     "Content-Type": "application/json",
@@ -27,26 +27,34 @@ axiosInstance.interceptors.response.use(
   (response) => response,
   (error) => {
     console.error("Axios interceptor error:", error);
-    
+
     if (error.response?.status === 401) {
       // Clear invalid token
       localStorage.removeItem("token");
       localStorage.removeItem("user");
-      
+
       // Only redirect to login if we're on a protected route
       // or if the user was actually trying to access protected content
       const currentPath = window.location.pathname;
-      const protectedRoutes = ['/account', '/admin', '/orders', '/order-detail', '/notifications'];
-      const isProtectedRoute = protectedRoutes.some(route => currentPath.startsWith(route));
-      
+      const protectedRoutes = [
+        "/account",
+        "/admin",
+        "/orders",
+        "/order-detail",
+        "/notifications",
+      ];
+      const isProtectedRoute = protectedRoutes.some((route) =>
+        currentPath.startsWith(route)
+      );
+
       if (isProtectedRoute) {
         // Store the intended route to redirect after login
         localStorage.setItem("intendedRoute", currentPath);
-        window.location.href = '/login';
+        window.location.href = "/login";
       }
       // If not on protected route, let the app continue normally without redirect
     }
-    
+
     // Log detailed error information for debugging
     if (error.response) {
       console.error("Error response data:", error.response.data);
@@ -56,7 +64,7 @@ axiosInstance.interceptors.response.use(
     } else {
       console.error("Error message:", error.message);
     }
-    
+
     return Promise.reject(error);
   }
 );

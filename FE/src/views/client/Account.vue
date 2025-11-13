@@ -760,6 +760,26 @@
                       <p class="text-2xl font-bold text-gray-900">
                         {{ formatPrice(order.total) }}
                       </p>
+                      <!-- Coupon Badge -->
+                      <div
+                        v-if="order.coupon_code"
+                        class="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 px-2 py-1 rounded-full mt-1"
+                      >
+                        <svg
+                          class="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                          />
+                        </svg>
+                        {{ order.coupon_code }}
+                      </div>
                       <div class="flex space-x-2 mt-2">
                         <router-link
                           :to="`/order-detail/${order.id}`"

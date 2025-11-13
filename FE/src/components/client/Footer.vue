@@ -77,11 +77,11 @@ const socialLinks = [
             <div class="space-y-2 text-gray-300">
               <div class="flex items-center">
                 <i class="fas fa-map-marker-alt w-4 text-blue-400 mr-3"></i>
-                <span>123 Đường ABC, Quận 1, TP.HCM</span>
+                <span>Ngõ 89,Từ Liêm, Hà Nội</span>
               </div>
               <div class="flex items-center">
                 <i class="fas fa-phone w-4 text-blue-400 mr-3"></i>
-                <span>0123.456.789</span>
+                <span>0848 123 456</span>
               </div>
               <div class="flex items-center">
                 <i class="fas fa-envelope w-4 text-blue-400 mr-3"></i>

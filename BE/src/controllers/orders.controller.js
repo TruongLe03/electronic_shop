@@ -158,7 +158,10 @@ export const cancelOrder = asyncHandler(async (req, res) => {
 // Tạo đơn hàng từ giỏ hàng
 export const createOrderFromCart = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { shippingAddress, paymentMethod, note } = req.body;
+  const { shippingAddress, paymentMethod, note, coupon_code } = req.body;
+
+  console.log("createOrderFromCart controller - req.body:", req.body);
+  console.log("createOrderFromCart controller - coupon_code:", coupon_code);
 
   // Validate required fields
   if (!shippingAddress || !paymentMethod) {
@@ -183,6 +186,7 @@ export const createOrderFromCart = asyncHandler(async (req, res) => {
     shippingAddress,
     paymentMethod,
     note: note?.trim(),
+    coupon_code: coupon_code?.trim() || null,
   };
 
   const order = await OrderService.createOrderFromCart(orderData);
@@ -197,7 +201,10 @@ export const createOrderFromCart = asyncHandler(async (req, res) => {
 // Tạo đơn hàng trực tiếp (mua ngay)
 export const createDirectOrder = asyncHandler(async (req, res) => {
   const userId = req.user.id;
-  const { items, shippingAddress, paymentMethod, note } = req.body;
+  const { items, shippingAddress, paymentMethod, note, coupon_code } = req.body;
+
+  console.log("createDirectOrder controller - req.body:", req.body);
+  console.log("createDirectOrder controller - coupon_code:", coupon_code);
 
   // Validate required fields
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -245,6 +252,7 @@ export const createDirectOrder = asyncHandler(async (req, res) => {
     shippingAddress,
     paymentMethod,
     note: note?.trim(),
+    coupon_code: coupon_code?.trim() || null,
   });
   return ResponseUtil.success(
     res,

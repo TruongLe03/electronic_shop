@@ -547,6 +547,328 @@
 
             <hr class="border-gray-200 mb-4" />
 
+            <!-- Coupon Code -->
+            <div class="mb-4">
+              <!-- Applied Coupon Display -->
+              <div v-if="appliedCoupon" class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Mã giảm giá
+                </label>
+                <div
+                  class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg"
+                >
+                  <div class="flex items-center gap-2">
+                    <svg
+                      class="w-5 h-5 text-green-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                    <div>
+                      <p class="text-sm font-medium text-green-800">
+                        Mã {{ appliedCoupon.code }} đã được áp dụng
+                      </p>
+                      <p class="text-xs text-green-600">
+                        Giảm {{ formatPrice(discountAmount) }}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    @click="removeCoupon"
+                    class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-sm rounded-lg font-medium transition-colors"
+                  >
+                    Hủy
+                  </button>
+                </div>
+              </div>
+
+              <!-- Add Coupon Button -->
+              <div v-else>
+                <button
+                  type="button"
+                  @click="showCouponModal = true"
+                  class="w-full flex items-center justify-between px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors group"
+                >
+                  <div class="flex items-center gap-2">
+                    <svg
+                      class="w-5 h-5 text-gray-400 group-hover:text-blue-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                    <span
+                      class="text-sm font-medium text-gray-600 group-hover:text-blue-600"
+                    >
+                      Thêm mã giảm giá
+                    </span>
+                  </div>
+                  <svg
+                    class="w-5 h-5 text-gray-400 group-hover:text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <!-- Coupon Modal -->
+            <div
+              v-if="showCouponModal"
+              class="fixed inset-0 bg-opacity-50 z-50 flex items-center justify-center p-4"
+              @click.self="showCouponModal = false"
+            >
+              <div
+                class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden"
+              >
+                <!-- Modal Header -->
+                <div
+                  class="flex items-center justify-between p-6 border-b border-gray-200"
+                >
+                  <h3 class="text-xl font-bold text-gray-800">
+                    Chọn mã giảm giá
+                  </h3>
+                  <button
+                    type="button"
+                    @click="showCouponModal = false"
+                    class="text-gray-400 hover:text-gray-600 transition-colors"
+                  >
+                    <svg
+                      class="w-6 h-6"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+
+                <!-- Modal Body -->
+                <div class="p-6 overflow-y-auto max-h-[calc(80vh-140px)]">
+                  <div
+                    v-if="availableCoupons.length === 0"
+                    class="text-center py-8"
+                  >
+                    <svg
+                      class="w-16 h-16 mx-auto text-gray-400 mb-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
+                      />
+                    </svg>
+                    <p class="text-gray-600">Không có mã giảm giá khả dụng</p>
+                  </div>
+
+                  <div v-else class="space-y-3">
+                    <div
+                      v-for="coupon in availableCoupons"
+                      :key="coupon._id"
+                      @click="
+                        !isCouponDisabled(coupon) &&
+                          selectCouponFromModal(coupon)
+                      "
+                      class="relative border rounded-lg p-4 transition-all cursor-pointer"
+                      :class="[
+                        isCouponDisabled(coupon)
+                          ? 'border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed'
+                          : selectedCouponId === coupon._id
+                          ? 'border-blue-500 bg-blue-50 shadow-md'
+                          : 'border-gray-200 hover:border-blue-300 hover:shadow-sm',
+                      ]"
+                    >
+                      <!-- Checkbox -->
+                      <div class="absolute top-4 right-4">
+                        <input
+                          type="radio"
+                          :value="coupon._id"
+                          v-model="selectedCouponId"
+                          :disabled="isCouponDisabled(coupon)"
+                          class="w-5 h-5 text-blue-600"
+                        />
+                      </div>
+
+                      <div class="pr-8">
+                        <!-- Coupon Code and Badge -->
+                        <div class="flex items-center gap-2 mb-2">
+                          <div
+                            class="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600 text-white px-3 py-1 rounded-lg"
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"
+                              />
+                            </svg>
+                            <span class="font-bold text-sm">{{
+                              coupon.code
+                            }}</span>
+                          </div>
+                          <span
+                            v-if="coupon.discount_type === 'percent'"
+                            class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded"
+                          >
+                            -{{ coupon.discount_value }}%
+                          </span>
+                          <span
+                            v-else
+                            class="bg-red-100 text-red-600 text-xs font-bold px-2 py-1 rounded"
+                          >
+                            -{{ formatPrice(coupon.discount_value) }}
+                          </span>
+                        </div>
+
+                        <!-- Title -->
+                        <h4 class="font-semibold text-gray-800 mb-2">
+                          {{ coupon.title }}
+                        </h4>
+
+                        <!-- Description -->
+                        <p
+                          v-if="coupon.description"
+                          class="text-sm text-gray-600 mb-3"
+                        >
+                          {{ coupon.description }}
+                        </p>
+
+                        <!-- Conditions -->
+                        <div class="flex flex-wrap gap-3 text-xs text-gray-600">
+                          <div class="flex items-center gap-1">
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            <span
+                              >Đơn tối thiểu:
+                              {{ formatPrice(coupon.min_order_value) }}</span
+                            >
+                          </div>
+                          <div
+                            v-if="coupon.max_discount_amount"
+                            class="flex items-center gap-1"
+                          >
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                              />
+                            </svg>
+                            <span
+                              >Giảm tối đa:
+                              {{
+                                formatPrice(coupon.max_discount_amount)
+                              }}</span
+                            >
+                          </div>
+                          <div class="flex items-center gap-1">
+                            <svg
+                              class="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                            <span
+                              >HSD: {{ formatDate(coupon.expiry_date) }}</span
+                            >
+                          </div>
+                        </div>
+
+                        <!-- Not applicable message -->
+                        <div
+                          v-if="isCouponDisabled(coupon)"
+                          class="mt-3 text-xs text-red-600 font-medium"
+                        >
+                          {{ getCouponDisabledReason(coupon) }}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div class="flex gap-3 p-6 border-t border-gray-200 bg-gray-50">
+                  <button
+                    type="button"
+                    @click="showCouponModal = false"
+                    class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    type="button"
+                    @click="applySelectedCoupon"
+                    :disabled="!selectedCouponId || isValidatingCoupon"
+                    class="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white rounded-lg font-medium transition-colors"
+                  >
+                    {{ isValidatingCoupon ? "Đang áp dụng..." : "Áp dụng" }}
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <!-- Order Total -->
             <div class="space-y-2 mb-6">
               <div class="flex justify-between text-sm text-gray-600">
@@ -556,6 +878,13 @@
               <div class="flex justify-between text-sm text-gray-600">
                 <span>Phí vận chuyển</span>
                 <span>{{ formatPrice(shippingFee) }}</span>
+              </div>
+              <div
+                v-if="discountAmount > 0"
+                class="flex justify-between text-sm text-green-600"
+              >
+                <span>Giảm giá ({{ appliedCoupon?.code }})</span>
+                <span>-{{ formatPrice(discountAmount) }}</span>
               </div>
               <hr class="border-gray-200" />
               <div class="flex justify-between text-lg font-bold text-gray-800">
@@ -601,6 +930,7 @@ import { orderService } from "@api/orderService";
 import { userService } from "@api/userService";
 import { addressService } from "@api/addressService";
 import { paymentService } from "@api/paymentService";
+import { validateCoupon, getPublicCoupons } from "@api/couponService";
 import { getFullImage } from "@utils/imageUtils";
 import Header from "@components/client/Header.vue";
 import Footer from "@components/client/Footer.vue";
@@ -625,6 +955,15 @@ const isProcessingOrder = ref(false); // Prevent double submission
 const provinces = ref([]);
 const districts = ref([]);
 const wards = ref([]);
+
+// Coupon state
+const couponCode = ref("");
+const selectedCouponId = ref("");
+const appliedCoupon = ref(null);
+const discountAmount = ref(0);
+const isValidatingCoupon = ref(false);
+const availableCoupons = ref([]);
+const showCouponModal = ref(false);
 
 // Form data
 const form = ref({
@@ -657,7 +996,7 @@ const subtotal = computed(() => {
 });
 
 const total = computed(() => {
-  return subtotal.value + shippingFee;
+  return subtotal.value + shippingFee - discountAmount.value;
 });
 
 const displayItems = computed(() => {
@@ -765,7 +1104,7 @@ const fullAddressText = computed(() => {
 const parseAddressString = (addressString) => {
   // Parse address string: "Khu 1, Xã Bắc Sơn, Huyện Tam Nông, Tỉnh Phú Thọ"
   const parts = addressString.split(", ");
-  
+
   let detailedAddress = "";
   let wardName = "";
   let districtName = "";
@@ -792,24 +1131,27 @@ const selectSavedAddress = async (event) => {
   console.log("Selected saved address:", selectedAddressString);
 
   try {
-    const { detailedAddress, wardName, districtName, provinceName } = parseAddressString(selectedAddressString);
+    const { detailedAddress, wardName, districtName, provinceName } =
+      parseAddressString(selectedAddressString);
 
     // Tìm province code
-    const provinceItem = provinces.value.find(p => p.name === provinceName);
+    const provinceItem = provinces.value.find((p) => p.name === provinceName);
     if (provinceItem) {
       form.value.province = provinceItem.code;
       await onProvinceChange();
 
       // Tìm district code
       if (districtName && districts.value.length > 0) {
-        const districtItem = districts.value.find(d => d.name === districtName);
+        const districtItem = districts.value.find(
+          (d) => d.name === districtName
+        );
         if (districtItem) {
           form.value.district = districtItem.code;
           await onDistrictChange();
 
           // Tìm ward code
           if (wardName && wards.value.length > 0) {
-            const wardItem = wards.value.find(w => w.name === wardName);
+            const wardItem = wards.value.find((w) => w.name === wardName);
             if (wardItem) {
               form.value.ward = wardItem.code;
             }
@@ -822,7 +1164,7 @@ const selectSavedAddress = async (event) => {
     form.value.address = detailedAddress;
 
     showSuccess("Đã chọn địa chỉ từ danh sách");
-    
+
     // Reset dropdown
     event.target.value = "";
   } catch (error) {
@@ -1047,7 +1389,8 @@ const loadUserProfile = async () => {
       if (savedAddressString) {
         // Backend lưu address dạng: "Khu 1, Xã Bắc Sơn, Huyện Tam Nông, Tỉnh Phú Thọ"
         // Parse để lấy địa chỉ chi tiết và tỉnh/huyện/xã
-        const { detailedAddress, wardName, districtName, provinceName } = parseAddressString(savedAddressString);
+        const { detailedAddress, wardName, districtName, provinceName } =
+          parseAddressString(savedAddressString);
 
         console.log("Parsed address:", {
           detailedAddress,
@@ -1218,6 +1561,15 @@ const formatPrice = (price) => {
   }).format(price);
 };
 
+const formatDate = (dateString) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+};
+
 // Handle online payment methods
 const handleOnlinePayment = async (orderId, paymentMethod) => {
   try {
@@ -1276,7 +1628,202 @@ const handleOnlinePayment = async (orderId, paymentMethod) => {
   }
 };
 
+// Load available coupons
+const loadAvailableCoupons = async () => {
+  try {
+    const response = await getPublicCoupons();
+    console.log("Load coupons response:", response);
+    if (response.success) {
+      availableCoupons.value = response.data || [];
+      console.log("Available coupons loaded:", availableCoupons.value.length);
+    }
+  } catch (error) {
+    console.error("Error loading coupons:", error);
+    availableCoupons.value = []; // Ensure it's always an array
+  }
+};
+
+// Handle coupon selection from dropdown
+const onCouponSelect = () => {
+  if (selectedCouponId.value) {
+    const selectedCoupon = availableCoupons.value.find(
+      (c) => c._id === selectedCouponId.value
+    );
+    if (selectedCoupon) {
+      couponCode.value = selectedCoupon.code;
+      applyCoupon();
+    }
+  }
+};
+
+// Apply coupon
+const applyCoupon = async () => {
+  if (!couponCode.value.trim()) {
+    showWarning("Vui lòng nhập mã giảm giá");
+    return;
+  }
+
+  if (!authStore.isAuthenticated) {
+    showWarning("Vui lòng đăng nhập để sử dụng mã giảm giá");
+    return;
+  }
+
+  isValidatingCoupon.value = true;
+
+  try {
+    const response = await validateCoupon(
+      couponCode.value.toUpperCase(),
+      subtotal.value
+    );
+
+    if (response.success) {
+      // response.data chính là object coupon, không có nested .coupon
+      appliedCoupon.value = response.data;
+      discountAmount.value = response.data.discount_amount;
+      showSuccess(`Đã áp dụng mã giảm giá ${appliedCoupon.value.code}`);
+    } else {
+      showError(response.message || "Mã giảm giá không hợp lệ");
+    }
+  } catch (error) {
+    console.error("Error validating coupon:", error);
+    showError(error.message || "Không thể áp dụng mã giảm giá");
+  } finally {
+    isValidatingCoupon.value = false;
+  }
+};
+
+// Remove coupon
+const removeCoupon = () => {
+  appliedCoupon.value = null;
+  discountAmount.value = 0;
+  couponCode.value = "";
+  selectedCouponId.value = "";
+  showSuccess("Đã hủy mã giảm giá");
+};
+
+// Check if coupon is disabled based on conditions
+const isCouponDisabled = (coupon) => {
+  // Check minimum order value
+  if (subtotal.value < coupon.min_order_value) {
+    return true;
+  }
+
+  // Check if coupon has expired
+  if (new Date(coupon.expiry_date) < new Date()) {
+    return true;
+  }
+
+  // Check if coupon has reached max usage
+  if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
+    return true;
+  }
+
+  return false;
+};
+
+// Get reason why coupon is disabled
+const getCouponDisabledReason = (coupon) => {
+  if (subtotal.value < coupon.min_order_value) {
+    return `Đơn hàng tối thiểu ${formatPrice(coupon.min_order_value)}`;
+  }
+
+  if (new Date(coupon.expiry_date) < new Date()) {
+    return "Mã giảm giá đã hết hạn";
+  }
+
+  if (coupon.max_uses && coupon.used_count >= coupon.max_uses) {
+    return "Mã giảm giá đã hết lượt sử dụng";
+  }
+
+  return "";
+};
+
+// Select coupon from modal (just update selectedCouponId)
+const selectCouponFromModal = (coupon) => {
+  if (!isCouponDisabled(coupon)) {
+    selectedCouponId.value = coupon._id;
+  }
+};
+
+// Apply selected coupon from modal
+const applySelectedCoupon = async () => {
+  console.log(
+    "Apply selected coupon - selectedCouponId:",
+    selectedCouponId.value
+  );
+  console.log("Available coupons:", availableCoupons.value);
+
+  if (!selectedCouponId.value) {
+    showWarning("Vui lòng chọn mã giảm giá");
+    return;
+  }
+
+  // Ensure availableCoupons is an array
+  if (
+    !Array.isArray(availableCoupons.value) ||
+    availableCoupons.value.length === 0
+  ) {
+    showError("Danh sách mã giảm giá không khả dụng");
+    console.error("availableCoupons is not valid:", availableCoupons.value);
+    return;
+  }
+
+  const selectedCoupon = availableCoupons.value.find(
+    (c) => c._id === selectedCouponId.value
+  );
+
+  console.log("Found selected coupon:", selectedCoupon);
+
+  if (!selectedCoupon || !selectedCoupon.code) {
+    showError("Không tìm thấy mã giảm giá");
+    console.error("Selected coupon not found or missing code:", selectedCoupon);
+    selectedCouponId.value = ""; // Reset selection
+    return;
+  }
+
+  if (!authStore.isAuthenticated) {
+    showWarning("Vui lòng đăng nhập để sử dụng mã giảm giá");
+    return;
+  }
+
+  isValidatingCoupon.value = true;
+
+  try {
+    console.log("Calling validateCoupon with code:", selectedCoupon.code);
+    const response = await validateCoupon(selectedCoupon.code, subtotal.value);
+    console.log("Validation response:", response);
+
+    if (response.success) {
+      console.log("Response data:", response.data);
+      // response.data chính là object coupon, không có nested .coupon
+      appliedCoupon.value = response.data;
+      discountAmount.value = response.data.discount_amount;
+      couponCode.value = response.data.code;
+      showCouponModal.value = false;
+      showSuccess(
+        `Đã áp dụng mã giảm giá ${
+          appliedCoupon.value?.code || response.data.code
+        }`
+      );
+    } else {
+      showError(response.message || "Mã giảm giá không hợp lệ");
+    }
+  } catch (error) {
+    console.error("Error validating coupon:", error);
+    console.error("Error stack:", error.stack);
+    showError(error.message || "Không thể áp dụng mã giảm giá");
+  } finally {
+    isValidatingCoupon.value = false;
+  }
+};
+
 const processCheckout = async () => {
+  // CRITICAL DEBUG: Check coupon state at submission
+  console.log("=== PROCESS CHECKOUT START ===");
+  console.log("appliedCoupon at submission:", appliedCoupon.value);
+  console.log("discountAmount at submission:", discountAmount.value);
+  console.log("couponCode at submission:", couponCode.value);
+
   if (!isFormValid.value) {
     showError("Vui lòng điền đầy đủ thông tin");
     return;
@@ -1374,9 +1921,14 @@ const processCheckout = async () => {
         shippingAddress: shippingInfo,
         paymentMethod: form.value.paymentMethod,
         note: form.value.notes,
+        coupon_code: appliedCoupon.value?.code || null,
       };
 
       console.log("Direct order - sending data:", orderData);
+      console.log("Applied coupon:", appliedCoupon.value);
+      console.log("Coupon code:", appliedCoupon.value?.code);
+      console.log("Discount amount:", discountAmount.value);
+
       orderResponse = await orderService.createDirectOrder(orderData);
     } else if (orderType.value === "cart") {
       // Create new order from cart
@@ -1396,10 +1948,15 @@ const processCheckout = async () => {
         quantity: item.quantity,
       }));
 
+      console.log("Cart order - Applied coupon:", appliedCoupon.value);
+      console.log("Cart order - Coupon code:", appliedCoupon.value?.code);
+      console.log("Cart order - Discount amount:", discountAmount.value);
+
       orderResponse = await orderService.createOrderFromCart({
         shippingAddress: shippingInfo,
         paymentMethod: form.value.paymentMethod,
         note: form.value.notes,
+        coupon_code: appliedCoupon.value?.code || null,
       });
     }
 
@@ -1529,7 +2086,10 @@ const processCheckout = async () => {
                 await notificationStore.fetchUnreadCount();
                 console.log("✅ Notification count updated (recovery flow)");
               } catch (notifError) {
-                console.error("❌ Error fetching notification count:", notifError);
+                console.error(
+                  "❌ Error fetching notification count:",
+                  notifError
+                );
               }
             }
 
@@ -1590,6 +2150,34 @@ const processCheckout = async () => {
   }
 };
 
+// Watch subtotal changes and validate coupon again if needed
+watch(subtotal, (newSubtotal) => {
+  if (appliedCoupon.value && newSubtotal > 0) {
+    // Re-validate coupon when subtotal changes
+    validateCoupon(appliedCoupon.value.code, newSubtotal)
+      .then((response) => {
+        if (response.success) {
+          discountAmount.value = response.data.discount_amount;
+        } else {
+          // Coupon no longer valid
+          removeCoupon();
+          showWarning("Mã giảm giá không còn hợp lệ với đơn hàng hiện tại");
+        }
+      })
+      .catch(() => {
+        removeCoupon();
+      });
+  }
+});
+
+// Watch showCouponModal to reload coupons when opening
+watch(showCouponModal, async (newValue) => {
+  if (newValue) {
+    // Reload coupons when modal opens
+    await loadAvailableCoupons();
+  }
+});
+
 // Lifecycle
 onMounted(async () => {
   // Load provinces first
@@ -1600,5 +2188,8 @@ onMounted(async () => {
 
   // Load user profile to auto-fill form if user is logged in
   await loadUserProfile();
+
+  // Load available coupons
+  await loadAvailableCoupons();
 });
 </script>

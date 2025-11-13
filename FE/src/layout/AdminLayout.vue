@@ -98,6 +98,12 @@ const menuItems = [
     gradient: "from-orange-500 to-red-500",
   },
   {
+    name: "Mã giảm giá",
+    icon: "fas fa-ticket-alt",
+    path: "/admin/coupons",
+    gradient: "from-green-500 to-teal-500",
+  },
+  {
     name: "Người dùng",
     icon: "fas fa-users",
     path: "/admin/users",

@@ -34,6 +34,8 @@ const orderSchema = new mongoose.Schema(
       ref: "Coupon",
       default: null,
     },
+    coupon_code: { type: String, default: null },
+    discount_amount: { type: Number, default: 0 },
     shipping_fee: { type: Number, default: 0 },
     total: { type: Number, required: true },
     shipping_address: {

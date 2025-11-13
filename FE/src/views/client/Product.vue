@@ -79,12 +79,17 @@ const handleAddToCart = async (product) => {
 // Advanced filter functions
 const applySort = (products) => {
   const sorted = [...products];
+  
+  // Helper function to get final price (ưu tiên discount_price)
+  const getFinalPrice = (product) => {
+    return product.discount_price || product.price || 0;
+  };
 
   switch (sortBy.value) {
     case "price-asc":
-      return sorted.sort((a, b) => (a.price || 0) - (b.price || 0));
+      return sorted.sort((a, b) => getFinalPrice(a) - getFinalPrice(b));
     case "price-desc":
-      return sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+      return sorted.sort((a, b) => getFinalPrice(b) - getFinalPrice(a));
     case "name-asc":
       return sorted.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
     case "name-desc":

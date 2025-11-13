@@ -61,7 +61,12 @@ const discountPercentage = computed(() => {
 });
 
 const rating = computed(() => {
-  return props.product.rating || 4.5; // Default rating nếu không có
+  // Lấy average_rating từ product, default là 0 nếu chưa có đánh giá
+  return props.product.average_rating || 0;
+});
+
+const reviewCount = computed(() => {
+  return props.product.review_count || 0;
 });
 
 const stockStatus = computed(() => {
@@ -107,10 +112,10 @@ const handleAddToCart = async (event) => {
 
   try {
     loading.value = true;
-    
+
     // Cart store sẽ tự động xử lý authentication và redirect
     const added = await cartStore.addToCart(props.product, 1);
-    
+
     if (added) {
       // Add success class for feedback
       button.classList.add("success");
@@ -119,7 +124,6 @@ const handleAddToCart = async (event) => {
       }, 600);
     }
     // Nếu không thêm được (chưa đăng nhập), cart store sẽ tự động xử lý
-
   } catch (error) {
     console.error("Error adding to cart:", error);
     showError("Có lỗi xảy ra khi thêm vào giỏ hàng");
@@ -228,8 +232,9 @@ const handleQuickView = () => {
       </router-link>
 
       <!-- Rating -->
-      <div class="flex items-center mb-2 sm:mb-3">
-        <div class="flex items-center">
+      <div class="mb-2 sm:mb-3">
+        <div class="flex items-center mb-1">
+          <!-- Luôn hiển thị 5 sao -->
           <div class="flex">
             <i
               v-for="star in 5"
@@ -244,18 +249,22 @@ const handleQuickView = () => {
               ]"
             ></i>
           </div>
-          <span class="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2"
-            >({{ rating }})</span
+          <span
+            v-if="rating > 0"
+            class="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2"
+            >({{ rating.toFixed(1) }}) · {{ reviewCount }} đánh giá</span
+          >
+          <span v-else class="text-xs sm:text-sm text-gray-400 ml-1 sm:ml-2"
+            >Chưa có đánh giá</span
           >
         </div>
-        <span class="text-xs text-gray-400 ml-auto">{{
-          product.sold || 0
-        }}</span>
+        <!-- Đã bán -->
+        <div class="text-xs text-gray-500">Đã bán: {{ product.sold || 0 }}</div>
       </div>
 
       <!-- Price -->
-      <div class="flex items-center justify-between mb-2 sm:mb-4">
-        <div class="flex flex-col space-y-1">
+      <div class="mb-2 sm:mb-4">
+        <div class="flex items-center gap-2 flex-wrap">
           <!-- Current Price -->
           <span class="text-sm sm:text-lg font-bold text-red-600">
             {{ formatPrice(discountedPrice) }}
@@ -268,23 +277,6 @@ const handleQuickView = () => {
           >
             {{ formatPrice(product.price) }}
           </span>
-
-          <!-- Discount savings -->
-          <div v-if="hasDiscount" class="text-xs text-green-600 font-medium">
-            Tiết kiệm {{ formatPrice(product.price - discountedPrice) }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Product Features -->
-      <div class="text-xs text-gray-500 mb-2 sm:mb-4 space-y-1 hidden sm:block">
-        <div class="flex items-center">
-          <i class="fas fa-shipping-fast mr-2 text-green-600"></i>
-          <span>Miễn phí vận chuyển</span>
-        </div>
-        <div class="flex items-center">
-          <i class="fas fa-shield-alt mr-2 text-blue-600"></i>
-          <span>Bảo hành chính hãng</span>
         </div>
       </div>
 

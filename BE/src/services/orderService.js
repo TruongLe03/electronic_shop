@@ -2,17 +2,23 @@ import Order from "../models/orders.model.js";
 import { CartService } from "./cartService.js";
 import { ProductService } from "./productService.js";
 import NotificationService from "./notificationService.js";
+import { CouponService } from "./couponService.js";
 
 export class OrderService {
   // Tạo đơn hàng mới
-  static async createOrder(userId, orderData) {
+  static async createOrder(orderData, userId) {
     const {
       shipping_address,
       payment_method,
       items,
-      discount_amount = 0,
+      coupon_code,
       shipping_fee = 30000, // Default shipping fee 30k VND
     } = orderData;
+
+    console.log("=== CREATE ORDER ===");
+    console.log("Order data:", orderData);
+    console.log("Coupon code received:", coupon_code);
+    console.log("User ID:", userId);
 
     // Validate required fields
     if (
@@ -75,7 +81,48 @@ export class OrderService {
 
     // Round values to avoid decimal issues
     subtotal = Math.round(subtotal);
-    const total = Math.round(subtotal + shipping_fee); // Removed discount_amount since we're not using coupons
+    
+    // Validate và áp dụng coupon nếu có
+    let discount_amount = 0;
+    let coupon_id = null;
+    
+    console.log("Checking coupon:", coupon_code);
+    
+    if (coupon_code) {
+      console.log("Validating coupon:", coupon_code, "for subtotal:", subtotal);
+      try {
+        const couponResult = await CouponService.validateAndCalculateDiscount(
+          coupon_code,
+          subtotal,
+          userId
+        );
+        
+        console.log("Coupon validation result:", couponResult);
+        
+        // validateAndCalculateDiscount returns object directly if valid, throws error if invalid
+        discount_amount = couponResult.discount_amount;
+        coupon_id = couponResult.coupon_id;
+        console.log("✅ Coupon applied:", {
+          code: coupon_code,
+          discount_amount,
+          coupon_id
+        });
+      } catch (error) {
+        console.log("❌ Coupon validation failed:", error.message);
+        throw new Error(error.message || "Mã giảm giá không hợp lệ");
+      }
+    } else {
+      console.log("No coupon code provided");
+    }
+    
+    const total = Math.round(subtotal + shipping_fee - discount_amount);
+    
+    console.log("📊 Order calculation:", {
+      subtotal,
+      shipping_fee,
+      discount_amount,
+      total
+    });
 
     // Validate numeric values
     if (isNaN(subtotal) || subtotal < 0) {
@@ -90,6 +137,9 @@ export class OrderService {
       user_id: userId,
       products: orderItems,
       subtotal,
+      coupon_id,
+      coupon_code,
+      discount_amount,
       shipping_fee,
       total,
       shipping_address,
@@ -100,6 +150,17 @@ export class OrderService {
     });
 
     const savedOrder = await order.save();
+
+    // Cập nhật usage count của coupon nếu có
+    if (coupon_id) {
+      try {
+        await CouponService.applyCouponToOrder(coupon_id, userId, savedOrder._id);
+        console.log("✅ Coupon usage updated successfully");
+      } catch (couponError) {
+        console.error("❌ Error updating coupon usage:", couponError);
+        // Không throw error để không ảnh hưởng đến order creation
+      }
+    }
 
     // Tự động kiểm tra và xử lý tồn kho
     let autoConfirmed = false;
@@ -547,7 +608,12 @@ export class OrderService {
 
   // Tạo đơn hàng từ giỏ hàng
   static async createOrderFromCart(orderData) {
-    const { userId, shippingAddress, paymentMethod, note } = orderData;
+    const { userId, shippingAddress, paymentMethod, note, coupon_code } = orderData;
+
+    console.log("=== CREATE ORDER FROM CART ===");
+    console.log("Order data:", orderData);
+    console.log("Coupon code received:", coupon_code);
+    console.log("User ID:", userId);
 
     // Validate shipping address
     if (
@@ -575,19 +641,54 @@ export class OrderService {
       image: item.product_id.main_image,
     }));
 
-    // Tính subtotal và total
+    // Tính subtotal
     const subtotal = products.reduce(
       (sum, item) => sum + item.price * item.quantity,
       0
     );
     const shipping_fee = 30000; // Default 30k VND
-    const total = subtotal + shipping_fee;
+    
+    // Validate và áp dụng coupon nếu có
+    let discount_amount = 0;
+    let coupon_id = null;
+    
+    console.log("Checking coupon for cart order:", coupon_code);
+    
+    if (coupon_code) {
+      console.log("Validating coupon:", coupon_code, "for subtotal:", subtotal);
+      try {
+        const couponResult = await CouponService.validateAndCalculateDiscount(
+          coupon_code,
+          subtotal,
+          userId
+        );
+        
+        console.log("Coupon validation result:", couponResult);
+        
+        // validateAndCalculateDiscount returns object directly if valid, throws error if invalid
+        discount_amount = couponResult.discount_amount;
+        coupon_id = couponResult.coupon_id;
+        console.log("✅ Coupon applied to cart order:", {
+          code: coupon_code,
+          discount_amount,
+          coupon_id
+        });
+      } catch (error) {
+        console.log("❌ Coupon validation failed:", error.message);
+        throw new Error(error.message || "Mã giảm giá không hợp lệ");
+      }
+    }
+    
+    const total = Math.round(subtotal + shipping_fee - discount_amount);
 
     // Tạo đơn hàng trực tiếp
     const order = new Order({
       user_id: userId,
       products,
       subtotal,
+      coupon_id,
+      coupon_code,
+      discount_amount,
       shipping_fee,
       total,
       shipping_address: shippingAddress,
@@ -598,6 +699,17 @@ export class OrderService {
     });
 
     const savedOrder = await order.save();
+    
+    // Cập nhật usage count của coupon nếu có
+    if (coupon_id) {
+      try {
+        await CouponService.applyCouponToOrder(coupon_id, userId, savedOrder._id);
+        console.log("✅ Coupon usage updated successfully");
+      } catch (couponError) {
+        console.error("❌ Error updating coupon usage:", couponError);
+        // Không throw error để không ảnh hưởng đến order creation
+      }
+    }
 
     // Cập nhật stock cho các sản phẩm
     for (const item of products) {
@@ -666,19 +778,26 @@ export class OrderService {
       throw new Error("Dữ liệu đơn hàng không hợp lệ");
     }
 
-    const { items, shippingAddress, paymentMethod, note } = orderData;
+    const { items, shippingAddress, paymentMethod, note, coupon_code } = orderData;
+
+    console.log("createDirectOrder - orderData:", orderData);
+    console.log("createDirectOrder - coupon_code:", coupon_code);
 
     // Validate items
     if (!items || !Array.isArray(items) || items.length === 0) {
       throw new Error("Danh sách sản phẩm không hợp lệ");
     }
 
-    return await this.createOrder(userId, {
-      items,
-      shipping_address: shippingAddress,
-      payment_method: paymentMethod,
-      note,
-    });
+    return await this.createOrder(
+      {
+        items,
+        shipping_address: shippingAddress,
+        payment_method: paymentMethod,
+        note,
+        coupon_code,
+      },
+      userId
+    );
   }
 
   // Cập nhật thông tin đơn hàng

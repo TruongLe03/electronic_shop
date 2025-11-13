@@ -12,6 +12,7 @@ import adminRouter from "./admin.router.js";
 import stockNotificationRouter from "./stockNotification.router.js";
 import commentsRouter from "./comments.router.js";
 import notificationRouter from "./notification.router.js";
+import couponRouter from "./coupon.router.js";
 
 const appRouter = express();
 
@@ -34,6 +35,7 @@ appRouter.use("/orders", ordersRouter);
 appRouter.use("/inventory", inventoryRouter);
 appRouter.use("/payment", paymentRouter);
 appRouter.use("/vnpay", vnpayRouter);
+appRouter.use("/coupons", couponRouter);
 
 // Administrative
 appRouter.use("/admin", adminRouter);

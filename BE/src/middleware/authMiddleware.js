@@ -8,7 +8,10 @@ export const authMiddleware = async (req, res, next) => {
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return ResponseUtil.unauthorized(res, "Token xác thực không được cung cấp");
+      return ResponseUtil.unauthorized(
+        res,
+        "Token xác thực không được cung cấp"
+      );
     }
 
     const token = authHeader.split(" ")[1];
@@ -48,7 +51,10 @@ export const requireAdmin = (req, res, next) => {
   }
 
   if (req.user.role !== "admin") {
-    return ResponseUtil.forbidden(res, "Bạn không có quyền truy cập tính năng này");
+    return ResponseUtil.forbidden(
+      res,
+      "Bạn không có quyền truy cập tính năng này"
+    );
   }
 
   next();
@@ -79,14 +85,23 @@ export const requireOwner = (userIdField = "userId") => {
       return next();
     }
 
-    const resourceUserId = req.params[userIdField] || req.body[userIdField] || req.query[userIdField];
+    const resourceUserId =
+      req.params[userIdField] ||
+      req.body[userIdField] ||
+      req.query[userIdField];
 
     if (!resourceUserId) {
-      return ResponseUtil.badRequest(res, `Không tìm thấy ${userIdField} trong request`);
+      return ResponseUtil.badRequest(
+        res,
+        `Không tìm thấy ${userIdField} trong request`
+      );
     }
 
     if (req.user.id.toString() !== resourceUserId.toString()) {
-      return ResponseUtil.forbidden(res, "Bạn chỉ có thể truy cập dữ liệu của chính mình");
+      return ResponseUtil.forbidden(
+        res,
+        "Bạn chỉ có thể truy cập dữ liệu của chính mình"
+      );
     }
 
     next();
@@ -96,7 +111,7 @@ export const requireOwner = (userIdField = "userId") => {
 // Middleware kết hợp: auth + admin
 export const requireAdminAuth = [authMiddleware, requireAdmin];
 
-// Middleware kết hợp: auth + customer  
+// Middleware kết hợp: auth + customer
 export const requireCustomerAuth = [authMiddleware, requireCustomer];
 
 // Export default để backward compatibility
