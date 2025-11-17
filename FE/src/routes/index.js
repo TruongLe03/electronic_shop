@@ -102,6 +102,36 @@ const routes = [
     name: "search",
     component: () => import("@views/client/Search.vue"),
   },
+  {
+    path: "/about",
+    name: "about",
+    component: () => import("@views/client/About.vue"),
+  },
+  {
+    path: "/contact",
+    name: "contact",
+    component: () => import("@views/client/Contact.vue"),
+  },
+  {
+    path: "/faq",
+    name: "faq",
+    component: () => import("@views/client/FAQ.vue"),
+  },
+  {
+    path: "/warranty",
+    name: "warranty",
+    component: () => import("@views/client/Warranty.vue"),
+  },
+  {
+    path: "/guide",
+    name: "guide",
+    component: () => import("@views/client/Warranty.vue"),
+  },
+  {
+    path: "/careers",
+    name: "careers",
+    component: () => import("@views/client/About.vue"),
+  },
   // Admin Routes
   {
     path: "/admin",

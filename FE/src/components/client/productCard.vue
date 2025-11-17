@@ -254,9 +254,6 @@ const handleQuickView = () => {
             class="text-xs sm:text-sm text-gray-600 ml-1 sm:ml-2"
             >({{ rating.toFixed(1) }}) · {{ reviewCount }} đánh giá</span
           >
-          <span v-else class="text-xs sm:text-sm text-gray-400 ml-1 sm:ml-2"
-            >Chưa có đánh giá</span
-          >
         </div>
         <!-- Đã bán -->
         <div class="text-xs text-gray-500">Đã bán: {{ product.sold || 0 }}</div>
