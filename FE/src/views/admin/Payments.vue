@@ -1,132 +1,124 @@
 <template>
   <AdminLayout>
     <div class="space-y-6">
-      <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-semibold text-gray-900">
-            Quản lý thanh toán
-          </h1>
-          <p class="mt-1 text-sm text-gray-500">
-            Theo dõi và quản lý các giao dịch thanh toán
-          </p>
+      <!-- Header với gradient background -->
+      <div
+        class="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl shadow-lg p-6"
+      >
+        <div class="flex items-center justify-between">
+          <div class="text-white">
+            <div class="flex items-center gap-3">
+              <div class="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+                <i class="fas fa-credit-card text-2xl"></i>
+              </div>
+              <div>
+                <h1 class="text-3xl font-bold">Quản lý thanh toán</h1>
+                <p class="mt-1 text-emerald-100">
+                  Theo dõi và quản lý các giao dịch thanh toán
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- Stats Cards -->
+      <!-- Stats Cards với design hiện đại -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div class="bg-white p-6 rounded-lg shadow-sm border">
-          <div class="flex items-center">
-            <div class="p-2 bg-green-100 rounded-lg">
-              <svg
-                class="w-6 h-6 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-500">Tổng doanh thu</p>
-              <p class="text-2xl font-semibold text-gray-900">
+        <div
+          class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-500 mb-1">
+                Tổng doanh thu
+              </p>
+              <p class="text-2xl font-bold text-gray-900">
                 {{ formatCurrency(stats.total?.totalAmount || 0) }}
               </p>
             </div>
+            <div
+              class="p-4 bg-gradient-to-br from-green-400 to-emerald-500 rounded-xl shadow-lg"
+            >
+              <i class="fas fa-money-bill-wave text-2xl text-white"></i>
+            </div>
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-sm border">
-          <div class="flex items-center">
-            <div class="p-2 bg-blue-100 rounded-lg">
-              <svg
-                class="w-6 h-6 text-blue-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-500">Tổng giao dịch</p>
-              <p class="text-2xl font-semibold text-gray-900">
+        <div
+          class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-500 mb-1">
+                Tổng giao dịch
+              </p>
+              <p class="text-2xl font-bold text-gray-900">
                 {{ stats.total?.totalPayments || 0 }}
               </p>
             </div>
+            <div
+              class="p-4 bg-gradient-to-br from-blue-400 to-cyan-500 rounded-xl shadow-lg"
+            >
+              <i class="fas fa-receipt text-2xl text-white"></i>
+            </div>
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-sm border">
-          <div class="flex items-center">
-            <div class="p-2 bg-purple-100 rounded-lg">
-              <svg
-                class="w-6 h-6 text-purple-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
-                />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-500">Giá trị TB</p>
-              <p class="text-2xl font-semibold text-gray-900">
+        <div
+          class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-500 mb-1">
+                Giá trị trung bình
+              </p>
+              <p class="text-2xl font-bold text-gray-900">
                 {{ formatCurrency(stats.total?.avgAmount || 0) }}
               </p>
             </div>
+            <div
+              class="p-4 bg-gradient-to-br from-purple-400 to-pink-500 rounded-xl shadow-lg"
+            >
+              <i class="fas fa-chart-line text-2xl text-white"></i>
+            </div>
           </div>
         </div>
 
-        <div class="bg-white p-6 rounded-lg shadow-sm border">
-          <div class="flex items-center">
-            <div class="p-2 bg-yellow-100 rounded-lg">
-              <svg
-                class="w-6 h-6 text-yellow-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-            </div>
-            <div class="ml-4">
-              <p class="text-sm font-medium text-gray-500">Chờ xử lý</p>
-              <p class="text-2xl font-semibold text-gray-900">
+        <div
+          class="bg-white p-6 rounded-xl shadow-md border border-gray-100 hover:shadow-lg transition-shadow"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex-1">
+              <p class="text-sm font-medium text-gray-500 mb-1">Chờ xử lý</p>
+              <p class="text-2xl font-bold text-gray-900">
                 {{ getPendingCount() }}
               </p>
+            </div>
+            <div
+              class="p-4 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-xl shadow-lg"
+            >
+              <i class="fas fa-clock text-2xl text-white"></i>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Filters -->
-      <div class="bg-white p-4 rounded-lg shadow-sm border">
+      <!-- Filters Card với design mới -->
+      <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fas fa-filter text-emerald-600"></i>
+          <h3 class="font-semibold text-gray-800">Bộ lọc giao dịch</h3>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
-          <div>
+          <div class="relative">
+            <div
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+            >
+              <i class="fas fa-info-circle text-gray-400"></i>
+            </div>
             <select
               v-model="filters.status"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
             >
               <option value="">Tất cả trạng thái</option>
               <option value="pending">Chờ xử lý</option>
@@ -139,10 +131,15 @@
             </select>
           </div>
 
-          <div>
+          <div class="relative">
+            <div
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+            >
+              <i class="fas fa-wallet text-gray-400"></i>
+            </div>
             <select
               v-model="filters.method"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
             >
               <option value="">Tất cả phương thức</option>
               <option value="cod">COD</option>
@@ -153,26 +150,43 @@
             </select>
           </div>
 
-          <div>
+          <div class="relative">
+            <div
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+            >
+              <i class="fas fa-calendar-alt text-gray-400"></i>
+            </div>
             <input
               v-model="filters.startDate"
               type="date"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              placeholder="Từ ngày"
             />
           </div>
 
-          <div>
+          <div class="relative">
+            <div
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+            >
+              <i class="fas fa-calendar-check text-gray-400"></i>
+            </div>
             <input
               v-model="filters.endDate"
               type="date"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+              placeholder="Đến ngày"
             />
           </div>
 
-          <div>
+          <div class="relative">
+            <div
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+            >
+              <i class="fas fa-sort text-gray-400"></i>
+            </div>
             <select
               v-model="filters.sortBy"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
             >
               <option value="createdAt">Ngày tạo</option>
               <option value="amount">Số tiền</option>
@@ -183,154 +197,195 @@
           <div class="flex gap-2">
             <button
               @click="fetchPayments"
-              class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex-1"
+              class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white px-6 py-2.5 rounded-lg flex-1 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg transition-all"
             >
+              <i class="fas fa-search"></i>
               Lọc
             </button>
             <button
               @click="resetFilters"
-              class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg"
+              class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg flex items-center gap-2 font-medium transition-all"
             >
-              Reset
+              <i class="fas fa-redo"></i>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Payments Table -->
-      <div class="bg-white rounded-lg shadow-sm border">
-        <div v-if="loading" class="p-8 text-center">
-          <div
-            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"
-          ></div>
-          <p class="mt-2 text-gray-500">Đang tải...</p>
+      <!-- Payments Table với design hiện đại -->
+      <div
+        class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden"
+      >
+        <div v-if="loading" class="p-12 text-center">
+          <div class="inline-flex items-center justify-center">
+            <div
+              class="animate-spin rounded-full h-12 w-12 border-4 border-emerald-200 border-t-emerald-600"
+            ></div>
+          </div>
+          <p class="mt-4 text-gray-600 font-medium">Đang tải dữ liệu...</p>
         </div>
 
-        <div v-else-if="error" class="p-8 text-center text-red-600">
-          {{ error }}
+        <div v-else-if="error" class="p-12 text-center">
+          <div
+            class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4"
+          >
+            <i class="fas fa-exclamation-circle text-3xl text-red-600"></i>
+          </div>
+          <p class="text-red-600 font-medium">{{ error }}</p>
         </div>
 
         <div v-else>
           <table class="w-full">
-            <thead class="bg-gray-50">
+            <thead class="bg-gradient-to-r from-emerald-50 to-teal-50">
               <tr>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-emerald-900 uppercase tracking-wider"
                 >
-                  Giao dịch
+                  <i class="fas fa-hashtag mr-2"></i>Giao dịch
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-emerald-900 uppercase tracking-wider"
                 >
-                  Khách hàng
+                  <i class="fas fa-user mr-2"></i>Khách hàng
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-emerald-900 uppercase tracking-wider"
                 >
-                  Số tiền
+                  <i class="fas fa-money-bill mr-2"></i>Số tiền
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-emerald-900 uppercase tracking-wider"
                 >
-                  Phương thức
+                  <i class="fas fa-credit-card mr-2"></i>Phương thức
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-emerald-900 uppercase tracking-wider"
                 >
-                  Trạng thái
+                  <i class="fas fa-info-circle mr-2"></i>Trạng thái
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-emerald-900 uppercase tracking-wider"
                 >
-                  Ngày tạo
+                  <i class="fas fa-calendar mr-2"></i>Ngày tạo
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-emerald-900 uppercase tracking-wider"
                 >
-                  Thao tác
+                  <i class="fas fa-cog mr-2"></i>Thao tác
                 </th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-gray-100">
               <tr
                 v-for="payment in payments"
                 :key="payment._id"
-                class="hover:bg-gray-50"
+                class="hover:bg-emerald-50 transition-colors duration-150"
               >
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-6 py-4">
                   <div>
-                    <div class="text-sm font-medium text-gray-900">
+                    <div
+                      class="text-sm font-semibold text-gray-900 flex items-center gap-2"
+                    >
+                      <i class="fas fa-file-invoice text-emerald-500"></i>
                       {{ payment.paymentId }}
                     </div>
-                    <div class="text-sm text-gray-500">
-                      Đơn hàng: {{ payment.orderId?.orderNumber }}
+                    <div class="text-sm text-gray-500 mt-1">
+                      <i class="fas fa-shopping-bag text-gray-400 mr-1"></i>
+                      Đơn: {{ payment.orderId?.orderNumber }}
                     </div>
                     <div
                       v-if="payment.gateway_transaction_id"
-                      class="text-xs text-blue-600"
+                      class="text-xs text-blue-600 mt-1 flex items-center gap-1"
                     >
-                      Gateway: {{ payment.gateway_transaction_id }}
+                      <i class="fas fa-exchange-alt"></i>
+                      GW: {{ payment.gateway_transaction_id }}
                     </div>
                   </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div v-if="payment.orderId?.userId">
-                    <div class="text-sm font-medium text-gray-900">
-                      {{ payment.orderId.userId.name }}
+                <td class="px-6 py-4">
+                  <div
+                    v-if="payment.orderId?.userId"
+                    class="flex items-center gap-2"
+                  >
+                    <div
+                      class="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center text-white font-bold"
+                    >
+                      {{
+                        payment.orderId.userId.username?.charAt(0).toUpperCase()
+                      }}
                     </div>
-                    <div class="text-sm text-gray-500">
-                      {{ payment.orderId.userId.email }}
+                    <div>
+                      <div class="text-sm font-semibold text-gray-900">
+                        {{ payment.orderId.userId.username }}
+                      </div>
+                      <div class="text-sm text-gray-500">
+                        <i class="fas fa-envelope text-gray-400 mr-1"></i>
+                        {{ payment.orderId.userId.email }}
+                      </div>
                     </div>
                   </div>
-                  <div v-else class="text-sm text-gray-400">N/A</div>
+                  <div v-else class="text-sm text-gray-400 italic">
+                    Không có thông tin
+                  </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                  <div class="text-sm font-medium text-gray-900">
+                <td class="px-6 py-4">
+                  <div class="text-sm font-bold text-emerald-600">
                     {{ formatCurrency(payment.amount) }}
                   </div>
-                  <div class="text-sm text-gray-500">
+                  <div class="text-xs text-gray-500 mt-1">
                     {{ payment.currency }}
                   </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-6 py-4">
                   <span
                     :class="getMethodColor(payment.method)"
-                    class="px-2 py-1 text-xs font-medium rounded-full"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg"
                   >
+                    <i class="fas fa-credit-card"></i>
                     {{ getMethodLabel(payment.method) }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-6 py-4">
                   <span
                     :class="getStatusColor(payment.status)"
-                    class="px-2 py-1 text-xs font-medium rounded-full"
+                    class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg"
                   >
+                    <i class="fas fa-circle text-xs"></i>
                     {{ getStatusLabel(payment.status) }}
                   </span>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ formatDate(payment.createdAt) }}
+                <td class="px-6 py-4 text-sm text-gray-600">
+                  <div class="flex items-center gap-1">
+                    <i class="fas fa-clock text-gray-400"></i>
+                    {{ formatDate(payment.createdAt) }}
+                  </div>
                 </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div class="flex items-center space-x-3">
+                <td class="px-6 py-4">
+                  <div class="flex items-center space-x-2">
                     <button
                       @click="viewPayment(payment)"
-                      class="text-blue-600 hover:text-blue-900"
+                      class="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                      title="Xem chi tiết"
                     >
+                      <i class="fas fa-eye"></i>
                       Chi tiết
                     </button>
                     <button
                       v-if="canUpdateStatus(payment)"
                       @click="editPaymentStatus(payment)"
-                      class="text-green-600 hover:text-green-900"
+                      class="inline-flex items-center gap-1.5 bg-green-50 hover:bg-green-100 text-green-600 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                      title="Cập nhật trạng thái"
                     >
+                      <i class="fas fa-edit"></i>
                       Cập nhật
                     </button>
                     <button
                       v-if="canRefund(payment)"
                       @click="initRefund(payment)"
-                      class="text-purple-600 hover:text-purple-900"
+                      class="inline-flex items-center gap-1.5 bg-purple-50 hover:bg-purple-100 text-purple-600 px-3 py-2 rounded-lg text-sm font-medium transition-all"
+                      title="Hoàn tiền"
                     >
+                      <i class="fas fa-undo"></i>
                       Hoàn tiền
                     </button>
                   </div>
@@ -339,36 +394,56 @@
             </tbody>
           </table>
 
-          <!-- Pagination -->
+          <!-- Pagination với design mới -->
           <div
             v-if="pagination.totalPages > 1"
-            class="px-6 py-4 border-t border-gray-200"
+            class="px-6 py-4 bg-gray-50 border-t border-gray-100"
           >
             <div class="flex items-center justify-between">
-              <div class="text-sm text-gray-500">
-                Hiển thị {{ (pagination.page - 1) * pagination.limit + 1 }} đến
-                {{
-                  Math.min(pagination.page * pagination.limit, pagination.total)
-                }}
-                trong tổng số {{ pagination.total }} giao dịch
+              <div class="flex items-center gap-2 text-sm text-gray-600">
+                <i class="fas fa-info-circle text-emerald-500"></i>
+                <span class="font-medium">
+                  Hiển thị {{ (pagination.page - 1) * pagination.limit + 1 }} -
+                  {{
+                    Math.min(
+                      pagination.page * pagination.limit,
+                      pagination.total
+                    )
+                  }}
+                </span>
+                <span>trên tổng</span>
+                <span class="font-semibold text-emerald-600">{{
+                  pagination.total
+                }}</span>
+                <span>giao dịch</span>
               </div>
-              <div class="flex items-center space-x-2">
+              <div class="flex items-center gap-2">
                 <button
                   @click="changePage(pagination.page - 1)"
                   :disabled="!pagination.hasPrev"
-                  class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
+                  <i class="fas fa-chevron-left"></i>
                   Trước
                 </button>
-                <span class="px-3 py-1 bg-blue-600 text-white rounded">{{
-                  pagination.page
-                }}</span>
+                <div class="flex items-center gap-1">
+                  <span
+                    class="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-semibold rounded-lg shadow-md"
+                  >
+                    {{ pagination.page }}
+                  </span>
+                  <span class="text-gray-500 mx-1">/</span>
+                  <span class="text-gray-700 font-medium">{{
+                    pagination.totalPages
+                  }}</span>
+                </div>
                 <button
                   @click="changePage(pagination.page + 1)"
                   :disabled="!pagination.hasNext"
-                  class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   Sau
+                  <i class="fas fa-chevron-right"></i>
                 </button>
               </div>
             </div>
@@ -377,61 +452,97 @@
       </div>
     </div>
 
-    <!-- Payment Status Update Modal -->
+    <!-- Payment Status Update Modal với design mới -->
     <div
       v-if="showStatusModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
     >
-      <div class="bg-white rounded-lg p-6 w-full max-w-md">
-        <h3 class="text-lg font-medium mb-4">Cập nhật trạng thái thanh toán</h3>
+      <div
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+      >
+        <div class="bg-gradient-to-r from-green-600 to-emerald-600 px-6 py-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 text-white">
+              <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <i class="fas fa-edit text-xl"></i>
+              </div>
+              <h3 class="text-xl font-bold">Cập nhật trạng thái</h3>
+            </div>
+            <button
+              @click="closeStatusModal"
+              class="text-white hover:bg-white/20 p-2 rounded-lg transition-all"
+            >
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+        </div>
 
-        <form @submit.prevent="updateStatus">
-          <div class="space-y-4">
+        <form @submit.prevent="updateStatus" class="p-6">
+          <div class="space-y-5">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Trạng thái *</label
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2"
               >
-              <select
-                v-model="statusForm.status"
-                required
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option
-                  v-for="status in getAvailableStatuses(selectedPayment)"
-                  :key="status.value"
-                  :value="status.value"
+                <i class="fas fa-info-circle text-emerald-600"></i>
+                Trạng thái <span class="text-red-500">*</span>
+              </label>
+              <div class="relative">
+                <div
+                  class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
                 >
-                  {{ status.label }}
-                </option>
-              </select>
+                  <i class="fas fa-circle text-gray-400"></i>
+                </div>
+                <select
+                  v-model="statusForm.status"
+                  required
+                  class="w-full border-2 border-gray-200 rounded-lg pl-10 pr-3 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all"
+                >
+                  <option
+                    v-for="status in getAvailableStatuses(selectedPayment)"
+                    :key="status.value"
+                    :value="status.value"
+                  >
+                    {{ status.label }}
+                  </option>
+                </select>
+              </div>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Ghi chú</label
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2"
               >
+                <i class="fas fa-comment-alt text-emerald-600"></i>
+                Ghi chú
+              </label>
               <textarea
                 v-model="statusForm.note"
                 rows="3"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Ghi chú về việc cập nhật trạng thái..."
+                class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all resize-none"
+                placeholder="Nhập ghi chú về việc cập nhật trạng thái..."
               ></textarea>
             </div>
           </div>
 
-          <div class="flex justify-end space-x-3 mt-6">
+          <div
+            class="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200"
+          >
             <button
               type="button"
               @click="closeStatusModal"
-              class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+              class="inline-flex items-center gap-2 px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all"
             >
-              Hủy
+              <i class="fas fa-times"></i>
+              Hủy bỏ
             </button>
             <button
               type="submit"
               :disabled="updating"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
+              <i
+                :class="updating ? 'fas fa-spinner fa-spin' : 'fas fa-check'"
+              ></i>
               {{ updating ? "Đang xử lý..." : "Cập nhật" }}
             </button>
           </div>
@@ -439,118 +550,214 @@
       </div>
     </div>
 
-    <!-- Payment Detail Modal -->
+    <!-- Payment Detail Modal với design mới -->
     <div
       v-if="showDetailModal && selectedPayment"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50"
+      class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4"
     >
       <div
-        class="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto"
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-hidden flex flex-col"
       >
-        <h3 class="text-lg font-medium mb-4">Chi tiết thanh toán</h3>
+        <div
+          class="bg-gradient-to-r from-blue-600 to-cyan-600 px-6 py-4 flex-shrink-0"
+        >
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 text-white">
+              <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <i class="fas fa-file-invoice-dollar text-xl"></i>
+              </div>
+              <h3 class="text-xl font-bold">Chi tiết thanh toán</h3>
+            </div>
+            <button
+              @click="closeDetailModal"
+              class="text-white hover:bg-white/20 p-2 rounded-lg transition-all"
+            >
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
+        </div>
 
-        <div class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="text-sm font-medium text-gray-700"
-                >Mã giao dịch</label
-              >
-              <p class="text-sm text-gray-900">
-                {{ selectedPayment.paymentId }}
-              </p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-700">Số tiền</label>
-              <p class="text-sm text-gray-900">
-                {{ formatCurrency(selectedPayment.amount) }}
-              </p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-700"
-                >Phương thức</label
-              >
-              <p class="text-sm text-gray-900">
-                {{ getMethodLabel(selectedPayment.method) }}
-              </p>
-            </div>
-            <div>
-              <label class="text-sm font-medium text-gray-700"
-                >Trạng thái</label
-              >
-              <p class="text-sm">
+        <div class="p-6 overflow-y-auto flex-1 space-y-6">
+          <!-- Thông tin cơ bản -->
+          <div
+            class="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-5 border border-blue-100"
+          >
+            <h4
+              class="font-semibold text-gray-800 mb-4 flex items-center gap-2"
+            >
+              <i class="fas fa-info-circle text-blue-600"></i>
+              Thông tin giao dịch
+            </h4>
+            <div class="grid grid-cols-2 gap-4">
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
+                >
+                  <i class="fas fa-hashtag text-blue-500"></i>
+                  Mã giao dịch
+                </label>
+                <p class="text-sm font-semibold text-gray-900">
+                  {{ selectedPayment.paymentId }}
+                </p>
+              </div>
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
+                >
+                  <i class="fas fa-money-bill-wave text-green-500"></i>
+                  Số tiền
+                </label>
+                <p class="text-sm font-bold text-green-600">
+                  {{ formatCurrency(selectedPayment.amount) }}
+                </p>
+              </div>
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
+                >
+                  <i class="fas fa-credit-card text-purple-500"></i>
+                  Phương thức
+                </label>
+                <p class="text-sm font-semibold text-gray-900">
+                  {{ getMethodLabel(selectedPayment.method) }}
+                </p>
+              </div>
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
+                >
+                  <i class="fas fa-circle-notch text-blue-500"></i>
+                  Trạng thái
+                </label>
                 <span
                   :class="getStatusColor(selectedPayment.status)"
-                  class="px-2 py-1 text-xs font-medium rounded-full"
+                  class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg"
                 >
+                  <i class="fas fa-circle text-xs"></i>
                   {{ getStatusLabel(selectedPayment.status) }}
                 </span>
-              </p>
+              </div>
             </div>
           </div>
 
-          <div v-if="selectedPayment.orderId" class="border-t pt-4">
-            <h4 class="font-medium mb-2">Thông tin đơn hàng</h4>
+          <!-- Thông tin đơn hàng -->
+          <div
+            v-if="selectedPayment.orderId"
+            class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-xl p-5 border border-amber-100"
+          >
+            <h4
+              class="font-semibold text-gray-800 mb-4 flex items-center gap-2"
+            >
+              <i class="fas fa-shopping-cart text-amber-600"></i>
+              Thông tin đơn hàng
+            </h4>
             <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-sm font-medium text-gray-700"
-                  >Mã đơn hàng</label
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
                 >
-                <p class="text-sm text-gray-900">
+                  <i class="fas fa-barcode text-amber-500"></i>
+                  Mã đơn hàng
+                </label>
+                <p class="text-sm font-semibold text-gray-900">
                   {{ selectedPayment.orderId.orderNumber }}
                 </p>
               </div>
-              <div>
-                <label class="text-sm font-medium text-gray-700"
-                  >Tổng tiền đơn hàng</label
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
                 >
-                <p class="text-sm text-gray-900">
+                  <i class="fas fa-dollar-sign text-green-500"></i>
+                  Tổng tiền
+                </label>
+                <p class="text-sm font-bold text-green-600">
                   {{ formatCurrency(selectedPayment.orderId.totalAmount) }}
                 </p>
               </div>
             </div>
           </div>
 
-          <div v-if="selectedPayment.orderId?.userId" class="border-t pt-4">
-            <h4 class="font-medium mb-2">Thông tin khách hàng</h4>
+          <!-- Thông tin khách hàng -->
+          <div
+            v-if="selectedPayment.orderId?.userId"
+            class="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border border-purple-100"
+          >
+            <h4
+              class="font-semibold text-gray-800 mb-4 flex items-center gap-2"
+            >
+              <i class="fas fa-user-circle text-purple-600"></i>
+              Thông tin khách hàng
+            </h4>
             <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-sm font-medium text-gray-700">Tên</label>
-                <p class="text-sm text-gray-900">
-                  {{ selectedPayment.orderId.userId.name }}
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
+                >
+                  <i class="fas fa-user text-purple-500"></i>
+                  Tên khách hàng
+                </label>
+                <p class="text-sm font-semibold text-gray-900">
+                  {{ selectedPayment.orderId.userId.username }}
                 </p>
               </div>
-              <div>
-                <label class="text-sm font-medium text-gray-700">Email</label>
-                <p class="text-sm text-gray-900">
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
+                >
+                  <i class="fas fa-envelope text-blue-500"></i>
+                  Email
+                </label>
+                <p class="text-sm font-semibold text-gray-900">
                   {{ selectedPayment.orderId.userId.email }}
                 </p>
               </div>
-              <div v-if="selectedPayment.orderId.userId.phone_number">
-                <label class="text-sm font-medium text-gray-700"
-                  >Số điện thoại</label
+              <div
+                v-if="selectedPayment.orderId.userId.phone_number"
+                class="bg-white rounded-lg p-3 shadow-sm col-span-2"
+              >
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
                 >
-                <p class="text-sm text-gray-900">
+                  <i class="fas fa-phone text-green-500"></i>
+                  Số điện thoại
+                </label>
+                <p class="text-sm font-semibold text-gray-900">
                   {{ selectedPayment.orderId.userId.phone_number }}
                 </p>
               </div>
             </div>
           </div>
 
-          <div class="border-t pt-4">
+          <!-- Thông tin thời gian -->
+          <div
+            class="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200"
+          >
+            <h4
+              class="font-semibold text-gray-800 mb-4 flex items-center gap-2"
+            >
+              <i class="fas fa-clock text-gray-600"></i>
+              Thời gian
+            </h4>
             <div class="grid grid-cols-2 gap-4">
-              <div>
-                <label class="text-sm font-medium text-gray-700"
-                  >Ngày tạo</label
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
                 >
-                <p class="text-sm text-gray-900">
+                  <i class="fas fa-calendar-plus text-blue-500"></i>
+                  Ngày tạo
+                </label>
+                <p class="text-sm font-semibold text-gray-900">
                   {{ formatDate(selectedPayment.createdAt) }}
                 </p>
               </div>
-              <div>
-                <label class="text-sm font-medium text-gray-700"
-                  >Cập nhật lần cuối</label
+              <div class="bg-white rounded-lg p-3 shadow-sm">
+                <label
+                  class="text-xs font-medium text-gray-500 uppercase flex items-center gap-1 mb-1"
                 >
-                <p class="text-sm text-gray-900">
+                  <i class="fas fa-calendar-check text-green-500"></i>
+                  Cập nhật cuối
+                </label>
+                <p class="text-sm font-semibold text-gray-900">
                   {{ formatDate(selectedPayment.updatedAt) }}
                 </p>
               </div>
@@ -563,9 +770,14 @@
               selectedPayment.method === 'vnpay' &&
               selectedPayment.gateway_response
             "
-            class="border-t pt-4"
+            class="bg-gradient-to-br from-red-50 to-orange-50 rounded-xl p-5 border border-red-100"
           >
-            <h4 class="font-medium mb-2">Thông tin giao dịch VNPay</h4>
+            <h4
+              class="font-semibold text-gray-800 mb-4 flex items-center gap-2"
+            >
+              <i class="fab fa-cc-visa text-red-600"></i>
+              Thông tin giao dịch VNPay
+            </h4>
             <div class="grid grid-cols-2 gap-4">
               <div v-if="selectedPayment.gateway_transaction_id">
                 <label class="text-sm font-medium text-gray-700"
@@ -734,11 +946,14 @@
           </div>
         </div>
 
-        <div class="flex justify-end mt-6">
+        <div
+          class="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 flex-shrink-0"
+        >
           <button
             @click="closeDetailModal"
-            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+            class="inline-flex items-center gap-2 px-6 py-3 text-gray-700 bg-white hover:bg-gray-100 border border-gray-300 rounded-lg font-medium transition-all shadow-sm"
           >
+            <i class="fas fa-times"></i>
             Đóng
           </button>
         </div>

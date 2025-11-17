@@ -1,39 +1,64 @@
 <template>
   <AdminLayout>
     <div class="space-y-6">
-      <!-- Header -->
-      <div class="flex items-center justify-between">
-        <div>
-          <h1 class="text-2xl font-semibold text-gray-900">Quản lý danh mục</h1>
-          <p class="mt-1 text-sm text-gray-500">
-            Quản lý danh mục sản phẩm của cửa hàng
-          </p>
+      <!-- Header với gradient background -->
+      <div
+        class="bg-gradient-to-r from-purple-600 to-indigo-600 rounded-xl shadow-lg p-6"
+      >
+        <div class="flex items-center justify-between">
+          <div class="text-white">
+            <div class="flex items-center gap-3 mb-2">
+              <div class="bg-white/20 p-3 rounded-lg backdrop-blur-sm">
+                <i class="fas fa-folder-tree text-2xl"></i>
+              </div>
+              <div>
+                <h1 class="text-3xl font-bold">Quản lý danh mục</h1>
+                <p class="mt-1 text-purple-100">
+                  Tổ chức và quản lý danh mục sản phẩm
+                </p>
+              </div>
+            </div>
+          </div>
+          <button
+            @click="openCreateModal"
+            class="bg-white text-purple-600 hover:bg-purple-50 px-6 py-3 rounded-lg flex items-center gap-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+          >
+            <i class="fas fa-plus-circle"></i>
+            Thêm danh mục mới
+          </button>
         </div>
-        <button
-          @click="openCreateModal"
-          class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center gap-2"
-        >
-          <i class="fas fa-plus"></i>
-          Thêm danh mục
-        </button>
       </div>
 
-      <!-- Filters -->
-      <div class="bg-white p-4 rounded-lg shadow-sm border">
+      <!-- Filters Card với design mới -->
+      <div class="bg-white p-6 rounded-xl shadow-md border border-gray-100">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="fas fa-filter text-purple-600"></i>
+          <h3 class="font-semibold text-gray-800">Bộ lọc tìm kiếm</h3>
+        </div>
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div>
+          <div class="relative">
+            <div
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+            >
+              <i class="fas fa-search text-gray-400"></i>
+            </div>
             <input
               v-model="filters.search"
               type="text"
               placeholder="Tìm kiếm danh mục..."
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
             />
           </div>
 
-          <div>
+          <div class="relative">
+            <div
+              class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none"
+            >
+              <i class="fas fa-layer-group text-gray-400"></i>
+            </div>
             <select
               v-model="filters.parent_id"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              class="w-full border border-gray-300 rounded-lg pl-10 pr-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
             >
               <option value="">Tất cả danh mục</option>
               <option value="root">Danh mục gốc</option>
@@ -46,124 +71,107 @@
               </option>
             </select>
           </div>
-
-          <div>
-            <select
-              v-model="filters.sortBy"
-              class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="createdAt">Ngày tạo</option>
-              <option value="name">Tên</option>
-              <option value="updatedAt">Cập nhật</option>
-            </select>
-          </div>
-
-          <div class="flex gap-2">
+          <div class="flex gap-2 md:col-span-2">
             <button
               @click="fetchCategories(filters)"
-              class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex-1"
+              class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white px-6 py-2.5 rounded-lg flex-1 flex items-center justify-center gap-2 font-medium shadow-md hover:shadow-lg transition-all"
             >
-              Lọc
+              <i class="fas fa-search"></i>
+              Tìm kiếm
             </button>
             <button
               @click="resetFilters"
-              class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-4 py-2 rounded-lg"
+              class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-2.5 rounded-lg flex items-center gap-2 font-medium transition-all"
             >
-              Reset
+              <i class="fas fa-redo"></i>
+              Đặt lại
             </button>
           </div>
         </div>
       </div>
 
-      <!-- Categories Table -->
-      <div class="bg-white rounded-lg shadow-sm border">
-        <div v-if="loading" class="p-8 text-center">
-          <div
-            class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"
-          ></div>
-          <p class="mt-2 text-gray-500">Đang tải...</p>
+      <!-- Categories Table với design hiện đại -->
+      <div
+        class="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden"
+      >
+        <div v-if="loading" class="p-12 text-center">
+          <div class="inline-flex items-center justify-center">
+            <div
+              class="animate-spin rounded-full h-12 w-12 border-4 border-purple-200 border-t-purple-600"
+            ></div>
+          </div>
+          <p class="mt-4 text-gray-600 font-medium">Đang tải dữ liệu...</p>
         </div>
 
-        <div v-else-if="error" class="p-8 text-center text-red-600">
-          {{ error }}
+        <div v-else-if="error" class="p-12 text-center">
+          <div
+            class="inline-flex items-center justify-center w-16 h-16 bg-red-100 rounded-full mb-4"
+          >
+            <i class="fas fa-exclamation-circle text-3xl text-red-600"></i>
+          </div>
+          <p class="text-red-600 font-medium">{{ error }}</p>
         </div>
 
         <div v-else>
           <table class="w-full">
-            <thead class="bg-gray-50">
+            <thead class="bg-gradient-to-r from-purple-50 to-indigo-50">
               <tr>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-purple-900 uppercase tracking-wider"
                 >
-                  Danh mục
+                  <i class="fas fa-folder mr-2"></i>Danh mục
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-purple-900 uppercase tracking-wider"
                 >
-                  Slug
+                  <i class="fas fa-link mr-2"></i>Slug
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-purple-900 uppercase tracking-wider"
                 >
-                  Danh mục cha
+                  <i class="fas fa-sitemap mr-2"></i>Danh mục cha
                 </th>
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-purple-900 uppercase tracking-wider"
                 >
-                  Số sản phẩm
+                  <i class="fas fa-box mr-2"></i>Sản phẩm
                 </th>
+
                 <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  class="px-6 py-4 text-left text-xs font-bold text-purple-900 uppercase tracking-wider"
                 >
-                  Ngày tạo
-                </th>
-                <th
-                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                >
-                  Thao tác
+                  <i class="fas fa-cog mr-2"></i>Thao tác
                 </th>
               </tr>
             </thead>
-            <tbody class="bg-white divide-y divide-gray-200">
+            <tbody class="bg-white divide-y divide-gray-100">
               <tr
                 v-for="category in categories"
                 :key="category._id"
-                class="hover:bg-gray-50"
+                class="hover:bg-purple-50 transition-colors duration-150"
               >
-                <td class="px-6 py-4 whitespace-nowrap">
+                <td class="px-6 py-4">
                   <div class="flex items-center">
-                    <div class="flex-shrink-0 h-10 w-10">
+                    <div class="flex-shrink-0 h-12 w-12">
                       <img
                         v-if="category.image"
                         :src="category.image"
                         :alt="category.name"
-                        class="h-10 w-10 rounded object-cover"
+                        class="h-12 w-12 rounded-lg object-cover shadow-sm"
                       />
                       <div
                         v-else
-                        class="h-10 w-10 rounded bg-gray-200 flex items-center justify-center"
+                        class="h-12 w-12 rounded-lg bg-gradient-to-br from-purple-100 to-indigo-100 flex items-center justify-center"
                       >
-                        <svg
-                          class="w-6 h-6 text-gray-400"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                          />
-                        </svg>
+                        <i class="fas fa-image text-purple-400 text-xl"></i>
                       </div>
                     </div>
                     <div class="ml-4">
-                      <div class="text-sm font-medium text-gray-900">
+                      <div class="text-sm font-semibold text-gray-900">
                         {{ category.name }}
                       </div>
                       <div
-                        class="text-sm text-gray-500"
+                        class="text-sm text-gray-500 mt-0.5"
                         v-if="category.description"
                       >
                         {{ shortDesc(category.description) }}
@@ -172,46 +180,55 @@
                   </div>
                 </td>
 
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  <code class="bg-gray-100 px-2 py-1 rounded text-xs">{{
-                    category.slug
-                  }}</code>
+                <td class="px-6 py-4">
+                  <code
+                    class="bg-purple-50 text-purple-700 px-3 py-1.5 rounded-lg text-xs font-mono"
+                    >{{ category.slug }}</code
+                  >
                 </td>
 
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td class="px-6 py-4">
                   <span
                     v-if="category.parent_id"
-                    class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-xs"
+                    class="inline-flex items-center gap-1.5 bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-lg text-xs font-medium"
                   >
+                    <i class="fas fa-folder"></i>
                     {{ category.parent_id.name }}
                   </span>
-                  <span v-else class="text-gray-400">Danh mục gốc</span>
+                  <span
+                    v-else
+                    class="inline-flex items-center gap-1.5 text-gray-400 text-xs font-medium"
+                  >
+                    <i class="fas fa-home"></i>
+                    Danh mục gốc
+                  </span>
                 </td>
 
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ category.productCount || 0 }}
+                <td class="px-6 py-4">
+                  <span
+                    class="inline-flex items-center gap-2 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-sm font-semibold"
+                  >
+                    <i class="fas fa-cube"></i>
+                    {{ category.productCount || 0 }}
+                  </span>
                 </td>
 
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                  {{ formatDate(category.createdAt) }}
-                </td>
-
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div class="flex items-center space-x-3">
+                <td class="px-6 py-4">
+                  <div class="flex items-center space-x-2">
                     <button
                       @click="editCategory(category)"
-                      class="text-blue-600 hover:text-blue-900 flex items-center gap-1"
+                      class="inline-flex items-center gap-1.5 bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-2 rounded-lg text-sm font-medium transition-all"
                       title="Chỉnh sửa"
                     >
-                      <i class="fas fa-edit"></i>
+                      <i class="fas fa-pen"></i>
                       Sửa
                     </button>
                     <button
                       @click="confirmDelete(category)"
-                      class="text-red-600 hover:text-red-900 flex items-center gap-1"
+                      class="inline-flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 px-3 py-2 rounded-lg text-sm font-medium transition-all"
                       title="Xóa"
                     >
-                      <i class="fas fa-trash"></i>
+                      <i class="fas fa-trash-alt"></i>
                       Xóa
                     </button>
                   </div>
@@ -220,36 +237,56 @@
             </tbody>
           </table>
 
-          <!-- Pagination -->
+          <!-- Pagination với design mới -->
           <div
             v-if="pagination && pagination.totalPages > 1"
-            class="px-6 py-4 border-t border-gray-200"
+            class="px-6 py-4 bg-gray-50 border-t border-gray-100"
           >
             <div class="flex items-center justify-between">
-              <div class="text-sm text-gray-500">
-                Hiển thị {{ (pagination.page - 1) * pagination.limit + 1 }} đến
-                {{
-                  Math.min(pagination.page * pagination.limit, pagination.total)
-                }}
-                trong tổng số {{ pagination.total }} danh mục
+              <div class="flex items-center gap-2 text-sm text-gray-600">
+                <i class="fas fa-info-circle text-purple-500"></i>
+                <span class="font-medium">
+                  Hiển thị {{ (pagination.page - 1) * pagination.limit + 1 }} -
+                  {{
+                    Math.min(
+                      pagination.page * pagination.limit,
+                      pagination.total
+                    )
+                  }}
+                </span>
+                <span>trên tổng</span>
+                <span class="font-semibold text-purple-600">{{
+                  pagination.total
+                }}</span>
+                <span>danh mục</span>
               </div>
-              <div class="flex items-center space-x-2">
+              <div class="flex items-center gap-2">
                 <button
                   @click="changePage(pagination.page - 1)"
                   :disabled="!pagination.hasPrev"
-                  class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
+                  <i class="fas fa-chevron-left"></i>
                   Trước
                 </button>
-                <span class="px-3 py-1 bg-blue-600 text-white rounded">{{
-                  pagination.page
-                }}</span>
+                <div class="flex items-center gap-1">
+                  <span
+                    class="px-4 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold rounded-lg shadow-md"
+                  >
+                    {{ pagination.page }}
+                  </span>
+                  <span class="text-gray-500 mx-1">/</span>
+                  <span class="text-gray-700 font-medium">{{
+                    pagination.totalPages
+                  }}</span>
+                </div>
                 <button
                   @click="changePage(pagination.page + 1)"
                   :disabled="!pagination.hasNext"
-                  class="px-3 py-1 border border-gray-300 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                  class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
                 >
                   Sau
+                  <i class="fas fa-chevron-right"></i>
                 </button>
               </div>
             </div>
@@ -258,72 +295,107 @@
       </div>
     </div>
 
-    <!-- Create / Edit Modal -->
+    <!-- Create / Edit Modal với design đẹp hơn -->
     <div
       v-if="showCreateModal || showEditModal"
-      class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-[9999]"
+      class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
     >
       <div
-        class="bg-white rounded-lg p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto"
+        class="bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-hidden"
       >
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-900">
-            {{ showCreateModal ? "Thêm danh mục mới" : "Chỉnh sửa danh mục" }}
-          </h3>
-          <button @click="closeModal" class="text-gray-400 hover:text-gray-600">
-            <i class="fas fa-times"></i>
-          </button>
+        <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 text-white">
+              <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <i
+                  :class="
+                    showCreateModal ? 'fas fa-plus-circle' : 'fas fa-edit'
+                  "
+                  class="text-xl"
+                ></i>
+              </div>
+              <h3 class="text-xl font-bold">
+                {{
+                  showCreateModal ? "Thêm danh mục mới" : "Chỉnh sửa danh mục"
+                }}
+              </h3>
+            </div>
+            <button
+              @click="closeModal"
+              class="text-white hover:bg-white/20 p-2 rounded-lg transition-all"
+            >
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
         </div>
 
-        <form @submit.prevent="submitForm">
-          <div class="space-y-4">
+        <form @submit.prevent="submitForm" class="p-6">
+          <div class="space-y-5">
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Tên danh mục *</label
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2"
               >
+                <i class="fas fa-tag text-purple-600"></i>
+                Tên danh mục <span class="text-red-500">*</span>
+              </label>
               <input
                 v-model="form.name"
                 type="text"
                 required
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 placeholder="Nhập tên danh mục"
               />
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Slug *</label
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2"
               >
+                <i class="fas fa-link text-purple-600"></i>
+                Slug <span class="text-red-500">*</span>
+              </label>
               <input
                 v-model="form.slug"
                 type="text"
                 required
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Slug sẽ được tự động tạo"
+                class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all font-mono text-sm"
+                placeholder="slug-tu-dong-tao"
               />
+              <p class="mt-1 text-xs text-gray-500 flex items-center gap-1">
+                <i class="fas fa-info-circle"></i>
+                Slug sẽ được tự động tạo từ tên danh mục
+              </p>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Mô tả</label
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2"
               >
+                <i class="fas fa-align-left text-purple-600"></i>
+                Mô tả
+              </label>
               <textarea
                 v-model="form.description"
                 rows="3"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Mô tả danh mục (tùy chọn)"
+                class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all resize-none"
+                placeholder="Mô tả chi tiết về danh mục (tùy chọn)"
               ></textarea>
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Danh mục cha</label
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2"
               >
+                <i class="fas fa-sitemap text-purple-600"></i>
+                Danh mục cha
+              </label>
               <select
                 v-model="form.parent_id"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
               >
-                <option value="">Danh mục gốc</option>
+                <option value="">
+                  <i class="fas fa-home"></i> Danh mục gốc
+                </option>
                 <option
                   v-for="category in allCategories"
                   :key="category._id"
@@ -335,36 +407,51 @@
             </div>
 
             <div>
-              <label class="block text-sm font-medium text-gray-700 mb-1"
-                >Hình ảnh URL</label
+              <label
+                class="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-2"
               >
+                <i class="fas fa-image text-purple-600"></i>
+                URL hình ảnh
+              </label>
               <input
                 v-model="form.image"
                 type="url"
-                class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                class="w-full border-2 border-gray-200 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all"
                 placeholder="https://example.com/image.jpg"
               />
             </div>
           </div>
 
-          <div class="flex justify-end gap-3 mt-6">
+          <div
+            class="flex justify-end gap-3 mt-6 pt-6 border-t border-gray-200"
+          >
             <button
               type="button"
               @click="closeModal"
-              class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
+              class="inline-flex items-center gap-2 px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all"
             >
-              Hủy
+              <i class="fas fa-times"></i>
+              Hủy bỏ
             </button>
             <button
               type="submit"
               :disabled="submitting"
-              class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-medium shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
+              <i
+                :class="
+                  submitting
+                    ? 'fas fa-spinner fa-spin'
+                    : showCreateModal
+                    ? 'fas fa-plus-circle'
+                    : 'fas fa-save'
+                "
+              ></i>
               {{
                 submitting
                   ? "Đang xử lý..."
                   : showCreateModal
-                  ? "Tạo"
+                  ? "Tạo danh mục"
                   : "Cập nhật"
               }}
             </button>
@@ -373,57 +460,80 @@
       </div>
     </div>
 
-    <!-- Delete Confirmation Modal -->
+    <!-- Delete Confirmation Modal với animation -->
     <div
       v-if="showDeleteModal"
-      class="fixed inset-0 bg-white bg-opacity-5 flex items-center justify-center z-[9999]"
+      class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-[9999] p-4"
       @click="closeDeleteModal"
     >
-      <div class="bg-white rounded-lg p-6 max-w-md w-full mx-4" @click.stop>
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-semibold text-gray-900">Xác nhận xóa</h3>
-          <button
-            @click="closeDeleteModal"
-            class="text-gray-400 hover:text-gray-600"
-          >
-            <i class="fas fa-times"></i>
-          </button>
+      <div
+        class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 overflow-hidden transform transition-all"
+        @click.stop
+      >
+        <div class="bg-gradient-to-r from-red-500 to-red-600 px-6 py-4">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-3 text-white">
+              <div class="bg-white/20 p-2 rounded-lg backdrop-blur-sm">
+                <i class="fas fa-exclamation-triangle text-xl"></i>
+              </div>
+              <h3 class="text-xl font-bold">Xác nhận xóa</h3>
+            </div>
+            <button
+              @click="closeDeleteModal"
+              class="text-white hover:bg-white/20 p-2 rounded-lg transition-all"
+            >
+              <i class="fas fa-times text-xl"></i>
+            </button>
+          </div>
         </div>
 
-        <div class="mb-6">
-          <div class="flex items-center mb-3">
-            <div
-              class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mr-4"
-            >
-              <i class="fas fa-exclamation-triangle text-red-600 text-xl"></i>
+        <div class="p-6">
+          <div class="mb-6">
+            <div class="flex items-start gap-4 mb-4">
+              <div
+                class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0"
+              >
+                <i class="fas fa-trash-alt text-red-600 text-2xl"></i>
+              </div>
+              <div class="flex-1">
+                <h4 class="font-semibold text-gray-900 mb-2">
+                  Xóa danh mục vĩnh viễn
+                </h4>
+                <p class="text-sm text-gray-600">
+                  Bạn có chắc chắn muốn xóa danh mục
+                  <span class="font-bold text-red-600"
+                    >"{{ categoryToDelete?.name }}"</span
+                  >?
+                </p>
+              </div>
             </div>
-            <div>
-              <h4 class="font-medium text-gray-900">Xóa danh mục</h4>
-              <p class="text-sm text-gray-600">
-                Bạn có chắc chắn muốn xóa danh mục
-                <span class="font-semibold">"{{ categoryToDelete?.name }}"</span
-                >?
-              </p>
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg">
+              <div class="flex items-start gap-3">
+                <i class="fas fa-exclamation-circle text-red-600 mt-0.5"></i>
+                <p class="text-sm text-red-800">
+                  <strong>Cảnh báo:</strong> Hành động này không thể hoàn tác.
+                  Danh mục sẽ bị xóa vĩnh viễn khỏi hệ thống.
+                </p>
+              </div>
             </div>
           </div>
-          <p class="text-sm text-gray-500 bg-w">
-            Hành động này không thể hoàn tác. Danh mục sẽ bị xóa vĩnh viễn.
-          </p>
-        </div>
 
-        <div class="flex justify-end gap-3">
-          <button
-            @click="closeDeleteModal"
-            class="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50"
-          >
-            Hủy
-          </button>
-          <button
-            @click="handleDelete"
-            class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-          >
-            Xóa
-          </button>
+          <div class="flex justify-end gap-3">
+            <button
+              @click="closeDeleteModal"
+              class="inline-flex items-center gap-2 px-6 py-3 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-all"
+            >
+              <i class="fas fa-times"></i>
+              Hủy bỏ
+            </button>
+            <button
+              @click="handleDelete"
+              class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white rounded-lg font-medium shadow-lg hover:shadow-xl transition-all"
+            >
+              <i class="fas fa-trash-alt"></i>
+              Xác nhận xóa
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -546,7 +656,8 @@ const resetFilters = () => {
 };
 
 const changePage = (page) => {
-  if (!pagination.value || page < 1 || page > pagination.value.totalPages) return;
+  if (!pagination.value || page < 1 || page > pagination.value.totalPages)
+    return;
   filters.value.page = page;
   fetchCategories(filters.value);
 };

@@ -1,4 +1,6 @@
 import { AdminAnalyticsService, AdminReportService } from "../services/adminService.js";
+import { ReportService } from "../services/reportService.js";
+import { ExportService } from "../services/exportService.js";
 import { UserService } from "../services/userService.js";
 import { ProductService } from "../services/productService.js";
 import { OrderService } from "../services/orderService.js";
@@ -499,6 +501,98 @@ export const generateProductReport = asyncHandler(async (req, res) => {
 
   const report = await AdminReportService.generateProductReport(limitNum);
   return ResponseUtil.success(res, report, 'Tạo báo cáo sản phẩm thành công');
+});
+
+// Xuất báo cáo với nhiều loại và thời gian
+export const exportReport = asyncHandler(async (req, res) => {
+  const { type, timeRange, startDate, endDate, format = 'json' } = req.query;
+
+  // Validate report type
+  const validTypes = ['revenue', 'inventory', 'best-sellers', 'orders', 'categories', 'comprehensive'];
+  if (!type || !validTypes.includes(type)) {
+    return ResponseUtil.validationError(res, ['Loại báo cáo không hợp lệ. Chọn: revenue, inventory, best-sellers, orders, categories, comprehensive']);
+  }
+
+  // Validate time range
+  const validTimeRanges = ['day', 'week', 'month', 'quarter', 'year', 'custom'];
+  if (!timeRange || !validTimeRanges.includes(timeRange)) {
+    return ResponseUtil.validationError(res, ['Khoảng thời gian không hợp lệ. Chọn: day, week, month, quarter, year, custom']);
+  }
+
+  // Validate format
+  const validFormats = ['json', 'excel', 'pdf', 'word'];
+  if (!validFormats.includes(format)) {
+    return ResponseUtil.validationError(res, ['Định dạng không hợp lệ. Chọn: json, excel, pdf, word']);
+  }
+
+  // Validate custom dates if needed
+  if (timeRange === 'custom') {
+    if (!startDate || !endDate) {
+      return ResponseUtil.validationError(res, ['Vui lòng cung cấp startDate và endDate cho khoảng thời gian tùy chỉnh']);
+    }
+    if (!ValidationUtil.isValidDate(startDate) || !ValidationUtil.isValidDate(endDate)) {
+      return ResponseUtil.validationError(res, ['Định dạng ngày không hợp lệ']);
+    }
+  }
+
+  let report;
+
+  // Generate report data
+  switch (type) {
+    case 'revenue':
+      report = await ReportService.generateRevenueReport(timeRange, startDate, endDate);
+      break;
+    case 'inventory':
+      report = await ReportService.generateInventoryReport(timeRange, startDate, endDate);
+      break;
+    case 'best-sellers':
+      report = await ReportService.generateBestSellersReport(timeRange, startDate, endDate);
+      break;
+    case 'orders':
+      report = await ReportService.generateOrdersReport(timeRange, startDate, endDate);
+      break;
+    case 'categories':
+      report = await ReportService.generateCategoryReport(timeRange, startDate, endDate);
+      break;
+    case 'comprehensive':
+      report = await ReportService.generateComprehensiveReport(timeRange, startDate, endDate);
+      break;
+    default:
+      return ResponseUtil.validationError(res, ['Loại báo cáo không được hỗ trợ']);
+  }
+
+  // Export based on format
+  if (format === 'excel') {
+    let workbook;
+    if (type === 'revenue') {
+      workbook = await ExportService.exportRevenueToExcel(report);
+    } else if (type === 'inventory') {
+      workbook = await ExportService.exportInventoryToExcel(report);
+    } else if (type === 'best-sellers') {
+      workbook = await ExportService.exportBestSellersToExcel(report);
+    } else {
+      // Generic Excel export for other types
+      workbook = await ExportService.exportRevenueToExcel(report);
+    }
+
+    const buffer = await workbook.xlsx.writeBuffer();
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename=bao-cao-${type}-${Date.now()}.xlsx`);
+    return res.send(buffer);
+  } else if (format === 'pdf') {
+    const pdfBuffer = await ExportService.exportToPDF(report, type);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=bao-cao-${type}-${Date.now()}.pdf`);
+    return res.send(pdfBuffer);
+  } else if (format === 'word') {
+    const wordBuffer = await ExportService.exportToWord(report, type);
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+    res.setHeader('Content-Disposition', `attachment; filename=bao-cao-${type}-${Date.now()}.docx`);
+    return res.send(wordBuffer);
+  } else {
+    // JSON format (default)
+    return ResponseUtil.success(res, report, `Tạo báo cáo ${type} thành công`);
+  }
 });
 
 // ============= CATEGORY MANAGEMENT =============

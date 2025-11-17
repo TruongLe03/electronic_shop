@@ -37,15 +37,6 @@ const footerSections = [
       { name: "FAQ", href: "/faq" },
     ],
   },
-  {
-    title: "Danh mục",
-    links: [
-      { name: "Arduino & IoT", href: "/categories/arduino" },
-      { name: "Cảm biến", href: "/categories/sensors" },
-      { name: "Robot", href: "/categories/robotics" },
-      { name: "Phụ kiện", href: "/categories/accessories" },
-    ],
-  },
 ];
 
 const socialLinks = [
@@ -61,7 +52,7 @@ const socialLinks = [
     <!-- Main Footer Content -->
     <div class="py-12">
       <div class="container mx-auto px-4">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           <!-- Company Info -->
           <div class="lg:col-span-2">
             <h2 class="text-xl font-bold text-blue-400 mb-4">

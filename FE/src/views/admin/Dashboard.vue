@@ -45,12 +45,20 @@ const { vipCustomers, fetchVIPCustomers } = useAdminUsers();
 
 // Dashboard stats with growth trends
 const stats = computed(() => ({
+  totalCategories:
+    dashboardStats.value?.data?.overview?.totalCategories ||
+    dashboardStats.value?.overview?.totalCategories ||
+    0,
   totalProducts: totalProducts.value,
   totalUsers: totalUsers.value,
   totalOrders: totalOrders.value,
-  totalRevenue: totalRevenue.value,
   loading: dashboardLoading.value,
   trends: {
+    categories: growthStats.value?.categories
+      ? `${
+          growthStats.value.categories.growth > 0 ? "+" : ""
+        }${growthStats.value.categories.growth.toFixed(1)}%`
+      : "+0%",
     products: growthStats.value?.products
       ? `${
           growthStats.value.products.growth > 0 ? "+" : ""
@@ -65,11 +73,6 @@ const stats = computed(() => ({
       ? `${
           growthStats.value.orders.growth > 0 ? "+" : ""
         }${growthStats.value.orders.growth.toFixed(1)}%`
-      : "+0%",
-    revenue: growthStats.value?.revenue
-      ? `${
-          growthStats.value.revenue.growth > 0 ? "+" : ""
-        }${growthStats.value.revenue.growth.toFixed(1)}%`
       : "+0%",
   },
 }));
@@ -97,9 +100,9 @@ const ordersData = computed(() => {
   if (!ordersByStatus || !ordersByStatus.length) return [];
 
   return ordersByStatus.map((item) => ({
-    status: getStatusLabel(item._id),
+    status: getStatusLabel(item._id), // Label để hiển thị
+    statusKey: item._id, // Key để lấy màu
     count: item.count,
-    color: getStatusColor(item._id),
   }));
 });
 
@@ -142,6 +145,7 @@ const loadDashboardData = async () => {
 
     // Load recent orders (limit 5)
     await fetchOrders({ limit: 5 });
+    console.log("Recent orders loaded:", recentOrders.value);
 
     // Load VIP customers (limit 5)
     await fetchVIPCustomers(5);
@@ -162,10 +166,19 @@ const refreshData = async () => {
       <!-- Stats Cards Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <ModernStatsCard
+          title="Tổng danh mục"
+          :value="stats.totalCategories"
+          icon="fas fa-list"
+          gradient="from-blue-500 to-cyan-500"
+          :trend="stats.trends.categories"
+          :loading="stats.loading"
+        />
+
+        <ModernStatsCard
           title="Tổng sản phẩm"
           :value="stats.totalProducts"
           icon="fas fa-box"
-          gradient="from-blue-500 to-cyan-500"
+          gradient="from-green-500 to-emerald-500"
           :trend="stats.trends.products"
           :loading="stats.loading"
         />
@@ -174,7 +187,7 @@ const refreshData = async () => {
           title="Tổng người dùng"
           :value="stats.totalUsers"
           icon="fas fa-users"
-          gradient="from-green-500 to-emerald-500"
+          gradient="from-purple-500 to-pink-500"
           :trend="stats.trends.users"
           :loading="stats.loading"
         />
@@ -183,30 +196,20 @@ const refreshData = async () => {
           title="Tổng đơn hàng"
           :value="stats.totalOrders"
           icon="fas fa-shopping-cart"
-          gradient="from-purple-500 to-pink-500"
+          gradient="from-orange-500 to-red-500"
           :trend="stats.trends.orders"
           :loading="stats.loading"
-        />
-
-        <ModernStatsCard
-          title="Doanh thu"
-          :value="stats.totalRevenue"
-          icon="fas fa-dollar-sign"
-          gradient="from-orange-500 to-red-500"
-          :trend="stats.trends.revenue"
-          :loading="stats.loading"
-          :is-currency="true"
         />
       </div>
 
       <!-- Charts Section -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Revenue Chart -->
-        <div class="lg:col-span-2">
+        <div class="lg:col-span-1">
           <RevenueChart :data="salesData" :loading="stats.loading" />
         </div>
 
-        <!-- Orders Chart -->
+        <!-- Orders Status Pie Chart -->
         <div class="lg:col-span-1">
           <OrdersChart :data="ordersData" :loading="stats.loading" />
         </div>
@@ -215,85 +218,72 @@ const refreshData = async () => {
       <!-- Quick Actions -->
       <QuickActions />
 
-      <!-- Activity and Data Section -->
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <!-- Activity Feed -->
-        <div class="lg:col-span-1">
-          <ActivityFeed
-            :activities="recentActivities"
-            :loading="stats.loading"
-          />
+      <!-- Recent Orders -->
+      <div
+        class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6"
+      >
+        <div class="flex items-center justify-between mb-6">
+          <div class="flex items-center space-x-3">
+            <div
+              class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl"
+            >
+              <i class="fas fa-shopping-cart"></i>
+            </div>
+            <div>
+              <h3 class="text-xl font-bold text-gray-800 dark:text-white">
+                Đơn hàng gần đây
+              </h3>
+              <p class="text-sm text-gray-500 dark:text-gray-400">
+                Danh sách đơn hàng mới nhất
+              </p>
+            </div>
+          </div>
+          <router-link
+            to="/admin/orders"
+            class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 text-sm"
+          >
+            Xem tất cả
+          </router-link>
         </div>
 
-        <!-- Recent Orders -->
-        <div class="lg:col-span-2">
-          <div
-            class="bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6"
-          >
-            <div class="flex items-center justify-between mb-6">
-              <div class="flex items-center space-x-3">
-                <div
-                  class="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl flex items-center justify-center text-white text-xl"
-                >
-                  <i class="fas fa-shopping-cart"></i>
-                </div>
+        <div class="overflow-hidden">
+          <div class="space-y-3">
+            <div
+              v-for="order in recentOrders.slice(0, 5)"
+              :key="order._id"
+              class="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group"
+            >
+              <div class="flex items-center space-x-4">
+                <img
+                  class="w-12 h-12 rounded-full ring-2 ring-blue-500/20"
+                  :src="`https://ui-avatars.com/api/?name=${
+                    order.user_id?.username || 'Unknown'
+                  }&background=random`"
+                  :alt="order.user_id?.username || 'Unknown User'"
+                />
                 <div>
-                  <h3 class="text-xl font-bold text-gray-800 dark:text-white">
-                    Đơn hàng gần đây
-                  </h3>
+                  <p
+                    class="font-semibold text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
+                  >
+                    {{ order.user_id?.username || "Unknown User" }}
+                  </p>
                   <p class="text-sm text-gray-500 dark:text-gray-400">
-                    Danh sách đơn hàng mới nhất
+                    #{{ order._id.slice(-8) }}
                   </p>
                 </div>
               </div>
-              <router-link
-                to="/admin/orders"
-                class="px-4 py-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-lg hover:shadow-lg transition-all duration-200 text-sm"
-              >
-                Xem tất cả
-              </router-link>
-            </div>
 
-            <div class="overflow-hidden">
-              <div class="space-y-3">
-                <div
-                  v-for="order in recentOrders.slice(0, 5)"
-                  :key="order._id"
-                  class="flex items-center justify-between p-4 rounded-xl bg-gray-50 dark:bg-gray-700/50 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200 cursor-pointer group"
+              <div class="text-right">
+                <p class="font-semibold text-gray-800 dark:text-white">
+                  {{ formatCurrency(order.total) }}
+                </p>
+                <span
+                  :class="`inline-flex px-3 py-1 text-xs font-medium rounded-full ${getStatusColor(
+                    order.status
+                  )}`"
                 >
-                  <div class="flex items-center space-x-4">
-                    <img
-                      class="w-12 h-12 rounded-full ring-2 ring-blue-500/20"
-                      :src="`https://ui-avatars.com/api/?name=${
-                        order.userId?.name || 'Unknown'
-                      }&background=random`"
-                      :alt="order.userId?.name || 'Unknown User'"
-                    />
-                    <div>
-                      <p
-                        class="font-semibold text-gray-800 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors"
-                      >
-                        {{ order.userId?.name || "Unknown User" }}
-                      </p>
-                      <p class="text-sm text-gray-500 dark:text-gray-400">
-                        #{{ order._id.slice(-8) }}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div class="text-right">
-                    <p class="font-semibold text-gray-800 dark:text-white">
-                      {{ formatCurrency(order.totalAmount) }}
-                    </p>
-                    <span
-                      :class="`inline-flex px-3 py-1 text-xs font-medium rounded-full bg-${getStatusColor(
-                        order.status
-                      )}-100 text-${getStatusColor(order.status)}-700`"
-                    >
-                      {{ getStatusLabel(order.status) }}
-                    </span>
-                  </div>
-                </div>
+                  {{ getStatusLabel(order.status) }}
+                </span>
               </div>
             </div>
           </div>

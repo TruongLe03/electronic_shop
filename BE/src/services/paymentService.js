@@ -441,7 +441,7 @@ export class PaymentService {
         .populate({
           path: "order_id",
           match: { user_id: userId },
-          populate: { path: "user_id", select: "name email" },
+          populate: { path: "user_id", select: "username email" },
         })
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -919,7 +919,7 @@ export class PaymentService {
           select: "orderNumber total user_id",
           populate: {
             path: "user_id",
-            select: "name email phone_number",
+            select: "username email phone_number",
           },
         })
         .sort(sort)
@@ -960,7 +960,7 @@ export class PaymentService {
       select: "orderNumber total user_id products shipping_address",
       populate: {
         path: "user_id",
-        select: "name email phone_number",
+        select: "username email phone_number",
       },
     });
 
@@ -1012,7 +1012,7 @@ export class PaymentService {
       select: "orderNumber total user_id",
       populate: {
         path: "user_id",
-        select: "name email",
+        select: "username email",
       },
     });
 

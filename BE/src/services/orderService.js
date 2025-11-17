@@ -314,7 +314,7 @@ export class OrderService {
     const [orders, total] = await Promise.all([
       Order.find(query)
         .populate("products.product_id") // Fixed: Order model has 'products' not 'items'
-        .populate("user_id", "name email phone_number")
+        .populate("user_id", "username email phone_number")
         .sort(sort)
         .skip(skip)
         .limit(limit),

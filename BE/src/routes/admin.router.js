@@ -51,6 +51,7 @@ import {
   // Reports
   generateRevenueReport,
   generateProductReport,
+  exportReport,
   
   // System Management
   getSystemInfo,
@@ -114,6 +115,7 @@ adminRouter.patch("/payments/:id/status", requireAdminAuth, updatePaymentStatus)
 // ============= REPORTS & ANALYTICS - Admin Only =============
 adminRouter.get("/reports/revenue", requireAdminAuth, generateRevenueReport);
 adminRouter.get("/reports/products", requireAdminAuth, generateProductReport);
+adminRouter.get("/reports/export", requireAdminAuth, exportReport);
 
 // ============= SYSTEM ADMINISTRATION - Admin Only =============
 adminRouter.get("/system/information", requireAdminAuth, getSystemInfo);

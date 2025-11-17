@@ -14,6 +14,17 @@ const loading = ref(false);
 const error = ref(null);
 const timeRange = ref("month"); // week, month, quarter, year
 
+// 🟢 Modal xuất báo cáo
+const showExportModal = ref(false);
+const exportConfig = ref({
+  type: "revenue", // revenue, inventory, best-sellers, orders, categories, comprehensive
+  timeRange: "month", // day, week, month, quarter, year, custom
+  format: "excel", // excel, pdf, word, csv, json
+  customStartDate: "",
+  customEndDate: "",
+});
+const exporting = ref(false);
+
 // 🟢 Dữ liệu từ API
 const dashboardStats = ref(null);
 const revenueData = ref(null);
@@ -74,6 +85,21 @@ const formatPercent = (value) => {
   return `${(value || 0).toFixed(1)}%`;
 };
 
+// 🟢 Màu sắc cho biểu đồ danh mục
+const getCategoryColor = (index) => {
+  const colors = [
+    '#3B82F6', // blue
+    '#10B981', // green
+    '#F59E0B', // amber
+    '#EF4444', // red
+    '#8B5CF6', // purple
+    '#EC4899', // pink
+    '#14B8A6', // teal
+    '#F97316', // orange
+  ];
+  return colors[index % colors.length];
+};
+
 // 🟢 Tải tất cả dữ liệu
 async function loadAllData() {
   loading.value = true;
@@ -104,12 +130,12 @@ async function loadAllData() {
     if (revenueResponse.status === "fulfilled") {
       const responseData = revenueResponse.value;
       const rawData = responseData?.data || responseData || [];
-      
-      revenueData.value = Array.isArray(rawData) 
-        ? rawData.map(item => ({
-            month: item?.month || '',
+
+      revenueData.value = Array.isArray(rawData)
+        ? rawData.map((item) => ({
+            month: item?.month || "",
             revenue: Number(item?.revenue) || 0,
-            orders: Number(item?.orders) || 0
+            orders: Number(item?.orders) || 0,
           }))
         : [];
     }
@@ -145,13 +171,16 @@ async function loadAllData() {
 // 🟢 Tính toán thống kê tổng quan
 function calculateOverviewStats() {
   // Sử dụng dữ liệu từ dashboardStats API (tổng số thực từ database)
-  const overview = dashboardStats.value?.data?.overview || dashboardStats.value?.overview || {};
-  
+  const overview =
+    dashboardStats.value?.data?.overview ||
+    dashboardStats.value?.overview ||
+    {};
+
   const totalRevenue = Number(overview.totalRevenue) || 0;
   const totalOrders = Number(overview.totalOrders) || 0;
   const totalProducts = Number(overview.totalProducts) || 0;
   const totalUsers = Number(overview.totalUsers) || 0;
-  
+
   const avgOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
 
   // Tính conversion rate (giả định)
@@ -165,7 +194,8 @@ function calculateOverviewStats() {
   const returnedOrders = orders.value.filter(
     (o) => o.status === "returned" || o.status === "cancelled"
   ).length;
-  const returnRate = orders.value.length > 0 ? (returnedOrders / orders.value.length) * 100 : 0;
+  const returnRate =
+    orders.value.length > 0 ? (returnedOrders / orders.value.length) * 100 : 0;
 
   overviewStats.value = {
     totalRevenue,
@@ -184,11 +214,13 @@ function calculateInventoryStats() {
   // Lưu ý: products.value có giới hạn 1000 items do pagination
   // Để có số liệu chính xác 100%, nên tạo API riêng cho inventory stats
   // Hiện tại tính toán dựa trên products.value để hiển thị
-  
+
   const totalValue = products.value.reduce((sum, p) => {
     const price = Number(p.price ?? 0);
     const stock = Number(p.stock ?? 0);
-    const item = (Number.isFinite(price) ? price : 0) * (Number.isFinite(stock) ? stock : 0);
+    const item =
+      (Number.isFinite(price) ? price : 0) *
+      (Number.isFinite(stock) ? stock : 0);
     return sum + item;
   }, 0);
   const inStock = products.value.filter((p) => (p.stock || 0) > 5).length;
@@ -275,14 +307,14 @@ function calculateSalesStats() {
 
   const topSellingProducts = Object.entries(productSales)
     .map(([productId, quantity]) => {
-          const product = products.value.find((p) => p._id === productId);
-          const price = Number(product?.price ?? 0);
-          return {
-            id: productId,
-            name: product?.name || "Unknown Product",
-            quantity,
-            revenue: quantity * (Number.isFinite(price) ? price : 0),
-          };
+      const product = products.value.find((p) => p._id === productId);
+      const price = Number(product?.price ?? 0);
+      return {
+        id: productId,
+        name: product?.name || "Unknown Product",
+        quantity,
+        revenue: quantity * (Number.isFinite(price) ? price : 0),
+      };
     })
     .sort((a, b) => b.quantity - a.quantity)
     .slice(0, 5);
@@ -299,8 +331,11 @@ function calculateSalesStats() {
           product?.category?.name || product?.categoryName || "Khác";
         const price = Number(product?.price ?? 0);
         const qty = Number(item.quantity ?? 0);
-        const add = (Number.isFinite(price) ? price : 0) * (Number.isFinite(qty) ? qty : 0);
-        salesByCategory[categoryName] = (salesByCategory[categoryName] || 0) + add;
+        const add =
+          (Number.isFinite(price) ? price : 0) *
+          (Number.isFinite(qty) ? qty : 0);
+        salesByCategory[categoryName] =
+          (salesByCategory[categoryName] || 0) + add;
       });
     }
   });
@@ -335,6 +370,319 @@ async function changeTimeRange(range) {
 // 🟢 Refresh dữ liệu
 async function refreshData() {
   await loadAllData();
+}
+
+// 🟢 Mở modal xuất báo cáo
+function openExportModal() {
+  exportConfig.value = {
+    type: "revenue",
+    timeRange: timeRange.value,
+    format: "excel",
+    customStartDate: "",
+    customEndDate: "",
+  };
+  showExportModal.value = true;
+}
+
+// 🟢 Đóng modal xuất báo cáo
+function closeExportModal() {
+  showExportModal.value = false;
+}
+
+// 🟢 Xuất báo cáo với cấu hình
+async function exportReport() {
+  try {
+    exporting.value = true;
+
+    // Validate custom dates
+    if (exportConfig.value.timeRange === "custom") {
+      if (
+        !exportConfig.value.customStartDate ||
+        !exportConfig.value.customEndDate
+      ) {
+        alert("Vui lòng chọn ngày bắt đầu và ngày kết thúc");
+        return;
+      }
+    }
+
+    // Build query params
+    const params = new URLSearchParams({
+      type: exportConfig.value.type,
+      timeRange: exportConfig.value.timeRange,
+      format: exportConfig.value.format,
+    });
+
+    if (exportConfig.value.timeRange === "custom") {
+      params.append("startDate", exportConfig.value.customStartDate);
+      params.append("endDate", exportConfig.value.customEndDate);
+    }
+
+    // For Excel, PDF, Word - download file directly
+    if (["excel", "pdf", "word"].includes(exportConfig.value.format)) {
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/admin/reports/export?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Không thể xuất báo cáo");
+      }
+
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+
+      const extension =
+        exportConfig.value.format === "excel"
+          ? "xlsx"
+          : exportConfig.value.format === "pdf"
+          ? "pdf"
+          : "docx";
+      link.download = `bao-cao-${
+        exportConfig.value.type
+      }-${Date.now()}.${extension}`;
+
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } else {
+      // For CSV and JSON - process data
+      const response = await fetch(
+        `${
+          import.meta.env.VITE_API_URL
+        }/admin/reports/export?${params.toString()}`,
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Không thể xuất báo cáo");
+      }
+
+      const data = await response.json();
+      const reportData = data.data || data;
+
+      // Export based on format
+      if (exportConfig.value.format === "csv") {
+        exportToCSV(reportData);
+      } else {
+        exportToJSON(reportData);
+      }
+    }
+
+    closeExportModal();
+  } catch (err) {
+    console.error("Export error:", err);
+    alert("Lỗi xuất báo cáo: " + err.message);
+  } finally {
+    exporting.value = false;
+  }
+}
+
+// 🟢 Xuất CSV từ dữ liệu báo cáo
+function exportToCSV(reportData) {
+  let csv =
+    "\ufeffBÁO CÁO " +
+    getReportTypeName(exportConfig.value.type).toUpperCase() +
+    "\n";
+  csv += `Ngày xuất,${new Date().toLocaleString("vi-VN")}\n`;
+  csv += `Loại báo cáo,${getReportTypeName(exportConfig.value.type)}\n`;
+  csv += `Thời gian,${getTimeRangeName(exportConfig.value.timeRange)}\n\n`;
+
+  // Format dựa trên loại báo cáo
+  if (exportConfig.value.type === "revenue") {
+    csv += formatRevenueCSV(reportData);
+  } else if (exportConfig.value.type === "inventory") {
+    csv += formatInventoryCSV(reportData);
+  } else if (exportConfig.value.type === "best-sellers") {
+    csv += formatBestSellersCSV(reportData);
+  } else if (exportConfig.value.type === "orders") {
+    csv += formatOrdersCSV(reportData);
+  } else if (exportConfig.value.type === "categories") {
+    csv += formatCategoriesCSV(reportData);
+  } else if (exportConfig.value.type === "comprehensive") {
+    csv += formatComprehensiveCSV(reportData);
+  }
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute(
+    "download",
+    `bao-cao-${exportConfig.value.type}-${Date.now()}.csv`
+  );
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// 🟢 Xuất JSON
+function exportToJSON(reportData) {
+  const jsonStr = JSON.stringify(reportData, null, 2);
+  const blob = new Blob([jsonStr], { type: "application/json" });
+  const link = document.createElement("a");
+  const url = URL.createObjectURL(blob);
+  link.setAttribute("href", url);
+  link.setAttribute(
+    "download",
+    `bao-cao-${exportConfig.value.type}-${Date.now()}.json`
+  );
+  link.style.visibility = "hidden";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+// 🟢 Format các loại báo cáo CSV
+function formatRevenueCSV(data) {
+  let csv = "TỔNG QUAN DOANH THU\n";
+  csv += "Chỉ tiêu,Giá trị\n";
+  csv += `Tổng doanh thu,"${formatCurrency(
+    data.summary?.totalRevenue || 0
+  )}"\n`;
+  csv += `Tổng đơn hàng,${data.summary?.totalOrders || 0}\n`;
+  csv += `Đơn hoàn thành,${data.summary?.completedOrders || 0}\n`;
+  csv += `Đơn hủy,${data.summary?.cancelledOrders || 0}\n`;
+  csv += `Giá trị TB đơn hàng,"${formatCurrency(
+    data.summary?.avgOrderValue || 0
+  )}"\n\n`;
+
+  csv += "DOANH THU THEO NGÀY\n";
+  csv += "Ngày,Doanh thu,Số đơn\n";
+  (data.dailyRevenue || []).forEach((item) => {
+    csv += `${item.date},"${formatCurrency(item.revenue)}",${item.orders}\n`;
+  });
+
+  return csv;
+}
+
+function formatInventoryCSV(data) {
+  let csv = "TỔNG QUAN TỒN KHO\n";
+  csv += "Chỉ tiêu,Giá trị\n";
+  csv += `Tổng sản phẩm,${data.summary?.totalProducts || 0}\n`;
+  csv += `Còn hàng,${data.summary?.inStock || 0}\n`;
+  csv += `Sắp hết,${data.summary?.lowStock || 0}\n`;
+  csv += `Hết hàng,${data.summary?.outOfStock || 0}\n`;
+  csv += `Tổng giá trị,"${formatCurrency(data.summary?.totalValue || 0)}"\n\n`;
+
+  csv += "SẢN PHẨM CẦN NHẬP THÊM\n";
+  csv += "Tên sản phẩm,SKU,Tồn kho,Giá,Danh mục\n";
+  (data.needsRestock || []).forEach((item) => {
+    csv += `"${item.name}",${item.sku},${item.currentStock},"${formatCurrency(
+      item.price
+    )}","${item.category}"\n`;
+  });
+
+  return csv;
+}
+
+function formatBestSellersCSV(data) {
+  let csv = "SẢN PHẨM BÁN CHẠY\n";
+  csv += "Tên sản phẩm,SKU,Đã bán,Doanh thu,Số đơn\n";
+  (data.bestSellers || []).forEach((item) => {
+    csv += `"${item.productName}",${item.sku},${
+      item.totalSold
+    },"${formatCurrency(item.totalRevenue)}",${item.orderCount}\n`;
+  });
+  csv += "\n";
+
+  csv += "SẢN PHẨM BÁN CHẬM\n";
+  csv += "Tên sản phẩm,SKU,Đã bán,Doanh thu\n";
+  (data.slowMovers || []).forEach((item) => {
+    csv += `"${item.productName}",${item.sku},${
+      item.totalSold
+    },"${formatCurrency(item.totalRevenue)}"\n`;
+  });
+
+  return csv;
+}
+
+function formatOrdersCSV(data) {
+  let csv = "THỐNG KÊ ĐỖN HÀNG\n";
+  csv += "Trạng thái,Số lượng,Tổng tiền,Phần trăm\n";
+  (data.ordersByStatus || []).forEach((item) => {
+    csv += `${item.status},${item.count},"${formatCurrency(
+      item.totalAmount
+    )}",${item.percentage}%\n`;
+  });
+
+  return csv;
+}
+
+function formatCategoriesCSV(data) {
+  let csv = "DOANH SỐ THEO DANH MỤC\n";
+  csv += "Danh mục,Đã bán,Doanh thu,Phần trăm\n";
+  (data.categorySales || []).forEach((item) => {
+    csv += `"${item.categoryName}",${item.totalSold},"${formatCurrency(
+      item.totalRevenue
+    )}",${item.revenuePercentage}%\n`;
+  });
+
+  return csv;
+}
+
+function formatComprehensiveCSV(data) {
+  let csv = "BÁO CÁO TỔNG HỢP\n\n";
+  csv += formatRevenueCSV(data.revenue || {});
+  csv += "\n\n";
+  csv += formatInventoryCSV(data.inventory || {});
+  csv += "\n\n";
+  csv += formatBestSellersCSV(data.bestSellers || {});
+  return csv;
+}
+
+// 🟢 Helper functions
+function getReportTypeName(type) {
+  const names = {
+    revenue: "Doanh thu",
+    inventory: "Tồn kho",
+    "best-sellers": "Sản phẩm bán chạy",
+    orders: "Đơn hàng",
+    categories: "Danh mục",
+    comprehensive: "Tổng hợp",
+  };
+  return names[type] || type;
+}
+
+function getTimeRangeName(timeRange) {
+  const names = {
+    day: "Hôm nay",
+    week: "7 ngày gần nhất",
+    month: "Tháng này",
+    quarter: "Quý này",
+    year: "Năm này",
+    custom: "Tùy chỉnh",
+  };
+  return names[timeRange] || timeRange;
+}
+
+function getFormatName(format) {
+  const names = {
+    excel: "Excel (.xlsx)",
+    pdf: "PDF (.pdf)",
+    word: "Word (.docx)",
+    csv: "CSV (.csv)",
+    json: "JSON (.json)",
+  };
+  return names[format] || format.toUpperCase();
+}
+
+// 🟢 Xuất báo cáo PDF (sử dụng print)
+function exportToPDF() {
+  window.print();
 }
 
 // 🟢 Khởi tạo
@@ -421,7 +769,8 @@ onMounted(() => {
           </button>
 
           <button
-            class="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+            @click="openExportModal"
+            class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all shadow-sm"
           >
             <svg
               class="w-4 h-4"
@@ -800,11 +1149,75 @@ onMounted(() => {
           </div>
         </div>
 
-        <!-- Biểu đồ doanh thu theo tháng -->
-        <RevenueChart 
-          :data="revenueData || []" 
-          :loading="loading"
-        />
+        <!-- Biểu đồ thống kê sản phẩm theo danh mục -->
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="text-lg font-semibold text-gray-900">
+              📊 Thống kê sản phẩm theo danh mục
+            </h3>
+            <div class="text-sm text-gray-500">
+              Tổng: {{ inventoryStats.categoryStats.reduce((sum, cat) => sum + cat.totalProducts, 0) }} sản phẩm
+            </div>
+          </div>
+          
+          <div v-if="loading" class="flex justify-center py-8">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+          
+          <div v-else class="space-y-4">
+            <div
+              v-for="(category, index) in inventoryStats.categoryStats"
+              :key="index"
+              class="relative"
+            >
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-3">
+                  <div 
+                    class="w-3 h-3 rounded-full"
+                    :style="{ backgroundColor: getCategoryColor(index) }"
+                  ></div>
+                  <span class="font-medium text-gray-900">{{ category.name }}</span>
+                </div>
+                <div class="flex items-center gap-4">
+                  <span class="text-sm text-gray-600">
+                    {{ category.totalProducts }} sản phẩm
+                  </span>
+                  <span class="font-bold text-blue-600 min-w-[80px] text-right">
+                    {{ formatCurrency(category.totalValue) }}
+                  </span>
+                </div>
+              </div>
+              
+              <!-- Progress bar -->
+              <div class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                <div
+                  class="h-2.5 rounded-full transition-all duration-500"
+                  :style="{
+                    width: `${Math.min(100, (category.totalProducts / Math.max(1, ...inventoryStats.categoryStats.map(c => c.totalProducts))) * 100)}%`,
+                    backgroundColor: getCategoryColor(index)
+                  }"
+                ></div>
+              </div>
+              
+              <!-- Chi tiết trạng thái tồn kho -->
+              <div class="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                <span class="flex items-center gap-1">
+                  <span class="text-green-600">●</span> Còn hàng: {{ category.inStock }}
+                </span>
+                <span class="flex items-center gap-1">
+                  <span class="text-orange-600">●</span> Sắp hết: {{ category.lowStock }}
+                </span>
+                <span class="flex items-center gap-1">
+                  <span class="text-red-600">●</span> Hết hàng: {{ category.outOfStock }}
+                </span>
+              </div>
+            </div>
+            
+            <div v-if="!inventoryStats.categoryStats?.length" class="text-center py-8 text-gray-500">
+              Chưa có dữ liệu danh mục
+            </div>
+          </div>
+        </div>
 
         <!-- Biểu đồ và phân tích -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -837,11 +1250,14 @@ onMounted(() => {
                       :style="{
                         width: `${Math.min(
                           100,
-                          Math.max(0,
+                          Math.max(
+                            0,
                             (day.revenue /
                               Math.max(
                                 1,
-                                ...salesStats.dailySales.map((d) => Number(d?.revenue ?? 0) || 0)
+                                ...salesStats.dailySales.map(
+                                  (d) => Number(d?.revenue ?? 0) || 0
+                                )
                               )) *
                               100
                           )
@@ -916,11 +1332,14 @@ onMounted(() => {
                       :style="{
                         width: `${Math.min(
                           100,
-                          Math.max(0,
+                          Math.max(
+                            0,
                             (category.value /
                               Math.max(
                                 1,
-                                ...salesStats.salesByCategory.map((c) => Number(c?.value ?? 0) || 0)
+                                ...salesStats.salesByCategory.map(
+                                  (c) => Number(c?.value ?? 0) || 0
+                                )
                               )) *
                               100
                           )
@@ -1018,6 +1437,357 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Modal Xuất Báo Cáo -->
+    <Teleport to="body">
+      <div
+        v-if="showExportModal"
+        class="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50 p-4"
+        @click.self="closeExportModal"
+      >
+        <div
+          class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+          @click.stop
+        >
+          <!-- Header -->
+          <div
+            class="flex items-center justify-between p-6 border-b border-gray-200"
+          >
+            <div class="flex items-center gap-3">
+              <div
+                class="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-xl flex items-center justify-center"
+              >
+                <svg
+                  class="w-6 h-6 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-xl font-bold text-gray-900">Xuất báo cáo</h3>
+                <p class="text-sm text-gray-600">
+                  Chọn loại báo cáo và thời gian xuất
+                </p>
+              </div>
+            </div>
+            <button
+              @click="closeExportModal"
+              class="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <svg
+                class="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Body -->
+          <div class="p-6 space-y-6">
+            <!-- Loại báo cáo -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                Loại báo cáo
+              </label>
+              <div class="grid grid-cols-2 gap-3">
+                <button
+                  v-for="type in [
+                    {
+                      value: 'revenue',
+                      label: '💰 Doanh thu',
+                      desc: 'Thống kê doanh thu chi tiết',
+                    },
+                    {
+                      value: 'inventory',
+                      label: '📦 Tồn kho',
+                      desc: 'Báo cáo tồn kho sản phẩm',
+                    },
+                    {
+                      value: 'best-sellers',
+                      label: '🔥 Bán chạy',
+                      desc: 'Top sản phẩm bán chạy',
+                    },
+                    {
+                      value: 'orders',
+                      label: '📋 Đơn hàng',
+                      desc: 'Thống kê đơn hàng',
+                    },
+                    {
+                      value: 'categories',
+                      label: '🏷️ Danh mục',
+                      desc: 'Phân tích theo danh mục',
+                    },
+                    {
+                      value: 'comprehensive',
+                      label: '📊 Tổng hợp',
+                      desc: 'Báo cáo đầy đủ tất cả',
+                    },
+                  ]"
+                  :key="type.value"
+                  @click="exportConfig.type = type.value"
+                  :class="{
+                    'bg-green-50 border-green-500 ring-2 ring-green-200':
+                      exportConfig.type === type.value,
+                    'bg-white border-gray-200 hover:border-green-300':
+                      exportConfig.type !== type.value,
+                  }"
+                  class="p-4 border-2 rounded-xl text-left transition-all"
+                >
+                  <div class="font-semibold text-gray-900">
+                    {{ type.label }}
+                  </div>
+                  <div class="text-xs text-gray-600 mt-1">{{ type.desc }}</div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Thời gian -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                Khoảng thời gian
+              </label>
+              <div class="grid grid-cols-3 gap-3">
+                <button
+                  v-for="range in [
+                    { value: 'day', label: '📅 Hôm nay' },
+                    { value: 'week', label: '📆 7 ngày' },
+                    { value: 'month', label: '📊 Tháng này' },
+                    { value: 'quarter', label: '📈 Quý này' },
+                    { value: 'year', label: '🗓️ Năm này' },
+                    { value: 'custom', label: '⚙️ Tùy chỉnh' },
+                  ]"
+                  :key="range.value"
+                  @click="exportConfig.timeRange = range.value"
+                  :class="{
+                    'bg-blue-50 border-blue-500 ring-2 ring-blue-200':
+                      exportConfig.timeRange === range.value,
+                    'bg-white border-gray-200 hover:border-blue-300':
+                      exportConfig.timeRange !== range.value,
+                  }"
+                  class="p-3 border-2 rounded-xl text-sm font-medium transition-all"
+                >
+                  {{ range.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Custom Date Range -->
+            <div
+              v-if="exportConfig.timeRange === 'custom'"
+              class="grid grid-cols-2 gap-4 p-4 bg-blue-50 rounded-xl border border-blue-200"
+            >
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Từ ngày
+                </label>
+                <input
+                  v-model="exportConfig.customStartDate"
+                  type="date"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  Đến ngày
+                </label>
+                <input
+                  v-model="exportConfig.customEndDate"
+                  type="date"
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <!-- Định dạng file -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-3">
+                Định dạng xuất
+              </label>
+              <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                <button
+                  v-for="format in [
+                    {
+                      value: 'excel',
+                      label: '📊 Excel',
+                      desc: 'File .xlsx',
+                      color: 'green',
+                    },
+                    {
+                      value: 'pdf',
+                      label: '📕 PDF',
+                      desc: 'File .pdf',
+                      color: 'red',
+                    },
+                    {
+                      value: 'word',
+                      label: '📘 Word',
+                      desc: 'File .docx',
+                      color: 'blue',
+                    },
+                    {
+                      value: 'csv',
+                      label: '📄 CSV',
+                      desc: 'Văn bản',
+                      color: 'gray',
+                    },
+                    {
+                      value: 'json',
+                      label: '📋 JSON',
+                      desc: 'Dữ liệu thô',
+                      color: 'purple',
+                    },
+                  ]"
+                  :key="format.value"
+                  @click="exportConfig.format = format.value"
+                  :class="{
+                    'bg-green-50 border-green-500 ring-2 ring-green-200':
+                      exportConfig.format === format.value &&
+                      format.color === 'green',
+                    'bg-red-50 border-red-500 ring-2 ring-red-200':
+                      exportConfig.format === format.value &&
+                      format.color === 'red',
+                    'bg-blue-50 border-blue-500 ring-2 ring-blue-200':
+                      exportConfig.format === format.value &&
+                      format.color === 'blue',
+                    'bg-gray-50 border-gray-500 ring-2 ring-gray-200':
+                      exportConfig.format === format.value &&
+                      format.color === 'gray',
+                    'bg-purple-50 border-purple-500 ring-2 ring-purple-200':
+                      exportConfig.format === format.value &&
+                      format.color === 'purple',
+                    'bg-white border-gray-200 hover:border-green-300':
+                      exportConfig.format !== format.value &&
+                      format.color === 'green',
+                    'bg-white border-gray-200 hover:border-red-300':
+                      exportConfig.format !== format.value &&
+                      format.color === 'red',
+                    'bg-white border-gray-200 hover:border-blue-300':
+                      exportConfig.format !== format.value &&
+                      format.color === 'blue',
+                    'bg-white border-gray-200 hover:border-gray-300':
+                      exportConfig.format !== format.value &&
+                      format.color === 'gray',
+                    'bg-white border-gray-200 hover:border-purple-300':
+                      exportConfig.format !== format.value &&
+                      format.color === 'purple',
+                  }"
+                  class="p-3 border-2 rounded-xl text-left transition-all"
+                >
+                  <div class="font-semibold text-gray-900 text-sm">
+                    {{ format.label }}
+                  </div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    {{ format.desc }}
+                  </div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Thông tin tóm tắt -->
+            <div
+              class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 border border-gray-200"
+            >
+              <h4
+                class="font-semibold text-gray-900 mb-2 flex items-center gap-2"
+              >
+                <svg
+                  class="w-5 h-5 text-blue-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
+                </svg>
+                Sẽ xuất báo cáo
+              </h4>
+              <div class="space-y-1 text-sm text-gray-700">
+                <p>
+                  <span class="font-medium">Loại:</span>
+                  {{ getReportTypeName(exportConfig.type) }}
+                </p>
+                <p>
+                  <span class="font-medium">Thời gian:</span>
+                  {{ getTimeRangeName(exportConfig.timeRange) }}
+                </p>
+                <p>
+                  <span class="font-medium">Định dạng:</span>
+                  {{ getFormatName(exportConfig.format) }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div
+            class="flex items-center justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50 rounded-b-2xl"
+          >
+            <button
+              @click="closeExportModal"
+              :disabled="exporting"
+              class="px-6 py-2.5 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50 font-medium"
+            >
+              Hủy
+            </button>
+            <button
+              @click="exportReport"
+              :disabled="exporting"
+              class="px-6 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all disabled:opacity-50 font-medium flex items-center gap-2 shadow-sm"
+            >
+              <svg
+                v-if="exporting"
+                class="animate-spin w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                />
+              </svg>
+              <svg
+                v-else
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
+              </svg>
+              {{ exporting ? "Đang xuất..." : "Xuất báo cáo" }}
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </AdminLayout>
 </template>
 

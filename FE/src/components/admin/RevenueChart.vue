@@ -1,5 +1,28 @@
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
+import { Line } from "vue-chartjs";
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler,
+} from "chart.js";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 const props = defineProps({
   data: {
@@ -12,38 +35,15 @@ const props = defineProps({
   },
 });
 
-const chartContainer = ref(null);
-const animationProgress = ref(0);
-
-onMounted(() => {
-  if (!props.loading) {
-    // Animate chart on mount
-    const animate = () => {
-      if (animationProgress.value < 100) {
-        animationProgress.value += 2;
-        requestAnimationFrame(animate);
-      }
-    };
-    setTimeout(animate, 500);
-  }
-});
-
 const maxRevenue = computed(() => {
   if (!props.data || !props.data.length) return 0;
-  // Map to numbers and ignore non-finite values
   const values = props.data.map((item) => {
     const v = Number(item?.revenue ?? 0);
     return Number.isFinite(v) ? v : 0;
   });
   const max = Math.max(...values, 0);
-  // Avoid zero to prevent division by zero in bar height calculation
   return max > 0 ? max : 1;
 });
-
-// Provide a safe divisor to use in templates (never 0)
-const safeMaxRevenue = computed(() =>
-  maxRevenue.value > 0 ? maxRevenue.value : 1
-);
 
 const avgRevenue = computed(() => {
   if (!props.data || !props.data.length) return 0;
@@ -57,12 +57,92 @@ const avgRevenue = computed(() => {
 const formatCurrency = (amount) => {
   const num = Number(amount);
   if (!Number.isFinite(num)) return "0 ₫";
-  
+
   return new Intl.NumberFormat("vi-VN", {
     style: "currency",
     currency: "VND",
     notation: "compact",
   }).format(num);
+};
+
+const chartData = computed(() => ({
+  labels: props.data.map((item) => item.month),
+  datasets: [
+    {
+      label: "Doanh thu",
+      data: props.data.map((item) => Number(item?.revenue ?? 0)),
+      borderColor: "rgb(59, 130, 246)",
+      backgroundColor: "rgba(59, 130, 246, 0.1)",
+      borderWidth: 3,
+      fill: true,
+      tension: 0.4,
+      pointRadius: 6,
+      pointHoverRadius: 8,
+      pointBackgroundColor: "rgb(59, 130, 246)",
+      pointBorderColor: "#fff",
+      pointBorderWidth: 2,
+      pointHoverBackgroundColor: "rgb(37, 99, 235)",
+      pointHoverBorderColor: "#fff",
+    },
+  ],
+}));
+
+const chartOptions = {
+  responsive: true,
+  maintainAspectRatio: false,
+  plugins: {
+    legend: {
+      display: false,
+    },
+    tooltip: {
+      backgroundColor: "rgba(17, 24, 39, 0.9)",
+      titleColor: "#fff",
+      bodyColor: "#fff",
+      padding: 12,
+      borderColor: "rgba(255, 255, 255, 0.1)",
+      borderWidth: 1,
+      displayColors: false,
+      callbacks: {
+        label: function (context) {
+          return new Intl.NumberFormat("vi-VN", {
+            style: "currency",
+            currency: "VND",
+          }).format(context.parsed.y);
+        },
+      },
+    },
+  },
+  scales: {
+    y: {
+      beginAtZero: true,
+      grid: {
+        color: "rgba(156, 163, 175, 0.1)",
+        drawBorder: false,
+      },
+      ticks: {
+        color: "rgba(107, 114, 128, 0.8)",
+        callback: function (value) {
+          return new Intl.NumberFormat("vi-VN", {
+            notation: "compact",
+            compactDisplay: "short",
+          }).format(value);
+        },
+      },
+    },
+    x: {
+      grid: {
+        display: false,
+        drawBorder: false,
+      },
+      ticks: {
+        color: "rgba(107, 114, 128, 0.8)",
+      },
+    },
+  },
+  interaction: {
+    intersect: false,
+    mode: "index",
+  },
 };
 </script>
 
@@ -103,7 +183,7 @@ const formatCurrency = (amount) => {
     </div>
 
     <!-- Chart Area -->
-    <div ref="chartContainer" class="relative h-64">
+    <div class="relative h-64">
       <!-- Loading State -->
       <div
         v-if="loading"
@@ -123,39 +203,7 @@ const formatCurrency = (amount) => {
       </div>
 
       <!-- Chart Content -->
-      <div v-else class="h-full flex items-end justify-between space-x-2 px-4">
-        <div
-          v-for="(item, index) in data"
-          :key="index"
-          class="flex-1 flex flex-col items-center group cursor-pointer"
-        >
-          <!-- Bar -->
-          <div
-            class="w-full max-w-12 bg-gray-200 dark:bg-gray-700 rounded-t-lg overflow-hidden mb-3 relative"
-          >
-            <div
-              :class="`bg-gradient-to-t from-blue-500 to-cyan-400 rounded-t-lg transition-all duration-1000 ease-out group-hover:from-blue-600 group-hover:to-cyan-500`"
-              :style="`height: ${Math.max(0, 
-                ((Number(item?.revenue ?? 0) || 0) / safeMaxRevenue) *
-                200 *
-                (animationProgress / 100)
-              )}px`"
-            ></div>
-
-            <!-- Tooltip -->
-            <div
-              class="absolute -top-12 left-1/2 transform -translate-x-1/2 bg-gray-800 dark:bg-gray-700 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-10"
-            >
-              {{ formatCurrency(item.revenue) }}
-            </div>
-          </div>
-
-          <!-- Month Label -->
-          <span class="text-xs font-medium text-gray-600 dark:text-gray-400">
-            {{ item.month }}
-          </span>
-        </div>
-      </div>
+      <Line v-else :data="chartData" :options="chartOptions" />
     </div>
 
     <!-- Summary Stats -->

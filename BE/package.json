@@ -17,8 +17,10 @@
     "body-parser": "^2.2.0",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
+    "docx": "^9.5.1",
     "dotenv": "^17.2.1",
     "ejs": "^3.1.10",
+    "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "express-async-handler": "^1.2.0",
     "jsonwebtoken": "^9.0.2",
@@ -30,6 +32,7 @@
     "nodemailer": "^7.0.6",
     "nodemon": "^3.1.10",
     "openai": "^6.5.0",
+    "pdfkit": "^0.17.2",
     "qs": "^6.14.0",
     "socket.io": "^4.8.1",
     "vnpay": "^2.4.4"

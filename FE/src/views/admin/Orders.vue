@@ -69,7 +69,7 @@ const filteredOrders = computed(() => {
       (order) =>
         order._id?.toLowerCase().includes(query) ||
         order.orderId?.toLowerCase().includes(query) ||
-        order.user_id?.name?.toLowerCase().includes(query) ||
+        order.user_id?.username?.toLowerCase().includes(query) ||
         order.user_id?.email?.toLowerCase().includes(query)
     );
   }
@@ -464,10 +464,10 @@ onMounted(async () => {
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap">
                     <div class="text-sm font-medium text-gray-900">
-                      {{ order.user_id?.name || "N/A" }}
+                      {{ order.user_id?.username || "" }}
                     </div>
                     <div class="text-sm text-gray-500">
-                      {{ order.user_id?.email || "N/A" }}
+                      {{ order.user_id?.email || "" }}
                     </div>
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -493,7 +493,10 @@ onMounted(async () => {
                     >
                       {{ getPaymentStatusText(order.payment_status) }}
                     </span>
-                    <div v-if="order.payment_method" class="text-xs text-gray-500 mt-1">
+                    <div
+                      v-if="order.payment_method"
+                      class="text-xs text-gray-500 mt-1"
+                    >
                       {{ getPaymentMethodText(order.payment_method) }}
                     </div>
                   </td>
@@ -711,7 +714,7 @@ onMounted(async () => {
                 #{{ orderToDelete?._id?.slice(-8).toUpperCase() }}
               </p>
               <p class="text-sm text-gray-600">
-                Khách hàng: {{ orderToDelete?.user_id?.name }}
+                Khách hàng: {{ orderToDelete?.user_id?.username }}
               </p>
               <p class="text-sm text-gray-600">
                 Tổng tiền: {{ formatCurrency(orderToDelete?.total || 0) }}
@@ -780,7 +783,7 @@ onMounted(async () => {
                   orders
                     .find((o) => o._id === orderId)
                     ?._id?.slice(-8)
-                    .toUpperCase() || "N/A"
+                    .toUpperCase() || ""
                 }}
               </div>
             </div>

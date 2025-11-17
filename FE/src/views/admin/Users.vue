@@ -329,7 +329,7 @@ const unbanUser = (user) => {
                     :alt="user.name"
                   />
                   <div>
-                    <div class="font-semibold">{{ user.name }}</div>
+                    <div class="font-semibold">{{ user.username }}</div>
                     <div class="text-xs text-gray-500">
                       Tham gia: {{ formatDate(user.joinDate) }}
                     </div>

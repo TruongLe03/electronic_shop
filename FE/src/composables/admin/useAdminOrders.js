@@ -45,15 +45,16 @@ export function useAdminOrders() {
   ];
 
   // Methods
-  const fetchOrders = async () => {
+  const fetchOrders = async (options = {}) => {
     try {
       loading.value = true;
       error.value = null;
 
       const params = {
-        page: pagination.currentPage,
-        limit: pagination.limit,
+        page: options.page || pagination.currentPage,
+        limit: options.limit || pagination.limit,
         ...filters,
+        ...options,
       };
 
       const response = await getAllOrdersAdmin(params);
