@@ -69,7 +69,7 @@
 
           <div class="space-y-4">
             <router-link
-              :to="`/orders/${orderId}`"
+              :to="`/order-detail/${orderId}`"
               class="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
             >
               Xem chi tiết đơn hàng
@@ -121,7 +121,7 @@
 
           <div class="space-y-4">
             <router-link
-              to="/orders"
+              to="/my-orders"
               class="inline-block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors"
             >
               Kiểm tra đơn hàng
