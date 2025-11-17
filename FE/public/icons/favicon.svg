@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background Circle -->
+  <circle cx="32" cy="32" r="32" fill="#3B82F6"/>
+  
+  <!-- Microchip Icon -->
+  <g fill="#FFFFFF">
+    <!-- Center chip body -->
+    <rect x="20" y="20" width="24" height="24" rx="2" fill="#FFFFFF"/>
+    
+    <!-- Inner lines -->
+    <rect x="24" y="28" width="16" height="2" fill="#3B82F6"/>
+    <rect x="24" y="32" width="16" height="2" fill="#3B82F6"/>
+    <rect x="24" y="36" width="16" height="2" fill="#3B82F6"/>
+    
+    <!-- Left pins -->
+    <rect x="14" y="24" width="6" height="2"/>
+    <rect x="14" y="30" width="6" height="2"/>
+    <rect x="14" y="36" width="6" height="2"/>
+    
+    <!-- Right pins -->
+    <rect x="44" y="24" width="6" height="2"/>
+    <rect x="44" y="30" width="6" height="2"/>
+    <rect x="44" y="36" width="6" height="2"/>
+    
+    <!-- Top pins -->
+    <rect x="24" y="14" width="2" height="6"/>
+    <rect x="30" y="14" width="2" height="6"/>
+    <rect x="36" y="14" width="2" height="6"/>
+    
+    <!-- Bottom pins -->
+    <rect x="24" y="44" width="2" height="6"/>
+    <rect x="30" y="44" width="2" height="6"/>
+    <rect x="36" y="44" width="2" height="6"/>
+  </g>
+</svg>

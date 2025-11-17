@@ -1,0 +1,27 @@
+{
+  "name": "LNT Electronics Shop",
+  "short_name": "LNT Shop",
+  "description": "Cửa hàng điện tử, Arduino, IoT và thiết bị tự động hóa",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any"
+    },
+    {
+      "src": "/favicon-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "theme_color": "#3B82F6",
+  "background_color": "#FFFFFF",
+  "orientation": "portrait-primary"
+}

@@ -127,7 +127,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { searchProducts } from '../api/productService'
+import { searchProducts } from '@/api/productService'
 
 const router = useRouter()
 const route = useRoute()
