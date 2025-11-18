@@ -42,6 +42,12 @@ export const useAuthStore = defineStore('auth', () => {
       }
       
       console.log('Login successful:', { user: response.user, hasToken: !!response.token });
+      
+      // Đồng bộ giỏ hàng local lên server sau khi đăng nhập
+      const { useCartStore } = await import('./cart.js');
+      const cartStore = useCartStore();
+      await cartStore.syncLocalCartToServer();
+      
       return response;
     } catch (error) {
       console.error('Login error in store:', error);

@@ -1163,7 +1163,19 @@ const selectSavedAddress = async (event) => {
     // Set detailed address
     form.value.address = detailedAddress;
 
-    showSuccess("Đã chọn địa chỉ từ danh sách");
+    // Tự động lưu địa chỉ đã chọn
+    savedAddressData.value = {
+      province: form.value.province,
+      district: form.value.district,
+      ward: form.value.ward,
+      address: form.value.address,
+    };
+
+    // Đánh dấu có địa chỉ đã lưu và thoát chế độ edit
+    hasSavedAddress.value = true;
+    isEditingAddress.value = false;
+
+    showSuccess("Đã chọn và lưu địa chỉ");
 
     // Reset dropdown
     event.target.value = "";

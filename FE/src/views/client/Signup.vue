@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useAuthStore } from "@stores/auth";
+import { useCartStore } from "@stores/cart";
 import { register, validateEmailFormat, checkEmailExists } from "@api/authService";
 import { useNotification } from "@/composables/client/useNotification";
 import { useGlobalLoading } from "@/composables/client/useLoading";
@@ -182,6 +183,10 @@ const handleSubmit = async () => {
     // Tự động đăng nhập sau khi đăng ký thành công
     // Token đã được lưu trong authService, giờ cập nhật store với token
     authStore.updateUser(response.user, response.token);
+
+    // Đồng bộ giỏ hàng local lên server sau khi đăng ký
+    const cartStore = useCartStore();
+    await cartStore.syncLocalCartToServer();
 
     // Show success message
     notifyRegister(true);
