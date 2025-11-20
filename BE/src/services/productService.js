@@ -75,7 +75,14 @@ export class ProductService {
     }
 
     if (search && search.trim() !== "") {
-      query.name = { $regex: search, $options: "i" };
+      const searchRegex = { $regex: search, $options: "i" };
+      query.$or = [
+        { name: searchRegex },
+        { description: searchRegex },
+        { description_detail: searchRegex },
+        { tags: searchRegex },
+        { sku: searchRegex }
+      ];
     }
 
     // Build sort

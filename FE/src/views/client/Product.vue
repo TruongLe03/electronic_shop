@@ -17,6 +17,7 @@ const route = useRoute();
 const sortBy = ref("newest"); // newest, oldest, price-asc, price-desc, name-asc, name-desc
 const priceRange = ref("");
 const showFilters = ref(false);
+const showCategories = ref(false); // Trạng thái hiển thị dropdown danh mục trên mobile
 const originalProducts = ref([]); // Store original products for client-side filtering
 
 // Computed property for filtered products count
@@ -316,8 +317,45 @@ onMounted(async () => {
         <div
           class="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden"
         >
+          <!-- Mobile: Toggle Header -->
+          <div class="sm:hidden">
+            <button
+              @click="showCategories = !showCategories"
+              class="w-full flex items-center justify-between px-4 py-4 bg-gradient-to-r from-gray-50 to-blue-50 hover:from-gray-100 hover:to-blue-100 transition-colors"
+            >
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center"
+                >
+                  <i class="fas fa-folder text-white text-sm"></i>
+                </div>
+                <div class="text-left">
+                  <p class="font-semibold text-gray-800">Danh mục sản phẩm</p>
+                  <p class="text-sm text-gray-500">
+                    {{ categoriesWithAll.find(c => c.id === selectedCategory)?.name || 'Tất cả sản phẩm' }}
+                  </p>
+                </div>
+              </div>
+              <svg
+                :class="{ 'rotate-180': showCategories }"
+                class="w-5 h-5 text-gray-600 transition-transform duration-300"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Desktop: Header -->
           <div
-            class="px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-100"
+            class="hidden sm:block px-4 sm:px-6 py-4 bg-gradient-to-r from-gray-50 to-blue-50 border-b border-gray-100"
           >
             <h3
               class="text-lg font-semibold text-gray-800 flex items-center gap-2"
@@ -326,25 +364,29 @@ onMounted(async () => {
               Danh mục sản phẩm
             </h3>
           </div>
-          <div class="p-4 sm:p-6">
-            <!-- Mobile: Horizontal Scroll -->
-            <div class="sm:hidden">
-              <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                <button
-                  v-for="category in categoriesWithAll"
-                  :key="category.id"
-                  @click="handleCategoryChange(category.id)"
-                  :class="{
-                    'bg-blue-500 text-white shadow-lg':
-                      selectedCategory === category.id,
-                    'bg-gray-100 text-gray-700 hover:bg-gray-200':
-                      selectedCategory !== category.id,
-                  }"
-                  class="px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
-                >
-                  {{ category.name }}
-                </button>
-              </div>
+
+          <!-- Categories List -->
+          <div :class="{ hidden: !showCategories }" class="sm:block p-4 sm:p-6">
+            <!-- Mobile: Vertical List -->
+            <div class="sm:hidden space-y-2">
+              <button
+                v-for="category in categoriesWithAll"
+                :key="category.id"
+                @click="handleCategoryChange(category.id); showCategories = false"
+                :class="{
+                  'bg-blue-500 text-white shadow-lg':
+                    selectedCategory === category.id,
+                  'bg-gray-50 text-gray-700 hover:bg-gray-100':
+                    selectedCategory !== category.id,
+                }"
+                class="w-full px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 flex items-center justify-between"
+              >
+                <span>{{ category.name }}</span>
+                <i
+                  v-if="selectedCategory === category.id"
+                  class="fas fa-check text-sm"
+                ></i>
+              </button>
             </div>
 
             <!-- Desktop: Wrap Grid -->

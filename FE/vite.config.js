@@ -16,4 +16,12 @@ export default defineConfig({
       "@assets": path.resolve(__dirname, "./src/assets"),
     },
   },
+  build: {
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true,
+      },
+    },
+  },
 });

@@ -11,7 +11,7 @@
           </span>
           <span class="flex items-center">
             <i class="fas fa-envelope mr-2"></i>
-            lengoctruong020703@gmail.com
+            lntshop@gmail.com
           </span>
         </div>
 
@@ -337,7 +337,7 @@
     <div
       v-if="isMobileMenuOpen"
       @click="isMobileMenuOpen = false"
-      class="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+      class="fixed inset-0 bg-opacity-50 z-40 md:hidden"
     ></div>
 
     <!-- Mobile Menu -->
@@ -358,23 +358,6 @@
 
       <div class="p-4">
         <div class="space-y-4">
-          <!-- Mobile Search -->
-          <div class="relative">
-            <input
-              v-model="searchQuery"
-              @input="onSearchInput"
-              type="text"
-              placeholder="Tìm kiếm sản phẩm..."
-              class="w-full border border-gray-300 rounded-lg px-4 py-3 focus:outline-none focus:border-blue-500"
-            />
-            <button
-              @click="goToSearchPage"
-              class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-            >
-              <i class="fas fa-search"></i>
-            </button>
-          </div>
-
           <!-- Mobile Quick Actions -->
           <div class="flex gap-2 pt-2 border-t border-gray-100">
             <!-- Cart Button -->
@@ -559,7 +542,7 @@ const selectProduct = (product) => {
 
 const goToSearchPage = () => {
   if (searchQuery.value.trim()) {
-    router.push(`/filter?q=${encodeURIComponent(searchQuery.value.trim())}`);
+    router.push(`/products?search=${encodeURIComponent(searchQuery.value.trim())}`);
   }
   showResults.value = false;
   isMobileMenuOpen.value = false;
