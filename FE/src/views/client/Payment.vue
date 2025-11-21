@@ -442,7 +442,42 @@
                   </div>
                 </label>
 
-                <!-- Bank -->
+                <!-- SePay / Bank Transfer -->
+                <label
+                  class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
+                >
+                  <input
+                    v-model="form.paymentMethod"
+                    type="radio"
+                    value="sepay"
+                    class="mr-3 text-blue-600"
+                  />
+                  <div class="flex items-center">
+                    <svg
+                      class="w-6 h-6 mr-3 text-purple-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                      />
+                    </svg>
+                    <div>
+                      <div class="font-semibold">
+                        Chuyển khoản ngân hàng (SePay)
+                      </div>
+                      <div class="text-sm text-gray-600">
+                        Chuyển khoản qua QR Code, tự động xác nhận
+                      </div>
+                    </div>
+                  </div>
+                </label>
+
+                <!-- Bank (Legacy - keep for backward compatibility) -->
                 <label
                   class="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50"
                 >
@@ -1588,6 +1623,33 @@ const handleOnlinePayment = async (orderId, paymentMethod) => {
     const loader = showPageLoading("Đang chuyển đến cổng thanh toán...");
 
     switch (paymentMethod) {
+      case "sepay":
+        try {
+          showSuccess("Đang chuyển đến cổng thanh toán SePay...");
+
+          // Clear cart if order from cart before redirecting
+          if (orderType.value === "cart") {
+            try {
+              await cartStore.clearCart();
+            } catch (cartError) {
+              console.error("Error clearing cart:", cartError);
+            }
+          }
+
+          hideLoading(loader);
+
+          // Redirect to SePay checkout page (will auto-submit to SePay)
+          router.push({
+            path: "/sepay/transfer",
+            query: { orderId: orderId, total: total.value },
+          });
+        } catch (error) {
+          hideLoading(loader);
+          console.error("SePay redirect error:", error);
+          showError("Có lỗi xảy ra khi chuyển đến trang thanh toán");
+        }
+        break;
+
       case "vnpay":
         try {
           // Gọi API tạo URL thanh toán VNPay

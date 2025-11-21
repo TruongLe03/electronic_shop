@@ -42,6 +42,12 @@ const routes = [
     component: () => import("@views/client/PaymentFailed.vue"),
   },
   {
+    path: "/sepay/transfer",
+    name: "sepayTransfer",
+    component: () => import("@views/client/SepayTransfer.vue"),
+    meta: { requiresAuth: true },
+  },
+  {
     path: "/order-detail/:orderId",
     name: "orderDetail",
     component: () => import("@views/client/OrderDetail.vue"),

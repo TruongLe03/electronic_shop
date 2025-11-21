@@ -14,9 +14,9 @@ export class PaymentService {
     process.env.VNP_URL || "https://sandbox.vnpayment.vn/paymentv2/vpcpay.html";
   static VNP_RETURN_URL =
     process.env.VNP_RETURNURL ||
-    "http://localhost:6789/api/payment/vnpay_return";
+    "http://localhost:5173/api/payment/vnpay_return";
   static VNP_IPN_URL =
-    process.env.VNP_IPN_URL || "http://localhost:6789/api/vnpay/ipn";
+    process.env.VNP_IPN_URL || "http://localhost:5173/api/vnpay/ipn";
 
   // Tạo payment cho order
   static async createPayment(
@@ -57,6 +57,14 @@ export class PaymentService {
     switch (method.toLowerCase()) {
       case "vnpay":
         paymentUrl = await this.createVNPayUrl(savedPayment, order);
+        break;
+      case "sepay":
+      case "bank_transfer":
+        // SePay - sẽ được xử lý bởi createPaymentUrl endpoint riêng
+        // Trả về marker để frontend biết cần gọi API tạo SePay payment
+        paymentUrl = "SEPAY_CHECKOUT";
+        additionalData.requiresSepayCheckout = true;
+        additionalData.orderId = order._id;
         break;
       case "cod":
         // COD không cần payment URL
@@ -137,57 +145,34 @@ export class PaymentService {
       enableLog: process.env.NODE_ENV === "development",
     });
 
-    // Try manual verification first - VNPay expects URL encoded values
+    // Verify signature - VNPay expects raw values (not URL encoded)
     const secureHash = vnpParams.vnp_SecureHash;
     const paramsToVerify = { ...vnpParams };
     delete paramsToVerify.vnp_SecureHash;
     delete paramsToVerify.vnp_SecureHashType;
 
-    // Sort and build query string
+    // Sort parameters
     const sortedParams = this.sortObject(paramsToVerify);
 
-    // VNPay uses URL encoding, so we need to handle this properly
+    // Build sign data without URL encoding (VNPay uses raw values)
     const signData = Object.keys(sortedParams)
-      .map((key) => `${key}=${encodeURIComponent(sortedParams[key])}`)
-      .join("&");
-
-    console.log("📝 Sign Data (URL encoded):", signData);
-
-    // Try without URL encoding too
-    const signDataRaw = Object.keys(sortedParams)
       .map((key) => `${key}=${sortedParams[key]}`)
       .join("&");
 
-    console.log("📝 Sign Data (raw):", signDataRaw);
+    console.log("📝 Sign Data:", signData);
 
-    // Create HMAC with both versions
-    const hmacEncoded = crypto.createHmac("sha512", this.VNP_HASH_SECRET);
-    const signedEncoded = hmacEncoded.update(signData, "utf8").digest("hex");
+    // Create HMAC SHA512 signature
+    const hmac = crypto.createHmac("sha512", this.VNP_HASH_SECRET);
+    const signed = hmac.update(Buffer.from(signData, "utf-8")).digest("hex");
 
-    const hmacRaw = crypto.createHmac("sha512", this.VNP_HASH_SECRET);
-    const signedRaw = hmacRaw.update(signDataRaw, "utf8").digest("hex");
-
-    console.log("� Hash Secret Length:", this.VNP_HASH_SECRET.length);
-    console.log("🔑 Hash Secret:", this.VNP_HASH_SECRET);
-    console.log("🔐 Expected Signature (encoded):", signedEncoded);
-    console.log("🔐 Expected Signature (raw):", signedRaw);
+    console.log("🔐 Expected Signature:", signed);
     console.log("🔐 Received Signature:", secureHash);
-    console.log(
-      "📏 Signature lengths - Expected:",
-      signedRaw.length,
-      "Received:",
-      secureHash.length
-    );
+    console.log("✅ Signature Match:", signed === secureHash);
 
-    const isValidSignature =
-      secureHash === signedEncoded || secureHash === signedRaw;
-    console.log("✅ Signature Match:", isValidSignature);
+    // Validate signature
+    const isValidSignature = signed === secureHash;
 
-    // Temporary: Skip signature validation completely for testing
-    console.log("⚠️  COMPLETELY SKIPPING SIGNATURE VALIDATION FOR TESTING");
-
-    if (true) {
-      // Always proceed
+    if (isValidSignature) {
       // Tìm payment record
       const payment = await Payment.findById(vnpParams.vnp_TxnRef);
       if (!payment) {
@@ -322,9 +307,10 @@ export class PaymentService {
       });
 
       return updatedPayment;
+    } else {
+      console.error("❌ Invalid signature - Security check failed");
+      throw new Error("Chữ ký không hợp lệ hoặc dữ liệu đã bị thay đổi");
     }
-
-    throw new Error("Chữ ký không hợp lệ hoặc dữ liệu đã bị thay đổi");
   }
 
   // Verify MoMo IPN
@@ -454,7 +440,7 @@ export class PaymentService {
 
     // Normalize keys to camelCase
     const userPaymentsTransformed = userPayments.map((p) => {
-      const obj = typeof p.toObject === 'function' ? p.toObject() : { ...p };
+      const obj = typeof p.toObject === "function" ? p.toObject() : { ...p };
       if (obj.order_id) {
         obj.orderId = obj.order_id;
         if (obj.orderId.user_id) obj.orderId.userId = obj.orderId.user_id;
@@ -969,7 +955,10 @@ export class PaymentService {
     }
 
     // Normalize to camelCase keys for frontend
-    const obj = typeof payment.toObject === "function" ? payment.toObject() : { ...payment };
+    const obj =
+      typeof payment.toObject === "function"
+        ? payment.toObject()
+        : { ...payment };
     if (obj.order_id) {
       obj.orderId = obj.order_id;
       if (obj.orderId.user_id) obj.orderId.userId = obj.orderId.user_id;
@@ -1096,9 +1085,9 @@ export class PaymentService {
               count: { $sum: 1 },
               totalAmount: { $sum: "$amount" },
               successCount: {
-                    $sum: {
-                      $cond: [ { $in: ["$status", ["success", "completed"]] }, 1, 0 ],
-                    },
+                $sum: {
+                  $cond: [{ $in: ["$status", ["success", "completed"]] }, 1, 0],
+                },
               },
             },
           },

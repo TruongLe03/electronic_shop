@@ -60,17 +60,19 @@ export const vnpayReturn = asyncHandler(async (req, res) => {
     const payment = await PaymentService.verifyVNPayReturn(vnpayData);
 
     // Redirect về frontend với kết quả
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
     
     if (payment.status === 'completed') {
-      return res.redirect(`${frontendUrl}/payment/success?paymentId=${payment._id}&orderId=${payment.order_id}`);
+      // Thêm status=success để frontend nhận diện
+      return res.redirect(`${frontendUrl}/payment/success?status=success&paymentId=${payment._id}&orderId=${payment.order_id}`);
     } else {
-      return res.redirect(`${frontendUrl}/payment/failed?paymentId=${payment._id}&orderId=${payment.order_id}&reason=${encodeURIComponent(payment.failure_reason || 'Thanh toán thất bại')}`);
+      // Thêm status=failed để frontend nhận diện
+      return res.redirect(`${frontendUrl}/payment/failed?status=failed&paymentId=${payment._id}&orderId=${payment.order_id}&reason=${encodeURIComponent(payment.failure_reason || 'Thanh toán thất bại')}`);
     }
   } catch (error) {
     console.error('❌ VNPay Return Error:', error);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
-    return res.redirect(`${frontendUrl}/payment/error?message=${encodeURIComponent(error.message)}`);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    return res.redirect(`${frontendUrl}/payment/error?status=error&message=${encodeURIComponent(error.message)}`);
   }
 });
 

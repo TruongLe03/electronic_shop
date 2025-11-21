@@ -56,20 +56,20 @@ export const handleIPN = asyncHandler(async (req, res) => {
   try {
     const vnp_Params = req.query;
     
-    console.log('VNPay IPN received:', vnp_Params);
+    console.log('📨 VNPay IPN received:', vnp_Params);
 
     const result = await PaymentService.handleCallback(vnp_Params);
 
     if (result.success) {
-      console.log('VNPay payment success:', result);
+      console.log('✅ VNPay payment success (IPN):', result);
       // Trả về response cho VNPay để xác nhận đã nhận IPN
       return res.status(200).json({ RspCode: '00', Message: 'success' });
     } else {
-      console.log('VNPay payment failed:', result);
+      console.log('❌ VNPay payment failed (IPN):', result);
       return res.status(200).json({ RspCode: '99', Message: 'failed' });
     }
   } catch (error) {
-    console.error('VNPay IPN error:', error);
+    console.error('❌ VNPay IPN error:', error);
     return res.status(200).json({ RspCode: '99', Message: 'error' });
   }
 });
@@ -88,13 +88,13 @@ export const handleReturn = asyncHandler(async (req, res) => {
     if (result.success) {
       // Redirect đến trang thành công
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      const successUrl = `${frontendUrl}/payment/success?orderId=${result.orderId}&transactionNo=${result.transactionNo}`;
+      const successUrl = `${frontendUrl}/payment/success?status=success&orderId=${result.orderId}&transactionNo=${result.transactionNo}`;
       console.log("✅ Redirecting to success:", successUrl);
       return res.redirect(successUrl);
     } else {
       // Redirect đến trang thất bại
       const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-      const failUrl = `${frontendUrl}/payment/failed?orderId=${result.orderId}&error=${encodeURIComponent(result.message)}`;
+      const failUrl = `${frontendUrl}/payment/failed?status=failed&orderId=${result.orderId}&error=${encodeURIComponent(result.message)}`;
       console.log("❌ Redirecting to failed:", failUrl);
       return res.redirect(failUrl);
     }
