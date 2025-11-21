@@ -928,8 +928,95 @@
               </div>
             </div>
 
-            <!-- Place Order Button -->
+            <!-- SePay Payment Form -->
+            <div
+              v-if="form.paymentMethod === 'sepay' && sepayPaymentData"
+              class="mb-6"
+            >
+              <div
+                class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-lg p-4"
+              >
+                <h4
+                  class="font-bold text-blue-900 mb-3 flex items-center text-lg"
+                >
+                  <svg
+                    class="w-6 h-6 mr-2 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                    />
+                  </svg>
+                  Thanh toán qua SePay
+                </h4>
+                <div class="bg-white rounded-lg p-3 mb-3">
+                  <p class="text-sm text-gray-600 mb-1">
+                    Đơn hàng:
+                    <span class="font-semibold text-gray-800">{{
+                      sepayPaymentData.orderNumber
+                    }}</span>
+                  </p>
+                  <p class="text-sm text-gray-600">
+                    Số tiền:
+                    <span class="font-bold text-blue-600">{{
+                      formatPrice(total)
+                    }}</span>
+                  </p>
+                </div>
+                <!-- Render form HTML từ backend -->
+                <div
+                  v-html="sepayPaymentData.formHtml"
+                  class="sepay-form-container"
+                ></div>
+                <p
+                  class="text-xs text-gray-500 mt-3 text-center flex items-center justify-center"
+                >
+                  <svg
+                    class="w-4 h-4 mr-1"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+                    />
+                  </svg>
+                  Bảo mật bởi SePay Payment Gateway
+                </p>
+              </div>
+            </div>
+
+            <!-- Loading SePay Form -->
+            <div
+              v-else-if="form.paymentMethod === 'sepay' && isLoadingSepayForm"
+              class="mb-6"
+            >
+              <div
+                class="bg-gray-50 border-2 border-gray-200 rounded-lg p-8 text-center"
+              >
+                <div
+                  class="animate-spin rounded-full h-12 w-12 border-4 border-blue-600 border-t-transparent mx-auto mb-4"
+                ></div>
+                <p class="text-gray-700 font-medium">
+                  Đang tải form thanh toán SePay...
+                </p>
+                <p class="text-gray-500 text-sm mt-2">
+                  Vui lòng đợi trong giây lát
+                </p>
+              </div>
+            </div>
+
+            <!-- Place Order Button (for non-SePay methods) -->
             <button
+              v-if="form.paymentMethod !== 'sepay'"
               type="submit"
               form="checkout-form"
               :disabled="!isFormValid || isProcessingOrder"
@@ -966,6 +1053,7 @@ import { userService } from "@api/userService";
 import { addressService } from "@api/addressService";
 import { paymentService } from "@api/paymentService";
 import { validateCoupon, getPublicCoupons } from "@api/couponService";
+import { createSepayPayment } from "@api/sepayService";
 import { getFullImage } from "@utils/imageUtils";
 import Header from "@components/client/Header.vue";
 import Footer from "@components/client/Footer.vue";
@@ -985,6 +1073,10 @@ const orderItems = ref([]); // Items to be ordered
 const orderType = ref(""); // 'direct' or 'cart'
 
 const isProcessingOrder = ref(false); // Prevent double submission
+
+// SePay payment state
+const sepayPaymentData = ref(null);
+const isLoadingSepayForm = ref(false);
 
 // Address data
 const provinces = ref([]);
@@ -1891,6 +1983,102 @@ const applySelectedCoupon = async () => {
   }
 };
 
+// Load SePay payment form when selecting SePay method
+const loadSepayPaymentForm = async () => {
+  if (!isFormValid.value) {
+    showWarning("Vui lòng điền đầy đủ thông tin trước khi chọn SePay");
+    form.value.paymentMethod = "cod";
+    return;
+  }
+
+  isLoadingSepayForm.value = true;
+  sepayPaymentData.value = null;
+
+  try {
+    // Prepare address
+    let finalAddress = "";
+    if (
+      form.value.address &&
+      form.value.address.includes(",") &&
+      form.value.address.split(",").length >= 3
+    ) {
+      finalAddress = form.value.address;
+    } else {
+      const provinceName =
+        provinces.value.find((p) => p.code == form.value.province)?.name || "";
+      const districtName =
+        districts.value.find((d) => d.code == form.value.district)?.name || "";
+      const wardName =
+        wards.value.find((w) => w.code == form.value.ward)?.name || "";
+      finalAddress = `${form.value.address}, ${wardName}, ${districtName}, ${provinceName}`;
+    }
+
+    const shippingInfo = {
+      name: form.value.fullName?.trim(),
+      phone: form.value.phone?.trim(),
+      address: finalAddress.trim(),
+    };
+
+    // Create order first
+    let orderResponse = null;
+
+    if (orderType.value === "direct") {
+      const productInfo = orderItems.value[0];
+      const productId =
+        productInfo.productId || productInfo.id || productInfo.product?._id;
+
+      orderResponse = await orderService.createDirectOrder({
+        items: [
+          {
+            productId: productId,
+            quantity: productInfo.quantity,
+            price: productInfo.price,
+          },
+        ],
+        shippingAddress: shippingInfo,
+        paymentMethod: "sepay",
+        note: form.value.notes,
+        coupon_code: appliedCoupon.value?.code || null,
+      });
+    } else if (orderType.value === "cart") {
+      orderResponse = await orderService.createOrderFromCart({
+        shippingAddress: shippingInfo,
+        paymentMethod: "sepay",
+        note: form.value.notes,
+        coupon_code: appliedCoupon.value?.code || null,
+      });
+    }
+
+    if (!orderResponse || !orderResponse.success) {
+      throw new Error(orderResponse?.message || "Không thể tạo đơn hàng");
+    }
+
+    const orderId = orderResponse.data._id;
+    console.log("✅ Order created for SePay:", orderId);
+
+    // Call SePay API to get payment form
+    const sepayResponse = await createSepayPayment(orderId);
+    console.log("📋 SePay API response:", sepayResponse);
+
+    if (sepayResponse.success && sepayResponse.data) {
+      sepayPaymentData.value = sepayResponse.data;
+      console.log("✅ SePay payment data:", sepayPaymentData.value);
+      console.log("📋 Form HTML:", sepayPaymentData.value.formHtml);
+      showSuccess("Đã tải form thanh toán SePay");
+    } else {
+      throw new Error(
+        sepayResponse.message || "Không thể tải form thanh toán SePay"
+      );
+    }
+  } catch (error) {
+    console.error("❌ Error loading SePay form:", error);
+    showError(error.message || "Không thể tải form thanh toán SePay");
+    form.value.paymentMethod = "cod";
+  } finally {
+    isLoadingSepayForm.value = false;
+  }
+};
+
 const processCheckout = async () => {
   // CRITICAL DEBUG: Check coupon state at submission
   console.log("=== PROCESS CHECKOUT START ===");
@@ -2251,6 +2439,21 @@ watch(showCouponModal, async (newValue) => {
     await loadAvailableCoupons();
   }
 });
+
+// Watch payment method change to load SePay form automatically
+watch(
+  () => form.value.paymentMethod,
+  async (newMethod, oldMethod) => {
+    if (newMethod === "sepay" && oldMethod !== "sepay") {
+      console.log("🔵 Payment method changed to SePay, loading form...");
+      await loadSepayPaymentForm();
+    } else if (oldMethod === "sepay" && newMethod !== "sepay") {
+      // Clear SePay data when switching away
+      sepayPaymentData.value = null;
+      console.log("🔴 Cleared SePay payment data");
+    }
+  }
+);
 
 // Lifecycle
 onMounted(async () => {
