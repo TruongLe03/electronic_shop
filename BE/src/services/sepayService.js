@@ -72,7 +72,7 @@ export class SepayService {
       // Tạo form HTML cho thanh toán
       const formHtml = `<form action="${checkoutUrl}" method="POST">
 ${Object.keys(fields).map(field => `  <input type="hidden" name="${field}" value="${fields[field]}" />`).join('\n')}
-  <button type="submit">Thanh toán</button>
+    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white py-3 px-6 rounded-lg font-semibold transition-colors">Thanh toán ngay</button>
 </form>`;
 
       console.log("📋 Generated payment form HTML:", formHtml);
