@@ -8,12 +8,11 @@ export class SepayService {
   static SEPAY_MERCHANT_ID = process.env.SEPAY_MERCHANT_ID;
   static SEPAY_SECRET_KEY = process.env.SEPAY_SECRET_KEY;
   static SEPAY_SUCCESS_URL =
-    process.env.SEPAY_SUCCESS_URL || "http://localhost:5173/payment/success";
+    process.env.SEPAY_SUCCESS_URL || "http://goatenglish.online/payment/success";
   static SEPAY_ERROR_URL =
-    process.env.SEPAY_ERROR_URL || "http://localhost:5173/payment/failed";
+    process.env.SEPAY_ERROR_URL || "http://goatenglish.online/payment/failed";
   static SEPAY_CANCEL_URL =
-    process.env.SEPAY_CANCEL_URL || "http://localhost:5173/payment/cancelled";
-
+    process.env.SEPAY_CANCEL_URL || "http://goatenglish.online/payment/cancelled";
   /**
    * Khởi tạo SePay Client
    */
@@ -62,32 +61,28 @@ export class SepayService {
         payment_method: "BANK_TRANSFER", // Thanh toán bằng quét mã QR chuyển khoản
         order_invoice_number: order.orderId, // Mã đơn hàng duy nhất
         order_amount: Math.round(order.total), // Số tiền (phải là số nguyên)
-        currency: "VND",
+        currency: 'VND',
         order_description: `Thanh toan don hang ${order.orderId}`,
         customer_id: order.user_id.toString(),
         success_url: `${this.SEPAY_SUCCESS_URL}?orderId=${order._id}&paymentId=${savedPayment._id}`,
-        error_url: `${this.SEPAY_ERROR_URL}?orderId=${order._id}`,
-        cancel_url: `${this.SEPAY_CANCEL_URL}?orderId=${order._id}`,
-        custom_data: JSON.stringify({
-          orderId: order._id.toString(),
-          paymentId: savedPayment._id.toString(),
-          orderNumber: order.orderId,
-        }),
       });
-
       // Lấy checkout URL
       const checkoutUrl = client.checkout.initCheckoutUrl();
 
-      console.log("📋 SePay payment fields created:", {
-        checkoutUrl,
-        fields,
-      });
+      // Tạo form HTML cho thanh toán
+      const formHtml = `<form action="${checkoutUrl}" method="POST">
+${Object.keys(fields).map(field => `  <input type="hidden" name="${field}" value="${fields[field]}" />`).join('\n')}
+  <button type="submit">Thanh toán</button>
+</form>`;
 
+      console.log("📋 Generated payment form HTML:", formHtml);
+      
       return {
         success: true,
         payment: savedPayment,
         checkoutUrl,
         fields,
+        formHtml,
         orderId: order._id,
         orderNumber: order.orderId,
       };

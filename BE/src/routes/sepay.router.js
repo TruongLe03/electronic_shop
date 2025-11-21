@@ -6,6 +6,7 @@ import {
   getAllOrders,
   checkOrderStatus,
   testConfig,
+  getPaymentForm,
 } from '../controllers/sepay.controller.js';
 import authMiddleware, { requireAdminAuth } from '../middleware/authMiddleware.js';
 
@@ -21,6 +22,9 @@ sepayRouter.get('/test-config', testConfig);
 // ===== PROTECTED ROUTES (cần authentication) =====
 // Tạo payment fields và checkout URL
 sepayRouter.post('/create-payment', authMiddleware, createPaymentFields);
+
+// Trả về HTML form thanh toán
+sepayRouter.get('/payment-form/:orderId', authMiddleware, getPaymentForm);
 
 // Kiểm tra trạng thái thanh toán
 sepayRouter.get('/payment-status/:paymentId', authMiddleware, checkPaymentStatus);

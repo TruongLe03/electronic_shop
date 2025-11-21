@@ -3,6 +3,7 @@ import apiClient from "@/utils/axiosConfig";
 /**
  * Tạo payment fields và checkout URL cho SePay
  */
+
 export const createSepayPayment = async (orderId, total) => {
   try {
     const userId = localStorage.getItem("user")._id;
@@ -11,6 +12,7 @@ export const createSepayPayment = async (orderId, total) => {
       total,
       userId,
     });
+    console.log("Create SePay payment response:", response.data);
     return response.data;
   } catch (error) {
     console.error("Create SePay payment error:", error);

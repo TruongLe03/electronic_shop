@@ -169,3 +169,43 @@ export const testConfig = asyncHandler(async (req, res) => {
     return ResponseUtil.error(res, error.message, 500);
   }
 });
+
+/**
+ * Trả về HTML form thanh toán cho frontend render
+ */
+export const getPaymentForm = asyncHandler(async (req, res) => {
+  const { orderId } = req.params;
+
+  if (!orderId || !ValidationUtil.isValidObjectId(orderId)) {
+    return res.status(400).send('Invalid Order ID');
+  }
+
+  try {
+    const result = await SepayService.createPaymentFields(orderId);
+
+    const formFields = Object.keys(result.fields).map(field =>
+      `<input type="hidden" name="${field}" value="${result.fields[field]}" />`
+    ).join('');
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>SePay Checkout</title>
+      </head>
+      <body>
+        <h1>Thanh toán đơn hàng ${result.orderNumber}</h1>
+        <form action="${result.checkoutUrl}" method="POST">
+          ${formFields}
+          <button type="submit">Thanh toán ngay</button>
+        </form>
+      </body>
+      </html>
+    `;
+
+    res.send(html);
+  } catch (error) {
+    console.error('Get payment form error:', error);
+    res.status(500).send('Error generating payment form');
+  }
+});

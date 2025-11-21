@@ -13,6 +13,11 @@
           <p class="mt-2 text-sm text-gray-500">Vui lòng không tắt trang này</p>
         </div>
 
+        <!-- Render Form HTML -->
+        <div v-else-if="formHtml" class="bg-white rounded-lg shadow-lg p-8">
+          <div v-html="formHtml"></div>
+        </div>
+
         <!-- Form submit (auto submit to SePay) -->
         <form
           v-if="checkoutUrl && fields"
@@ -331,6 +336,7 @@ const fields = ref(null);
 const errorMessage = ref("");
 const orderId = ref("");
 const sepayForm = ref(null);
+const formHtml = ref("");
 
 // Bank names mapping
 const bankNames = {
@@ -429,16 +435,12 @@ onMounted(async () => {
     if (response.success) {
       checkoutUrl.value = response.data.checkoutUrl;
       fields.value = response.data.fields;
-
+      formHtml.value = response.data.formHtml;
       console.log("SePay checkout URL:", checkoutUrl.value);
       console.log("SePay fields:", fields.value);
+      console.log("SePay form HTML:", formHtml.value);
 
-      // Auto submit form after a short delay
-      setTimeout(() => {
-        if (sepayForm.value) {
-          sepayForm.value.submit();
-        }
-      }, 500);
+      loading.value = false; // Set loading to false to show the form
     } else {
       throw new Error(response.message);
     }
